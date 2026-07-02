@@ -11,11 +11,11 @@ final class CatalogoAdminService
 {
     /** Tablas editables y sus campos con tipo. */
     private const SPEC = [
-        'tipos_equipo'        => ['label' => 'Tipo de equipo',       'fields' => ['nombre' => 'string']],
+        'tipos_equipo'        => ['label' => 'Tipo de equipo',       'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'tipos_licencia'      => ['label' => 'Tipo de licencia',     'fields' => ['nombre' => 'string']],
         'permisos_especiales' => ['label' => 'Permiso especial',     'fields' => ['nombre' => 'string']],
         'categorias_vehiculo' => ['label' => 'Categoría de vehículo','fields' => ['nombre' => 'string', 'es_flota_operativa' => 'bool', 'requiere_furgon' => 'bool', 'orden' => 'int']],
-        'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'orden' => 'int']],
+        'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'paises'              => ['label' => 'País',                 'fields' => ['codigo_iso' => 'iso2', 'nombre' => 'string', 'region' => 'region', 'orden' => 'int']],
     ];
 
@@ -116,6 +116,9 @@ final class CatalogoAdminService
                 case 'string':
                     $v->required($campo, $label)->maxLen($campo, 100, $label);
                     break;
+                case 'text': // descripción opcional
+                    $v->maxLen($campo, 255, $label);
+                    break;
                 case 'iso2':
                     $v->required($campo, $label)->maxLen($campo, 2, $label);
                     break;
@@ -135,6 +138,7 @@ final class CatalogoAdminService
                 'bool'   => array_key_exists($campo, $input) ? (int) (bool) $input[$campo] : 0,
                 'int'    => $val !== null && $val !== '' ? (int) $val : 0,
                 'iso2'   => strtoupper((string) $val),
+                'text'   => $val === null || $val === '' ? null : $val,
                 default  => $val,
             };
         }

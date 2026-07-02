@@ -58,23 +58,23 @@ foreach ($categorias as [$nombre, $esFlota, $requiereFurgon, $orden]) {
 
 // ── Capacidades (por nombre) ──
 $nCap = 0;
-foreach ($capacidades as [$nombre, $orden]) {
+foreach ($capacidades as [$nombre, $descripcion, $orden]) {
     $nCap += $insertIfMissing(
         $pdo,
         'SELECT 1 FROM capacidades WHERE nombre = ?', [$nombre],
-        'INSERT INTO capacidades (nombre, orden) VALUES (?, ?)',
-        [$nombre, $orden]
+        'INSERT INTO capacidades (nombre, descripcion, orden) VALUES (?, ?, ?)',
+        [$nombre, $descripcion, $orden]
     );
 }
 
 // ── Tipos de equipo (por nombre) ──
 $nTE = 0;
-foreach ($tiposEquipo as $nombre) {
+foreach ($tiposEquipo as [$nombre, $descripcion, $orden]) {
     $nTE += $insertIfMissing(
         $pdo,
         'SELECT 1 FROM tipos_equipo WHERE nombre = ?', [$nombre],
-        'INSERT INTO tipos_equipo (nombre) VALUES (?)',
-        [$nombre]
+        'INSERT INTO tipos_equipo (nombre, descripcion, orden) VALUES (?, ?, ?)',
+        [$nombre, $descripcion, $orden]
     );
 }
 

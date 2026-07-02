@@ -25,6 +25,8 @@ function buildFields(tabla, item) {
             control = `<label class="check"><input type="checkbox" name="${campo}" value="1" ${Number(val) === 1 ? 'checked' : ''}> Sí</label>`;
         } else if (tipo === 'int') {
             control = `<input type="number" name="${campo}" min="0" value="${val ?? ''}">`;
+        } else if (tipo === 'text') {
+            control = `<input type="text" name="${campo}" maxlength="255" value="${escapeAttr(val)}">`;
         } else if (tipo === 'iso2') {
             control = `<input type="text" name="${campo}" maxlength="2" required value="${escapeAttr(val)}">`;
         } else if (tipo === 'region') {
