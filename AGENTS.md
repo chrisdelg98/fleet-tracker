@@ -4,7 +4,7 @@
 
 ## 📖 Fuente de verdad
 
-La especificación completa del sistema vive en **`docs/plan-sistema-disponibilidad-flota.md`**. Ese documento manda. En particular:
+La especificación completa del sistema vive en **`docs/plan-sistema-disponibilidad-flota.md`**. Ese documento manda. Las fases de trabajo y sus criterios de cierre viven en **`docs/fases-implementacion.md`**. En particular:
 
 - **§2** — La disponibilidad es un estado CALCULADO, nunca un campo editable. Es el concepto central de todo el sistema.
 - **§5** — Modelo de datos completo (tablas, campos, relaciones). No inventar campos ni renombrar los existentes.
@@ -52,12 +52,42 @@ docs/             → El plan y documentación
 7. **Respuestas API:** JSON con estructura consistente `{ok: bool, data|error, message}`. Códigos HTTP correctos (401, 403, 409 para conflictos de traslape, 422 validación).
 8. **CSS:** todo color/espaciado sale de custom properties definidas en `:root` de app.css. Los 4 colores de estado de disponibilidad son globales y únicos en todo el sistema.
 
-## 🚦 Flujo de trabajo
+## 🚦 Flujo de trabajo por fases
 
-- **Implementar SOLO la Fase 1 primero** (plan §11). No adelantar Fase 2/3 sin instrucción explícita.
+- Trabajar en el orden estricto de **`docs/fases-implementacion.md`** (Fase 0 → 4). No adelantar entregables de fases futuras sin instrucción explícita.
+- **Cada fase termina con su Validación Final ejecutada punto por punto.** Al cerrar una fase, entregar el reporte de validación: cada punto con ✅/❌ y su evidencia (comando, request/respuesta o consulta SQL). Un ❌ = la fase sigue abierta.
 - Commits pequeños y descriptivos en español: `feat: CRUD de pilotos con alerta de licencia`, `fix: validación de traslape en edición`.
-- Antes de dar por terminado un módulo, verificar contra el checklist de reglas (§8) y los principios poka-yoke (§9).
 - Si un cambio toca el modelo de datos, crear una migración SQL nueva numerada; nunca editar migraciones ya aplicadas.
+
+## ⚡ Eficiencia (cómo trabajar)
+
+- **No re-explicar lo conocido.** La documentación ya define el qué y el porqué; no repetirla en las respuestas ni en comentarios extensos. Referenciar la sección (`plan §6`) en lugar de parafrasearla.
+- **Leer antes de escribir.** Antes de crear cualquier archivo, revisar qué ya existe (helpers, servicios, estilos). No duplicar lógica: si algo se necesita dos veces, va a un helper/servicio compartido.
+- **No regenerar archivos completos por un cambio puntual**; editar lo necesario.
+- **Sin código especulativo:** nada de campos "por si acaso", abstracciones prematuras ni opciones de configuración no pedidas. El plan define el alcance exacto.
+- **Comentarios solo donde aportan:** reglas de negocio no obvias (ej. por qué el override tiene prioridad). Cero comentarios que narran lo evidente.
+- **Ir directo:** ante una tarea clara según la documentación, implementarla sin pedir confirmaciones innecesarias. Preguntar únicamente cuando el plan realmente no cubre el caso.
+- La medida de eficiencia es simple: **pasar las Validaciones Finales de la fase al primer intento**, con el mínimo de código necesario.
+
+## 🔒 Seguridad e integridad de datos (NUNCA olvidarlo)
+
+Estos dos principios están por encima de la velocidad. Ante cualquier duda entre "más rápido" y "más seguro/íntegro", gana lo segundo.
+
+**Seguridad — en cada endpoint, siempre:**
+1. Verificar sesión → 401 si no hay.
+2. Verificar rol y estación contra la acción y el recurso → 403 si no corresponde (la autorización vive en backend; la UI solo oculta).
+3. Validar y sanear TODA entrada (tipos, enums contra constantes, longitudes, fechas parseables) → 422 con mensaje claro.
+4. PDO prepared statements en el 100% de las queries — la concatenación de SQL está prohibida sin excepción.
+5. `htmlspecialchars()` en toda salida hacia HTML. `password_hash()`/`password_verify()` para credenciales. Cookies de sesión con `httponly`, `samesite=Lax` y regeneración de ID al hacer login.
+6. Los exports e informes filtran por el alcance del rol **en la consulta**, no después.
+
+**Integridad — en cada escritura, siempre:**
+1. **Transacciones** para operaciones múltiples: movimiento + bitácora, cambio de estado + override, apartar retorno + movimiento de regreso. Todo o nada.
+2. La validación de no-traslape corre **dentro** de la transacción con bloqueo adecuado (`SELECT ... FOR UPDATE`) para resistir requests simultáneas.
+3. FKs y restricciones UNIQUE definidas en la base de datos, no solo validadas en PHP — la BD es la última línea de defensa.
+4. Nunca borrado físico de unidades, pilotos ni movimientos (soft-delete / estados finales).
+5. Toda escritura deja su fila en bitácora con snapshot antes/después, dentro de la misma transacción.
+6. Fechas en UTC en la BD sin excepción; la conversión a hora local ocurre solo en la capa de presentación.
 
 ## 🚫 Prohibido
 

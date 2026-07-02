@@ -1,0 +1,35 @@
+-- 010_unidades.sql — Flota + inventario vehicular (plan §5.5). Doble propósito:
+-- en_disponibilidad=true => flota operativa (dashboard/movimientos); false => solo inventario.
+-- estado_notas es obligatorio cuando estado_vehiculo != OPERATIVO (validación en backend).
+CREATE TABLE unidades (
+    id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    placa_unidad          VARCHAR(30)     NOT NULL,
+    placa_furgon          VARCHAR(30)     NULL,
+    marca                 VARCHAR(80)     NULL,
+    modelo                VARCHAR(80)     NULL,
+    categoria_vehiculo_id BIGINT UNSIGNED NOT NULL,
+    en_disponibilidad     TINYINT(1)      NOT NULL DEFAULT 1,
+    capacidad             VARCHAR(60)     NULL,
+    tipo_equipo_id        BIGINT UNSIGNED NULL,
+    estacion_id           BIGINT UNSIGNED NOT NULL,
+    piloto_asignado_id    BIGINT UNSIGNED NULL,
+    estado_vehiculo       ENUM('OPERATIVO','EN_MANTENIMIENTO','INOPERATIVO','DE_BAJA') NOT NULL DEFAULT 'OPERATIVO',
+    estado_notas          TEXT            NULL,
+    activo                TINYINT(1)      NOT NULL DEFAULT 1,
+    created_at            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by            BIGINT UNSIGNED NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_unidades_placa (placa_unidad),
+    KEY idx_unidades_estacion (estacion_id),
+    KEY idx_unidades_categoria (categoria_vehiculo_id),
+    KEY idx_unidades_tipo_equipo (tipo_equipo_id),
+    KEY idx_unidades_piloto (piloto_asignado_id),
+    KEY idx_unidades_en_disponibilidad (en_disponibilidad),
+    KEY idx_unidades_estado_vehiculo (estado_vehiculo),
+    CONSTRAINT fk_unidades_categoria FOREIGN KEY (categoria_vehiculo_id) REFERENCES categorias_vehiculo (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_unidades_tipo_equipo FOREIGN KEY (tipo_equipo_id) REFERENCES tipos_equipo (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_unidades_estacion FOREIGN KEY (estacion_id) REFERENCES estaciones (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_unidades_piloto FOREIGN KEY (piloto_asignado_id) REFERENCES pilotos (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_unidades_created_by FOREIGN KEY (created_by) REFERENCES usuarios (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
