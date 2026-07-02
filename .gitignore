@@ -1,0 +1,40 @@
+# ── Entorno y credenciales (NUNCA subir) ──────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Dependencias ───────────────────────────────────────────
+/vendor/
+/node_modules/
+composer.lock
+
+# ── Archivos generados / temporales ───────────────────────
+/storage/
+/logs/
+*.log
+*.cache
+/public/uploads/
+/database/*.sqlite
+*.sql.gz
+*.tar.zst
+/backups/
+/docs/
+
+# ── Sistema operativo ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editores e IDEs ────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.sublime-*
+
+# ── Exports y archivos de prueba locales ──────────────────
+/exports/
+*.xlsx
+*.csv
+!database/seeds/*.csv
