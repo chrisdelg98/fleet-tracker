@@ -1,24 +1,37 @@
 <?php
 /**
- * Enrutador propio simple (AGENTS.md §Stack): mapea método + ruta exacta a un handler.
- * Suficiente para Fase 0; los parámetros de ruta se agregarán cuando los CRUD los pidan.
+ * Enrutador propio (AGENTS.md §Stack). Soporta rutas con parámetros nombrados
+ * (ej. /api/unidades/{id}) y los métodos GET/POST/PUT/PATCH/DELETE. El handler recibe
+ * un arreglo asociativo con los parámetros capturados.
  */
 
 declare(strict_types=1);
 
 final class Router
 {
-    /** @var array<string, callable> claves "METODO ruta" */
+    /** @var array<int, array{method:string, regex:string, params:string[], handler:callable}> */
     private array $routes = [];
 
-    public function get(string $path, callable $handler): void
-    {
-        $this->routes['GET ' . $path] = $handler;
-    }
+    public function get(string $path, callable $handler): void    { $this->add('GET', $path, $handler); }
+    public function post(string $path, callable $handler): void   { $this->add('POST', $path, $handler); }
+    public function put(string $path, callable $handler): void    { $this->add('PUT', $path, $handler); }
+    public function patch(string $path, callable $handler): void  { $this->add('PATCH', $path, $handler); }
+    public function delete(string $path, callable $handler): void { $this->add('DELETE', $path, $handler); }
 
-    public function post(string $path, callable $handler): void
+    private function add(string $method, string $path, callable $handler): void
     {
-        $this->routes['POST ' . $path] = $handler;
+        $params = [];
+        $regex = preg_replace_callback('/\{(\w+)\}/', static function (array $m) use (&$params): string {
+            $params[] = $m[1];
+            return '([^/]+)';
+        }, $path);
+
+        $this->routes[] = [
+            'method'  => $method,
+            'regex'   => '#^' . $regex . '$#',
+            'params'  => $params,
+            'handler' => $handler,
+        ];
     }
 
     public function dispatch(string $method, string $uri): void
@@ -28,13 +41,19 @@ final class Router
             $path = rtrim($path, '/');
         }
 
-        $handler = $this->routes[$method . ' ' . $path] ?? null;
-        if ($handler === null) {
-            $this->notFound($path);
-            return;
+        foreach ($this->routes as $route) {
+            if ($route['method'] !== $method) {
+                continue;
+            }
+            if (preg_match($route['regex'], $path, $matches)) {
+                array_shift($matches);
+                $params = array_combine($route['params'], $matches) ?: [];
+                ($route['handler'])($params);
+                return;
+            }
         }
 
-        $handler();
+        $this->notFound($path);
     }
 
     /** 404 en JSON para el API, texto plano para el resto. */

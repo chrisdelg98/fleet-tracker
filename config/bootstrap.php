@@ -17,6 +17,9 @@ require_once BASE_PATH . '/app/helpers/dates.php';
 require_once BASE_PATH . '/app/helpers/auth.php';
 require_once BASE_PATH . '/app/helpers/bitacora.php';
 require_once BASE_PATH . '/app/helpers/view.php';
+require_once BASE_PATH . '/app/helpers/validation.php';
+require_once BASE_PATH . '/app/helpers/db.php';
+require_once BASE_PATH . '/app/helpers/paises.php';
 
 // Autoloader simple para clases (controladores, servicios, modelos, Router).
 spl_autoload_register(static function (string $class): void {

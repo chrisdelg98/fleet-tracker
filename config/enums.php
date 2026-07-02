@@ -53,8 +53,11 @@ final class EstadoVehiculo
     public const INOPERATIVO      = 'INOPERATIVO';
     public const DE_BAJA          = 'DE_BAJA';
 
-    /** Estados que exigen estado_notas y generan override automático (plan §5.5, regla 17/18). */
+    /** Estados que exigen estado_notas (plan §5.5, regla 17). */
     public const REQUIERE_NOTAS = [self::EN_MANTENIMIENTO, self::INOPERATIVO, self::DE_BAJA];
+
+    /** Estados que generan un override automático abierto; OPERATIVO lo cierra (plan §5.5, regla 18). */
+    public const GENERA_OVERRIDE = [self::EN_MANTENIMIENTO, self::INOPERATIVO];
 
     public static function values(): array
     {

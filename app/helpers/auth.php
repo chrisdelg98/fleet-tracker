@@ -66,6 +66,21 @@ function require_role_api(array $rolesPermitidos): array
     return $user;
 }
 
+/** Exige rol ADMIN_GLOBAL (administración del sistema: estaciones, usuarios, catálogos). */
+function require_admin_api(): array
+{
+    return require_role_api([Rol::ADMIN_GLOBAL]);
+}
+
+/** True si el usuario puede escribir sobre recursos de la estación dada (plan §4). */
+function can_write_station(array $user, ?int $estacionRecurso): bool
+{
+    if ($user['rol'] === Rol::ADMIN_GLOBAL) {
+        return true;
+    }
+    return $estacionRecurso !== null && $user['estacion_id'] === $estacionRecurso;
+}
+
 /**
  * Exige que el usuario pueda escribir sobre un recurso de la estación dada.
  * ADMIN_GLOBAL escribe sobre cualquier estación; el resto solo sobre la suya (plan §4).

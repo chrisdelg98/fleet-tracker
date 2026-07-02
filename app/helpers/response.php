@@ -29,3 +29,29 @@ function json_error(string $error, int $status = 400, string $message = ''): voi
 {
     json_out($status, ['ok' => false, 'error' => $error, 'message' => $message !== '' ? $message : $error]);
 }
+
+/**
+ * Respuesta 422 de validación con el detalle por campo.
+ * @param array<string, string> $errors campo => mensaje
+ */
+function json_unprocessable(array $errors, string $message = 'Revisa los datos ingresados.'): void
+{
+    json_out(422, ['ok' => false, 'error' => 'validacion', 'message' => $message, 'errors' => $errors]);
+}
+
+/**
+ * Lee y decodifica el cuerpo JSON de la petición. Devuelve [] si no hay o es inválido.
+ * Los formularios pueden enviar application/json o form-urlencoded (se usa $_POST).
+ */
+function request_body(): array
+{
+    if (!empty($_POST)) {
+        return $_POST;
+    }
+    $raw = file_get_contents('php://input');
+    if ($raw === '' || $raw === false) {
+        return [];
+    }
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
+}
