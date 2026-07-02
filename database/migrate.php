@@ -18,22 +18,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 
-// ── Cargar .env (solo lo necesario para conectar) ──
-$envFile = $root . '/.env';
-if (!is_file($envFile)) {
-    fwrite(STDERR, "No existe .env — copiar de .env.example y completar DB_*.\n");
-    exit(1);
-}
-$env = [];
-foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-    $line = trim($line);
-    if ($line === '' || $line[0] === '#') {
-        continue;
-    }
-    [$key, $val] = array_pad(explode('=', $line, 2), 2, '');
-    $val = preg_replace('/\s+#.*$/', '', trim($val)); // comentario en línea
-    $env[trim($key)] = trim($val, "\"'");
-}
+// ── Cargar .env (parser compartido) ──
+require_once $root . '/config/env.php';
+$env = load_env($root . '/.env');
 
 $host = $env['DB_HOST']     ?? '127.0.0.1';
 $port = $env['DB_PORT']     ?? '3306';
