@@ -1,5 +1,6 @@
 /** Administración › Catálogos. Formulario dirigido por la spec de cada tabla. */
 import { api, showError } from './api.js';
+import { enhanceSelects } from './searchable-select.js';
 
 const specs = JSON.parse(document.getElementById('catalogos-spec').textContent);
 const data = JSON.parse(document.getElementById('catalogos-data').textContent);
@@ -49,6 +50,7 @@ document.addEventListener('click', async (ev) => {
         form.elements['id'].value = '';
         form.elements['__tabla'].value = tabla;
         buildFields(tabla, null);
+        enhanceSelects(fieldsBox);
         err.hidden = true;
         title.textContent = `Nuevo · ${specs[tabla].label}`;
         dlg.showModal();
@@ -60,6 +62,7 @@ document.addEventListener('click', async (ev) => {
         form.elements['id'].value = id;
         form.elements['__tabla'].value = tabla;
         buildFields(tabla, item);
+        enhanceSelects(fieldsBox);
         err.hidden = true;
         title.textContent = `Editar · ${specs[tabla].label}`;
         dlg.showModal();

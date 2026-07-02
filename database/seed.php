@@ -19,6 +19,7 @@ $paises    = require $root . '/database/seeds/paises.php';
 $categorias = require $root . '/database/seeds/categorias_vehiculo.php';
 $tiposEquipo = require $root . '/database/seeds/tipos_equipo.php';
 $tiposLic  = require $root . '/database/seeds/tipos_licencia.php';
+$capacidades = require $root . '/database/seeds/capacidades.php';
 $estaciones = require $root . '/database/seeds/estaciones.php';
 $admin     = require $root . '/database/seeds/admin.php';
 
@@ -46,12 +47,23 @@ foreach ($paises as [$iso, $nombre, $region, $orden]) {
 
 // ── Categorías de vehículo (por nombre) ──
 $nC = 0;
-foreach ($categorias as [$nombre, $esFlota, $orden]) {
+foreach ($categorias as [$nombre, $esFlota, $requiereFurgon, $orden]) {
     $nC += $insertIfMissing(
         $pdo,
         'SELECT 1 FROM categorias_vehiculo WHERE nombre = ?', [$nombre],
-        'INSERT INTO categorias_vehiculo (nombre, es_flota_operativa, orden) VALUES (?, ?, ?)',
-        [$nombre, $esFlota, $orden]
+        'INSERT INTO categorias_vehiculo (nombre, es_flota_operativa, requiere_furgon, orden) VALUES (?, ?, ?, ?)',
+        [$nombre, $esFlota, $requiereFurgon, $orden]
+    );
+}
+
+// ── Capacidades (por nombre) ──
+$nCap = 0;
+foreach ($capacidades as [$nombre, $orden]) {
+    $nCap += $insertIfMissing(
+        $pdo,
+        'SELECT 1 FROM capacidades WHERE nombre = ?', [$nombre],
+        'INSERT INTO capacidades (nombre, orden) VALUES (?, ?)',
+        [$nombre, $orden]
     );
 }
 
@@ -98,8 +110,8 @@ $nA = $insertIfMissing(
     [$admin['nombre'], $admin['email'], password_hash($admin['password'], PASSWORD_DEFAULT), $admin['rol']]
 );
 
-echo "Seeds aplicados (nuevos): países={$nP}, categorías={$nC}, tipos_equipo={$nTE}, " .
-     "tipos_licencia={$nTL}, estaciones={$nE}, admin={$nA}.\n";
+echo "Seeds aplicados (nuevos): países={$nP}, categorías={$nC}, capacidades={$nCap}, " .
+     "tipos_equipo={$nTE}, tipos_licencia={$nTL}, estaciones={$nE}, admin={$nA}.\n";
 if ($nA === 1) {
     echo "Admin Global creado: {$admin['email']} / {$admin['password']} (cámbiala tras el primer login).\n";
 }

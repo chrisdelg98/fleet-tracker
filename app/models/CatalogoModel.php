@@ -11,7 +11,7 @@ final class CatalogoModel
 {
     private const TABLAS = [
         'tipos_equipo', 'tipos_licencia', 'permisos_especiales',
-        'categorias_vehiculo', 'paises', 'estaciones',
+        'categorias_vehiculo', 'capacidades', 'paises', 'estaciones',
     ];
 
     public function __construct(private PDO $pdo)

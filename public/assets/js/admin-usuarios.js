@@ -11,6 +11,11 @@ const selEstacion = form.elements['estacion_id'];
 const passReq = document.getElementById('pass-req');
 const passHint = document.getElementById('pass-hint');
 
+/** Refresca el combobox buscable de cada select tras poblar/reset el formulario. */
+function syncSelects() {
+    form.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
+}
+
 // Poka-yoke: los roles globales/regionales no llevan estación.
 function syncEstacion() {
     const sinEstacion = rolesSinEstacion.includes(selRol.value);
@@ -35,6 +40,7 @@ document.addEventListener('click', async (ev) => {
         form.reset();
         form.elements['id'].value = '';
         setPasswordMode(false);
+        syncSelects();
         syncEstacion();
         err.hidden = true;
         document.getElementById('dlg-usuario-title').textContent = 'Nuevo usuario';
@@ -51,6 +57,7 @@ document.addEventListener('click', async (ev) => {
         form.elements['estacion_id'].value = resp.data.estacion_id ?? '';
         form.elements['id'].value = resp.data.id;
         setPasswordMode(true);
+        syncSelects();
         syncEstacion();
         err.hidden = true;
         document.getElementById('dlg-usuario-title').textContent = 'Editar usuario';

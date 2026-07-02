@@ -12,16 +12,27 @@ const errUnidad = document.getElementById('form-unidad-error');
 const errEstado = document.getElementById('form-estado-error');
 const selCategoria = formUnidad.elements['categoria_vehiculo_id'];
 const chkDisp = formUnidad.elements['en_disponibilidad'];
+const placaFurgon = formUnidad.elements['placa_furgon'];
+const furgonReq = formUnidad.querySelector('[data-furgon-req]');
 
 let dispTocadoManual = false;
 
-// ── Poka-yoke: el check de disponibilidad hereda el default de la categoría (regla 14) ──
+// ── Poka-yoke: al elegir categoría ──
 selCategoria.addEventListener('change', () => {
-    if (dispTocadoManual) return;
     const opt = selCategoria.selectedOptions[0];
-    chkDisp.checked = opt && opt.dataset.flota === '1';
+    // el check de disponibilidad hereda el default de la categoría (regla 14)
+    if (!dispTocadoManual) chkDisp.checked = !!opt && opt.dataset.flota === '1';
+    // placa de furgón obligatoria si la categoría jala furgón (ej. Cabezal)
+    const requiere = !!opt && opt.dataset.requiereFurgon === '1';
+    placaFurgon.required = requiere;
+    furgonReq.hidden = !requiere;
 });
 chkDisp.addEventListener('change', () => { dispTocadoManual = true; });
+
+/** Dispara change en los selects para que el combobox buscable refleje el valor actual. */
+function syncSelects() {
+    formUnidad.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
+}
 
 // ── Poka-yoke: notas obligatorias si el estado no es OPERATIVO ──
 const selEstado = formEstado.elements['estado_vehiculo'];
@@ -45,6 +56,7 @@ document.addEventListener('click', async (ev) => {
         formUnidad.elements['id'].value = '';
         dispTocadoManual = false;
         errUnidad.hidden = true;
+        syncSelects();
         document.getElementById('dlg-unidad-title').textContent = 'Nueva unidad';
         dlgUnidad.showModal();
     }
@@ -55,6 +67,7 @@ document.addEventListener('click', async (ev) => {
         fillForm(resp.data);
         dispTocadoManual = true; // en edición el valor ya es el guardado, no re-heredar
         errUnidad.hidden = true;
+        syncSelects();
         document.getElementById('dlg-unidad-title').textContent = 'Editar unidad';
         dlgUnidad.showModal();
     }
@@ -63,7 +76,7 @@ document.addEventListener('click', async (ev) => {
         formEstado.reset();
         formEstado.elements['id'].value = id;
         selEstado.value = btn.dataset.estado || 'OPERATIVO';
-        syncNotasReq();
+        selEstado.dispatchEvent(new Event('change', { bubbles: true }));
         errEstado.hidden = true;
         dlgEstado.showModal();
     }

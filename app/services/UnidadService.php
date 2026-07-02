@@ -137,7 +137,7 @@ final class UnidadService
         $v->required('placa_unidad', 'La placa')->maxLen('placa_unidad', 30, 'La placa')
           ->maxLen('placa_furgon', 30, 'La placa del furgón')
           ->maxLen('marca', 80, 'La marca')->maxLen('modelo', 80, 'El modelo')
-          ->maxLen('capacidad', 60, 'La capacidad')
+          ->positiveInt('capacidad_id', 'La capacidad')
           ->required('categoria_vehiculo_id', 'La categoría')->positiveInt('categoria_vehiculo_id', 'La categoría')
           ->required('estacion_id', 'La estación')->positiveInt('estacion_id', 'La estación')
           ->positiveInt('tipo_equipo_id', 'El tipo de equipo')
@@ -155,6 +155,16 @@ final class UnidadService
             json_unprocessable(['categoria_vehiculo_id' => 'La categoría seleccionada no existe.']);
         }
 
+        // placa_furgon obligatoria si la categoría jala furgón (ej. Cabezal).
+        if ((int) $categoria['requiere_furgon'] === 1 && $this->nullable($v->value('placa_furgon')) === null) {
+            json_unprocessable(['placa_furgon' => 'Esta categoría requiere la placa del furgón.']);
+        }
+
+        $capacidadId = $v->value('capacidad_id') ? (int) $v->value('capacidad_id') : null;
+        if ($capacidadId !== null && $this->catalogos->find('capacidades', $capacidadId) === null) {
+            json_unprocessable(['capacidad_id' => 'La capacidad seleccionada no existe.']);
+        }
+
         // en_disponibilidad: si el formulario lo envía, se respeta (excepción editable);
         // si no, hereda el default de la categoría (regla 14).
         $enDisponibilidad = array_key_exists('en_disponibilidad', $input)
@@ -170,7 +180,7 @@ final class UnidadService
             'modelo'                => $this->nullable($v->value('modelo')),
             'categoria_vehiculo_id' => (int) $v->value('categoria_vehiculo_id'),
             'en_disponibilidad'     => $enDisponibilidad,
-            'capacidad'             => $this->nullable($v->value('capacidad')),
+            'capacidad_id'          => $capacidadId,
             'tipo_equipo_id'        => $v->value('tipo_equipo_id') ? (int) $v->value('tipo_equipo_id') : null,
             'estacion_id'           => (int) $v->value('estacion_id'),
             'piloto_asignado_id'    => $v->value('piloto_asignado_id') ? (int) $v->value('piloto_asignado_id') : null,
@@ -197,7 +207,7 @@ final class UnidadService
     {
         return array_intersect_key($row, array_flip([
             'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'categoria_vehiculo_id',
-            'en_disponibilidad', 'capacidad', 'tipo_equipo_id', 'estacion_id', 'piloto_asignado_id',
+            'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id', 'piloto_asignado_id',
         ]));
     }
 

@@ -42,5 +42,6 @@
     <main class="page">
         <?= $content ?>
     </main>
+    <script src="/assets/js/searchable-select.js" type="module"></script>
 </body>
 </html>

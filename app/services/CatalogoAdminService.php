@@ -14,7 +14,8 @@ final class CatalogoAdminService
         'tipos_equipo'        => ['label' => 'Tipo de equipo',       'fields' => ['nombre' => 'string']],
         'tipos_licencia'      => ['label' => 'Tipo de licencia',     'fields' => ['nombre' => 'string']],
         'permisos_especiales' => ['label' => 'Permiso especial',     'fields' => ['nombre' => 'string']],
-        'categorias_vehiculo' => ['label' => 'Categoría de vehículo','fields' => ['nombre' => 'string', 'es_flota_operativa' => 'bool', 'orden' => 'int']],
+        'categorias_vehiculo' => ['label' => 'Categoría de vehículo','fields' => ['nombre' => 'string', 'es_flota_operativa' => 'bool', 'requiere_furgon' => 'bool', 'orden' => 'int']],
+        'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'orden' => 'int']],
         'paises'              => ['label' => 'País',                 'fields' => ['codigo_iso' => 'iso2', 'nombre' => 'string', 'region' => 'region', 'orden' => 'int']],
     ];
 

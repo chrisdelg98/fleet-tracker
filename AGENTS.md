@@ -51,6 +51,7 @@ docs/             → El plan y documentación
 6. **Idioma:** interfaz, mensajes de error y comentarios de negocio en **español**. Nombres de variables/funciones en inglés o español consistente (elegir uno y mantenerlo).
 7. **Respuestas API:** JSON con estructura consistente `{ok: bool, data|error, message}`. Códigos HTTP correctos (401, 403, 409 para conflictos de traslape, 422 validación).
 8. **CSS:** todo color/espaciado sale de custom properties definidas en `:root` de app.css. Los 4 colores de estado de disponibilidad son globales y únicos en todo el sistema.
+9. **Desplegables buscables (estándar de UI):** TODO `<select>` de formulario se presenta como un combobox con filtro de texto, mediante el componente propio **`public/assets/js/searchable-select.js`** (vanilla, sin librerías). Se carga globalmente desde el layout y realza automáticamente cada `<select>`; para excluir uno, marcarlo con `data-no-search`. El `<select>` nativo permanece como fuente de verdad (envío del form y `.value` siguen funcionando) y el componente sincroniza su vista al recibir el evento `change`, por lo que al poblar un formulario en modo edición hay que despachar `change` en los selects. Si se crean selects dinámicamente, llamar a `enhanceSelects(contenedor)`. No introducir otra librería o patrón de desplegable: este es el único.
 
 ## 🚦 Flujo de trabajo por fases
 

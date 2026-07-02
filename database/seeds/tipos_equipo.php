@@ -1,12 +1,14 @@
 <?php
-/** Catálogo básico de tipos de equipo (plan §5.3). */
+/**
+ * Tipos de equipo = naturaleza del equipo (plan §5.3, §5.5). Genéricos; el tamaño va en
+ * el catálogo de capacidades. "Estándar" acepta cualquier carga seca.
+ */
 
 declare(strict_types=1);
 
 return [
-    "Contenedor 40'",
-    "Contenedor 20'",
-    'Furgón seco',
-    'Plataforma',
+    'Estándar',
     'Refrigerado',
+    'Plataforma',
+    'Cisterna',
 ];

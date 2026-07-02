@@ -5,6 +5,11 @@ const dlg = document.getElementById('dlg-ruta');
 const form = document.getElementById('form-ruta');
 const err = document.getElementById('form-ruta-error');
 
+/** Refresca el combobox buscable de cada select tras poblar/reset el formulario. */
+function syncSelects() {
+    form.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
+}
+
 document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-action]');
     if (!btn) return;
@@ -14,6 +19,7 @@ document.addEventListener('click', async (ev) => {
         form.reset();
         form.elements['id'].value = '';
         err.hidden = true;
+        syncSelects();
         document.getElementById('dlg-ruta-title').textContent = 'Nueva ruta';
         dlg.showModal();
     }
@@ -26,6 +32,7 @@ document.addEventListener('click', async (ev) => {
         }
         form.elements['id'].value = resp.data.id;
         err.hidden = true;
+        syncSelects();
         document.getElementById('dlg-ruta-title').textContent = 'Editar ruta';
         dlg.showModal();
     }

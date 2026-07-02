@@ -54,7 +54,7 @@ final class AdminController
         foreach (CatalogoAdminService::tablas() as $tabla) {
             $datos[$tabla] = [
                 'spec'  => CatalogoAdminService::spec($tabla),
-                'items' => $this->catalogos->activos($tabla, in_array($tabla, ['categorias_vehiculo', 'paises'], true) ? 'orden' : 'nombre'),
+                'items' => $this->catalogos->activos($tabla, in_array($tabla, ['categorias_vehiculo', 'capacidades', 'paises'], true) ? 'orden' : 'nombre'),
             ];
         }
         render('admin/catalogos', ['usuario' => $user, 'catalogos' => $datos], 'Catálogos · Administración');

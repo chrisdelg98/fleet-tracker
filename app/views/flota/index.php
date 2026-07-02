@@ -83,13 +83,13 @@ $claseEstado = [
         <div class="grid-2">
             <label class="field"><span class="field__label">Placa de unidad *</span>
                 <input type="text" name="placa_unidad" maxlength="30" required></label>
-            <label class="field"><span class="field__label">Placa de furgón</span>
+            <label class="field"><span class="field__label">Placa de furgón <span data-furgon-req hidden>*</span></span>
                 <input type="text" name="placa_furgon" maxlength="30"></label>
             <label class="field"><span class="field__label">Categoría *</span>
                 <select name="categoria_vehiculo_id" required>
                     <option value="">Selecciona…</option>
                     <?php foreach ($categorias as $c): ?>
-                        <option value="<?= (int) $c['id'] ?>" data-flota="<?= (int) $c['es_flota_operativa'] ?>"><?= e($c['nombre']) ?></option>
+                        <option value="<?= (int) $c['id'] ?>" data-flota="<?= (int) $c['es_flota_operativa'] ?>" data-requiere-furgon="<?= (int) $c['requiere_furgon'] ?>"><?= e($c['nombre']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
             <label class="field field--check"><span class="field__label">Disponibilidad</span>
@@ -104,7 +104,10 @@ $claseEstado = [
                     <?php foreach ($tiposEquipo as $t): ?><option value="<?= (int) $t['id'] ?>"><?= e($t['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Capacidad</span>
-                <input type="text" name="capacidad" maxlength="60" placeholder="ej. 40 pies"></label>
+                <select name="capacidad_id">
+                    <option value="">—</option>
+                    <?php foreach ($capacidades as $cap): ?><option value="<?= (int) $cap['id'] ?>"><?= e($cap['nombre']) ?></option><?php endforeach; ?>
+                </select></label>
             <?php if ($esAdmin): ?>
             <label class="field"><span class="field__label">Estación *</span>
                 <select name="estacion_id" required>

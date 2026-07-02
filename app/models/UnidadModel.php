@@ -11,7 +11,7 @@ final class UnidadModel
     /** Columnas escribibles desde el formulario de alta/edición. */
     private const CAMPOS = [
         'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'categoria_vehiculo_id',
-        'en_disponibilidad', 'capacidad', 'tipo_equipo_id', 'estacion_id',
+        'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id',
         'piloto_asignado_id', 'estado_vehiculo', 'estado_notas',
     ];
 
@@ -29,13 +29,14 @@ final class UnidadModel
     /** Lista con nombres resueltos (para la tabla de Flota). Filtra por estación si se indica. */
     public function listar(?int $estacionId = null, bool $soloActivas = true): array
     {
-        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa,
+        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.requiere_furgon,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
-                       p.nombre AS piloto_asignado
+                       cap.nombre AS capacidad, p.nombre AS piloto_asignado
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   JOIN estaciones e ON e.id = u.estacion_id
                   LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
+                  LEFT JOIN capacidades cap ON cap.id = u.capacidad_id
                   LEFT JOIN pilotos p ON p.id = u.piloto_asignado_id
                  WHERE 1 = 1';
         $params = [];

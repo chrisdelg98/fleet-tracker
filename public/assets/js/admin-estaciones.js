@@ -5,6 +5,11 @@ const dlg = document.getElementById('dlg-estacion');
 const form = document.getElementById('form-estacion');
 const err = document.getElementById('form-estacion-error');
 
+/** Refresca el combobox buscable de cada select tras poblar/reset el formulario. */
+function syncSelects() {
+    form.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
+}
+
 document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-action]');
     if (!btn) return;
@@ -14,6 +19,7 @@ document.addEventListener('click', async (ev) => {
         form.reset();
         form.elements['id'].value = '';
         err.hidden = true;
+        syncSelects();
         document.getElementById('dlg-estacion-title').textContent = 'Nueva estación';
         dlg.showModal();
     }
@@ -26,6 +32,7 @@ document.addEventListener('click', async (ev) => {
         }
         form.elements['id'].value = resp.data.id;
         err.hidden = true;
+        syncSelects();
         document.getElementById('dlg-estacion-title').textContent = 'Editar estación';
         dlg.showModal();
     }
