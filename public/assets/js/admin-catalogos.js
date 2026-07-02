@@ -68,7 +68,7 @@ document.addEventListener('click', async (ev) => {
     if (btn.dataset.action === 'activo-catalogo') {
         if (!confirm('¿Desactivar este registro del catálogo?')) return;
         const resp = await api('POST', `/api/catalogos/${tabla}/${id}/activo`, { activo: false });
-        if (resp.ok) location.reload(); else alert(resp.data.message || 'No se pudo actualizar.');
+        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo actualizar.');
     }
 });
 

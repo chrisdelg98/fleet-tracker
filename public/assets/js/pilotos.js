@@ -20,7 +20,7 @@ document.addEventListener('click', async (ev) => {
 
     if (btn.dataset.action === 'editar-piloto') {
         const resp = await api('GET', `/api/pilotos/${id}`);
-        if (!resp.ok) { alert(resp.data.message || 'No se pudo cargar.'); return; }
+        if (!resp.ok) { alert(resp.message || 'No se pudo cargar.'); return; }
         for (const el of form.elements) {
             if (el.name && el.name !== 'id') el.value = resp.data[el.name] ?? '';
         }
@@ -33,7 +33,7 @@ document.addEventListener('click', async (ev) => {
     if (btn.dataset.action === 'eliminar-piloto') {
         if (!confirm(`¿Eliminar al piloto ${btn.dataset.nombre}? Queda inactivo (soft-delete).`)) return;
         const resp = await api('DELETE', `/api/pilotos/${id}`);
-        if (resp.ok) location.reload(); else alert(resp.data.message || 'No se pudo eliminar.');
+        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo eliminar.');
     }
 });
 

@@ -20,7 +20,7 @@ document.addEventListener('click', async (ev) => {
 
     if (btn.dataset.action === 'editar-estacion') {
         const resp = await api('GET', `/api/estaciones/${id}`);
-        if (!resp.ok) { alert(resp.data.message || 'No se pudo cargar.'); return; }
+        if (!resp.ok) { alert(resp.message || 'No se pudo cargar.'); return; }
         for (const el of form.elements) {
             if (el.name && el.name !== 'id') el.value = resp.data[el.name] ?? '';
         }
@@ -33,7 +33,7 @@ document.addEventListener('click', async (ev) => {
     if (btn.dataset.action === 'activo-estacion') {
         const activar = btn.dataset.activo === '0';
         const resp = await api('POST', `/api/estaciones/${id}/activo`, { activo: activar });
-        if (resp.ok) location.reload(); else alert(resp.data.message || 'No se pudo actualizar.');
+        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo actualizar.');
     }
 });
 
