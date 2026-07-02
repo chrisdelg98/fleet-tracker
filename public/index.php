@@ -70,4 +70,34 @@ $router->get('/api/rutas/{id}', fn($p) => $rutaController->apiShow($p));
 $router->put('/api/rutas/{id}', fn($p) => $rutaController->apiUpdate($p));
 $router->delete('/api/rutas/{id}', fn($p) => $rutaController->apiDelete($p));
 
+// ── Administración (solo Admin Global) ──
+$estacionModel = new EstacionModel($pdo);
+$usuarioModel = new UsuarioModel($pdo);
+$adminController = new AdminController(
+    new EstacionService($pdo, $estacionModel),
+    $estacionModel,
+    new UsuarioService($pdo, $usuarioModel, $estacionModel),
+    $usuarioModel,
+    new CatalogoAdminService($pdo),
+    $catalogoModel
+);
+$router->get('/admin', fn() => $adminController->index());
+$router->get('/admin/estaciones', fn() => $adminController->estacionesPage());
+$router->get('/admin/usuarios', fn() => $adminController->usuariosPage());
+$router->get('/admin/catalogos', fn() => $adminController->catalogosPage());
+
+$router->post('/api/estaciones', fn() => $adminController->estacionCreate());
+$router->get('/api/estaciones/{id}', fn($p) => $adminController->estacionShow($p));
+$router->put('/api/estaciones/{id}', fn($p) => $adminController->estacionUpdate($p));
+$router->post('/api/estaciones/{id}/activo', fn($p) => $adminController->estacionActivo($p));
+
+$router->post('/api/usuarios', fn() => $adminController->usuarioCreate());
+$router->get('/api/usuarios/{id}', fn($p) => $adminController->usuarioShow($p));
+$router->put('/api/usuarios/{id}', fn($p) => $adminController->usuarioUpdate($p));
+$router->post('/api/usuarios/{id}/activo', fn($p) => $adminController->usuarioActivo($p));
+
+$router->post('/api/catalogos/{tabla}', fn($p) => $adminController->catalogoCreate($p));
+$router->put('/api/catalogos/{tabla}/{id}', fn($p) => $adminController->catalogoUpdate($p));
+$router->post('/api/catalogos/{tabla}/{id}/activo', fn($p) => $adminController->catalogoActivo($p));
+
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

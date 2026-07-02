@@ -221,6 +221,18 @@ h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-4); }
 .btn--ghost-dark { background: transparent; color: var(--color-ink); border-color: var(--color-border); }
 .btn--ghost-dark:hover { background: #eef1f4; }
 
+/* ── Administración ── */
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-4); }
+.admin-card { text-decoration: none; color: inherit; transition: box-shadow 0.15s ease; }
+.admin-card:hover { box-shadow: 0 4px 14px rgba(28,39,51,0.15); }
+.admin-card h2 { margin: 0 0 var(--sp-2); font-size: var(--fs-lg); color: var(--color-primary); }
+.catalogo { margin-bottom: var(--sp-6); }
+.catalogo__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+.catalogo__head h2 { margin: 0; font-size: var(--fs-lg); }
+.btn--sm { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
+.is-inactive { opacity: 0.55; }
+.module__head h1 { margin: var(--sp-1) 0 0; }
+
 /* ── Responsive ── */
 @media (max-width: 760px) {
     .grid-2 { grid-template-columns: 1fr; }

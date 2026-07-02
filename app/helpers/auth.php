@@ -109,6 +109,18 @@ function require_login_web(): array
     return current_user();
 }
 
+/** Exige sesión + rol ADMIN_GLOBAL en una pantalla de Administración; si no, 403. */
+function require_admin_web(): array
+{
+    $user = require_login_web();
+    if ($user['rol'] !== Rol::ADMIN_GLOBAL) {
+        http_response_code(403);
+        echo 'No tienes acceso a esta sección.';
+        exit;
+    }
+    return $user;
+}
+
 // ── CSRF para formularios que hacen POST ──
 
 /** Token CSRF de la sesión (se crea una vez por sesión). */
