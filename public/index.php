@@ -136,4 +136,8 @@ $historicoController = new HistoricoController(new HistoricoService($pdo), $usua
 $router->get('/historico', fn() => $historicoController->index());
 $router->get('/historico/export.csv', fn() => $historicoController->export());
 
+// ── Fase 3: Timeline por unidad ──
+$timelineController = new TimelineController($pdo, $catalogoModel);
+$router->get('/timeline', fn() => $timelineController->index());
+
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

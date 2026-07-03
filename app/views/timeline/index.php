@@ -1,0 +1,51 @@
+<?php
+/**
+ * Timeline/Gantt por unidad (plan §7.5). @var array $dias @var array $unidades
+ * @var string $desde @var int $diasTotal @var bool $verTodas @var array $estaciones @var int|null $estacionSel
+ */
+$claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada', 'EN_TRANSITO' => 'tl--transito'];
+?>
+<section class="module">
+    <div class="module__head">
+        <h1>Timeline de reservas</h1>
+        <a class="btn btn--ghost-dark" href="/">← Dashboard</a>
+    </div>
+
+    <form class="module__toolbar" method="get" action="/timeline">
+        <label class="field"><span class="field__label">Desde</span><input type="date" name="desde" value="<?= e($desde) ?>"></label>
+        <?php if ($verTodas): ?>
+        <label class="field"><span class="field__label">Estación</span>
+            <select name="estacion_id"><option value="">Todas</option>
+                <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= (string) $estacionSel === (string) $es['id'] ? 'selected' : '' ?>><?= e($es['codigo']) ?></option><?php endforeach; ?>
+            </select></label>
+        <?php endif; ?>
+        <button type="submit" class="btn btn--ghost-dark">Ver</button>
+    </form>
+
+    <div class="card">
+        <?php if (empty($unidades)): ?>
+            <p class="muted" style="text-align:center">No hay unidades de flota operativa en el alcance.</p>
+        <?php else: ?>
+        <div class="tl" style="--tl-dias: <?= (int) $diasTotal ?>">
+            <div class="tl__head">
+                <div class="tl__unidad tl__corner">Unidad</div>
+                <div class="tl__dias">
+                    <?php foreach ($dias as $d): ?><div class="tl__dia"><strong><?= e($d['n']) ?></strong><small><?= e($d['m']) ?></small></div><?php endforeach; ?>
+                </div>
+            </div>
+            <?php foreach ($unidades as $u): ?>
+                <div class="tl__row">
+                    <div class="tl__unidad"><?= e($u['placa_unidad']) ?></div>
+                    <div class="tl__track">
+                        <?php for ($i = 1; $i < $diasTotal; $i++): ?><span class="tl__grid" style="left: <?= round($i / $diasTotal * 100, 3) ?>%"></span><?php endfor; ?>
+                        <?php foreach ($u['bloques'] as $b): ?>
+                            <span class="tl__bloque <?= e($claseEstado[$b['estado']] ?? '') ?>" style="left: <?= $b['left'] ?>%; width: <?= $b['width'] ?>%" title="<?= e($b['title']) ?>"><?= e($b['label']) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <p class="muted" style="margin-top: var(--sp-3)">Los bloques muestran las ventanas ocupadas. Las reservas se crean desde el <a href="/" class="link">Dashboard</a>; el backend rechaza cualquier traslape.</p>
+        <?php endif; ?>
+    </div>
+</section>

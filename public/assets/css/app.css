@@ -181,6 +181,7 @@ h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-4); }
 /* ── Cabecera de módulo ── */
 .module__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
 .module__head h1 { margin: 0; }
+.module__actions { display: flex; gap: var(--sp-3); align-items: center; }
 .module__toolbar { display: flex; gap: var(--sp-3); align-items: center; margin-bottom: var(--sp-4); flex-wrap: wrap; }
 .search { padding: var(--sp-3); border: 1px solid var(--color-border); border-radius: var(--radius); font: inherit; min-width: 280px; }
 
@@ -220,6 +221,21 @@ h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-4); }
 .form__error { color: var(--color-error); background: var(--color-error-bg); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); font-size: var(--fs-sm); }
 .btn--ghost-dark { background: transparent; color: var(--color-ink); border-color: var(--color-border); }
 .btn--ghost-dark:hover { background: #eef1f4; }
+
+/* ── Timeline / Gantt ── */
+.tl { min-width: 720px; }
+.tl__head, .tl__row { display: grid; grid-template-columns: 120px 1fr; align-items: stretch; }
+.tl__unidad { padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); font-weight: 600; display: flex; align-items: center; border-right: 1px solid var(--color-border); }
+.tl__corner { color: var(--color-ink-soft); }
+.tl__dias { display: grid; grid-template-columns: repeat(var(--tl-dias), 1fr); }
+.tl__dia { text-align: center; padding: var(--sp-1) 0; border-left: 1px solid var(--color-border); font-size: 0.7rem; line-height: 1.1; }
+.tl__dia small { display: block; color: var(--color-ink-soft); text-transform: uppercase; }
+.tl__row { border-top: 1px solid var(--color-border); }
+.tl__track { position: relative; height: 34px; }
+.tl__grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--color-border); }
+.tl__bloque { position: absolute; top: 5px; height: 24px; border-radius: 4px; color: #fff; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; padding: 0 4px; }
+.tl--reservada { background: var(--estado-reservada); }
+.tl--transito { background: var(--estado-transito); }
 
 /* ── Histórico ── */
 .pager { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: var(--sp-4); }

@@ -12,7 +12,10 @@
     <div class="module__head">
         <h1>Disponibilidad de flota</h1>
         <?php if ($puedeReservar): ?>
-            <button type="button" class="btn btn--primary" data-action="nueva-reserva">＋ Nueva reserva</button>
+            <div class="module__actions">
+                <a class="btn btn--ghost-dark" href="/timeline">📅 Timeline</a>
+                <button type="button" class="btn btn--primary" data-action="nueva-reserva">＋ Nueva reserva</button>
+            </div>
         <?php endif; ?>
     </div>
 
