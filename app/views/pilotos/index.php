@@ -1,7 +1,10 @@
 <?php
 /**
  * Pilotos (plan §7.3). Alerta visual: licencia vencida (rojo) o por vencer ≤30 días (ámbar).
- * @var array $usuario @var array $pilotos @var array $tiposLicencia @var array $estaciones
+ * @var array $usuario
+ * @var array $pilotos
+ * @var array $tiposLicencia
+ * @var array $estaciones
  */
 $esAdmin = $usuario['rol'] === Rol::ADMIN_GLOBAL;
 $hoy = new DateTimeImmutable('today');

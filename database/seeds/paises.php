@@ -8,8 +8,8 @@ declare(strict_types=1);
 
 return [
     // Centroamérica
-    ['GT', 'Guatemala',       RegionPais::CENTROAMERICA, 1],
-    ['SV', 'El Salvador',     RegionPais::CENTROAMERICA, 2],
+    ['SV', 'El Salvador',     RegionPais::CENTROAMERICA, 1],
+    ['GT', 'Guatemala',       RegionPais::CENTROAMERICA, 2],
     ['HN', 'Honduras',        RegionPais::CENTROAMERICA, 3],
     ['NI', 'Nicaragua',       RegionPais::CENTROAMERICA, 4],
     ['CR', 'Costa Rica',      RegionPais::CENTROAMERICA, 5],

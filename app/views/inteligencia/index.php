@@ -1,7 +1,14 @@
 <?php
 /**
- * @var array $filtros @var array $reportes @var array $suscripciones @var array $estaciones
- * @var array $paises @var bool $alcanceTotal @var array|null $flash @var array $tiposSuscripcion
+ * @var array $usuario
+ * @var array $filtros
+ * @var array $reportes
+ * @var array $suscripciones
+ * @var array $estaciones
+ * @var array $paises
+ * @var bool $alcanceTotal
+ * @var array|null $flash
+ * @var array $tiposSuscripcion
  */
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
 $ret = $reportes['retornos'];

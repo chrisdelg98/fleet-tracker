@@ -1,7 +1,14 @@
 <?php
 /**
- * Inventario vehicular (plan §7.6). Solo lectura. @var array $conteos @var array $unidades
- * @var bool $verTodas @var array $filtros @var array $estaciones @var array $categorias @var array $estados
+ * Inventario vehicular (plan §7.6). Solo lectura.
+ *
+ * @var array $conteos
+ * @var array $unidades
+ * @var bool $verTodas
+ * @var array $filtros
+ * @var array $estaciones
+ * @var array $categorias
+ * @var array $estados
  */
 $labelEstado = [
     EstadoVehiculo::OPERATIVO => 'Operativo', EstadoVehiculo::EN_MANTENIMIENTO => 'En mantenimiento',

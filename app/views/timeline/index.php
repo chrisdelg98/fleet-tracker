@@ -1,7 +1,14 @@
 <?php
 /**
- * Timeline/Gantt por unidad (plan §7.5). @var array $dias @var array $unidades
- * @var string $desde @var int $diasTotal @var bool $verTodas @var array $estaciones @var int|null $estacionSel
+ * Timeline/Gantt por unidad (plan §7.5).
+ *
+ * @var array $dias
+ * @var array $unidades
+ * @var string $desde
+ * @var int $diasTotal
+ * @var bool $verTodas
+ * @var array $estaciones
+ * @var int|null $estacionSel
  */
 $claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada', 'EN_TRANSITO' => 'tl--transito'];
 $qs = http_build_query(array_filter([

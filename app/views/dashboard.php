@@ -4,8 +4,14 @@
  * /api/disponibilidad (cálculo §2); los filtros la recalculan (incluida fecha futura).
  * Disponibilidad visible para todos los roles; reservar solo la propia estación.
  *
- * @var array $usuario @var bool $puedeReservar @var array $estaciones @var array $tiposEquipo
- * @var array $reservables @var array $rutas @var array $pilotos @var string $fechaHoy
+ * @var array $usuario
+ * @var bool $puedeReservar
+ * @var array $estaciones
+ * @var array $tiposEquipo
+ * @var array $reservables
+ * @var array $rutas
+ * @var array $pilotos
+ * @var string $fechaHoy
  */
 ?>
 <section class="module dashboard">

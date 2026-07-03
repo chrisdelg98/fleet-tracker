@@ -4,8 +4,15 @@
  * + diálogos para alta/edición y para el cambio de estado (poka-yoke). El JS del módulo
  * consume la API /api/unidades.
  *
- * @var array $usuario @var array $unidades @var array $categorias @var array $tiposEquipo
- * @var array $permisos @var array $estaciones @var array $pilotos @var array $estados
+ * @var array $usuario
+ * @var array $unidades
+ * @var array $categorias
+ * @var array $tiposEquipo
+ * @var array $capacidades
+ * @var array $permisos
+ * @var array $estaciones
+ * @var array $pilotos
+ * @var array $estados
  */
 $esAdmin = $usuario['rol'] === Rol::ADMIN_GLOBAL;
 $labelEstado = [

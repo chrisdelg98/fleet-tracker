@@ -1,7 +1,11 @@
 <?php
 /**
- * Administración › Usuarios (plan §5.2, §4). @var array $usuarios @var array $estaciones
- * @var array $roles @var array $rolesSinEstacion
+ * Administración › Usuarios (plan §5.2, §4).
+ *
+ * @var array $usuarios
+ * @var array $estaciones
+ * @var array $roles
+ * @var array $rolesSinEstacion
  */
 $labelRol = [
     Rol::ADMIN_GLOBAL => 'Admin Global', Rol::ENCARGADO => 'Encargado',

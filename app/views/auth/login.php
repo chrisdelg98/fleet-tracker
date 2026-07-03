@@ -1,4 +1,9 @@
-<?php /** @var string|null $error Mensaje genérico de credenciales inválidas. */ ?>
+<?php
+/**
+ * @var string|null $error Mensaje genérico de credenciales inválidas.
+ * @var string|null $email Correo reingresado tras un intento fallido.
+ */
+?>
 <main class="auth-layout">
     <section class="auth-hero">
         <div class="auth-hero__inner">

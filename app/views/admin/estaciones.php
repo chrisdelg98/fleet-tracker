@@ -1,6 +1,8 @@
 <?php
 /**
- * Administración › Estaciones (plan §5.1). @var array $estaciones
+ * Administración › Estaciones (plan §5.1).
+ *
+ * @var array $estaciones
  */
 $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn(string $z): bool => str_starts_with($z, 'America/')));
 ?>

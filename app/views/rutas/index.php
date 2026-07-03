@@ -1,7 +1,9 @@
 <?php
 /**
  * Rutas (plan §7.4). Búsqueda por origen/destino/nombre; tipo auto-derivado (no editable).
- * @var array $usuario @var array $rutas @var string $q
+ * @var array $usuario
+ * @var array $rutas
+ * @var string $q
  */
 ?>
 <section class="module">

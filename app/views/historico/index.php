@@ -1,7 +1,12 @@
 <?php
 /**
- * Histórico de actividad (plan §7.7). @var array $resultado @var array $filtros
- * @var array $usuarios @var array $entidades @var array $acciones
+ * Histórico de actividad (plan §7.7).
+ *
+ * @var array $resultado
+ * @var array $filtros
+ * @var array $usuarios
+ * @var array $entidades
+ * @var array $acciones
  */
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
 $r = $resultado;
