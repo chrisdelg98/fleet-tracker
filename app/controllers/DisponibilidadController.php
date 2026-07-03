@@ -94,6 +94,7 @@ final class DisponibilidadController
             'solo_retorno'   => !empty($q['solo_retorno']),
             'sin_retorno'    => !empty($q['sin_retorno']),
             'retorno_hacia'  => $q['retorno_hacia'] ?? null,
+            'ocultar_fuera_operacion' => true,
         ];
     }
 }

@@ -22,9 +22,9 @@ final class DisponibilidadService
     }
 
     /**
-     * @param string $desdeUtc 'Y-m-d H:i:s'
-     * @param string $hastaUtc 'Y-m-d H:i:s'
-    * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?
+    * @param string $desdeUtc 'Y-m-d H:i:s'
+    * @param string $hastaUtc 'Y-m-d H:i:s'
+    * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?, ocultar_fuera_operacion?
      */
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
@@ -88,15 +88,24 @@ final class DisponibilidadService
         $soloRetorno   = !empty($filtros['solo_retorno']);
         $sinRetorno    = !empty($filtros['sin_retorno']);
         $retornoHacia  = !empty($filtros['retorno_hacia']) ? (int) $filtros['retorno_hacia'] : null;
+        $ocultarFueraOperacion = !empty($filtros['ocultar_fuera_operacion']);
+        $ahoraUtc = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
 
         $out = [];
         foreach ($rows as $r) {
             $estado = $this->estadoDe($r);
 
+            if ($ocultarFueraOperacion && $estado === EstadoDisponibilidad::TALLER_BLOQUEADA) {
+                continue;
+            }
+
             if ($estadosFiltro && !in_array($estado, $estadosFiltro, true)) {
                 continue;
             }
             $tieneRetorno = $r['mov_id'] && (int) $r['retorno_disponible'] === 1;
+            $conDemora = $estado === EstadoDisponibilidad::EN_TRANSITO
+                && !empty($r['fecha_fin_estimada'])
+                && $r['fecha_fin_estimada'] < $ahoraUtc;
             if ($soloRetorno && !$tieneRetorno) {
                 continue;
             }
@@ -116,6 +125,7 @@ final class DisponibilidadService
                 'estacion_codigo' => $r['estacion_codigo'],
                 'timezone'        => $r['timezone'],
                 'estado'          => $estado,
+                'con_demora'      => $conDemora,
                 'piloto'          => $r['mov_piloto'] ?? $r['piloto_asignado'],
                 'movimiento'      => $r['mov_id'] ? [
                     'id'                      => (int) $r['mov_id'],

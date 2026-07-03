@@ -70,6 +70,7 @@ function render(unidades, meta) {
 function rowHtml(u) {
     const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
     const m = u.movimiento;
+    const demora = u.con_demora ? '<span class="badge badge--alert">Con demora</span>' : '';
     const actividad = m
         ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} <small class="muted">· sale ${fmtLibera(m.fecha_salida, u.timezone)}</small>`
         : (u.override ? `<span class="muted">${esc(u.override.motivo || u.override.tipo)}</span>` : '—');
@@ -84,7 +85,7 @@ function rowHtml(u) {
         <td><strong>${esc(u.placa_unidad)}</strong>${u.placa_furgon ? `<small class="muted block">${esc(u.placa_furgon)}</small>` : ''}</td>
         <td>${esc(u.tipo_equipo || '—')}${u.capacidad ? ` · ${esc(u.capacidad)}` : ''}</td>
         <td>${esc(u.estacion_codigo)}</td>
-        <td><span class="chip ${cls}">${label}</span></td>
+        <td><span class="chip ${cls}">${label}</span>${demora ? `<small class="block" style="margin-top:6px">${demora}</small>` : ''}</td>
         <td>${actividad}</td>
         <td>${libera}</td>
         <td>${retorno}</td>

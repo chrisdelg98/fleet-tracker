@@ -53,7 +53,6 @@
                     <label class="estado-chip"><input type="checkbox" class="f-estado" value="DISPONIBLE"><span class="estado-chip__dot estado-chip__dot--disponible"></span><span>Disponible</span></label>
                     <label class="estado-chip"><input type="checkbox" class="f-estado" value="RESERVADA"><span class="estado-chip__dot estado-chip__dot--reservada"></span><span>Reservada</span></label>
                     <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_TRANSITO"><span class="estado-chip__dot estado-chip__dot--transito"></span><span>En tránsito</span></label>
-                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="TALLER_BLOQUEADA"><span class="estado-chip__dot estado-chip__dot--taller"></span><span>Taller / bloqueada</span></label>
                 </div>
             </div>
             <label class="field"><span class="field__label">Retorno disponible</span>
