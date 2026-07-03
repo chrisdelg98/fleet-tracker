@@ -7,7 +7,11 @@
 declare(strict_types=1);
 
 return [
-    ['Ciudad de Guatemala', 'GUA', 'GT', 'America/Guatemala'],
-    ['San Salvador',        'SAL', 'SV', 'America/El_Salvador'],
-    ['Ciudad de Panamá',    'PAN', 'PA', 'America/Panama'],
+    ['Trucking',                'SAL', 'SV', 'America/El_Salvador'],
+    ['EFL Global El Salvador',  'SAL', 'SV', 'America/El_Salvador'],
+    ['EFL Global Guatemala',    'GUA', 'GT', 'America/Guatemala'],
+    ['EFL Global Honduras',     'TGU', 'HN', 'America/Tegucigalpa'],
+    ['EFL Global Nicaragua',    'MGA', 'NI', 'America/Managua'],
+    ['EFL Global Costa Rica',   'SJO', 'CR', 'America/Costa_Rica'],
+    ['EFL Global Panamá',       'PTY', 'PA', 'America/Panama'],
 ];

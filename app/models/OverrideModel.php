@@ -47,6 +47,18 @@ final class OverrideModel
         return $stmt->rowCount();
     }
 
+    /** Cierra los overrides manuales abiertos de una unidad (desbloqueo administrativo). */
+    public function cerrarManualesAbiertos(int $unidadId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE overrides_unidad
+                SET cerrado = 1, hasta = :hasta
+              WHERE unidad_id = :unidad_id AND cerrado = 0 AND origen = :origen'
+        );
+        $stmt->execute([':hasta' => now_utc(), ':unidad_id' => $unidadId, ':origen' => OrigenOverride::MANUAL]);
+        return $stmt->rowCount();
+    }
+
     /** True si la unidad tiene algún override automático abierto. */
     public function tieneAutomaticoAbierto(int $unidadId): bool
     {

@@ -18,12 +18,6 @@ $router->get('/login',  fn() => $authController->showLogin());
 $router->post('/login', fn() => $authController->login());
 $router->post('/logout', fn() => $authController->logout());
 
-// ── Pantalla protegida (redirige a /login sin sesión) ──
-$router->get('/', function (): void {
-    $usuario = require_login_web();
-    render('dashboard', ['usuario' => $usuario]);
-});
-
 // ── API protegida ──
 // Devuelve el usuario en sesión; sin sesión responde 401 (demuestra el guard de API).
 $router->get('/api/me', function (): void {
@@ -99,5 +93,30 @@ $router->post('/api/usuarios/{id}/activo', fn($p) => $adminController->usuarioAc
 $router->post('/api/catalogos/{tabla}', fn($p) => $adminController->catalogoCreate($p));
 $router->put('/api/catalogos/{tabla}/{id}', fn($p) => $adminController->catalogoUpdate($p));
 $router->post('/api/catalogos/{tabla}/{id}/activo', fn($p) => $adminController->catalogoActivo($p));
+
+// ── Fase 2: Motor de disponibilidad (movimientos, dashboard, overrides) ──
+$movimientoModel = new MovimientoModel($pdo);
+$movimientoService = new MovimientoService($pdo, $movimientoModel, $unidadModel, $rutaModel, $pilotoModel);
+$overrideService = new OverrideService($pdo, new OverrideModel($pdo), $unidadModel);
+$movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService);
+$disponibilidadController = new DisponibilidadController(new DisponibilidadService($pdo), $catalogoModel);
+
+// Dashboard (visible para todos los roles) + endpoint de disponibilidad
+$router->get('/', fn() => $disponibilidadController->dashboard());
+$router->get('/api/disponibilidad', fn() => $disponibilidadController->apiDisponibilidad());
+
+// Movimientos y máquina de estados
+$router->post('/api/movimientos', fn() => $movimientoController->apiCreate());
+$router->get('/api/movimientos/{id}', fn($p) => $movimientoController->apiShow($p));
+$router->put('/api/movimientos/{id}', fn($p) => $movimientoController->apiUpdate($p));
+$router->post('/api/movimientos/{id}/confirmar', fn($p) => $movimientoController->apiConfirmar($p));
+$router->post('/api/movimientos/{id}/salida', fn($p) => $movimientoController->apiSalida($p));
+$router->post('/api/movimientos/{id}/llegada', fn($p) => $movimientoController->apiLlegada($p));
+$router->post('/api/movimientos/{id}/cancelar', fn($p) => $movimientoController->apiCancelar($p));
+$router->get('/api/unidades/{id}/movimientos', fn($p) => $movimientoController->apiPorUnidad($p));
+
+// Overrides manuales (bloquear/desbloquear)
+$router->post('/api/unidades/{id}/bloquear', fn($p) => $movimientoController->apiBloquear($p));
+$router->post('/api/unidades/{id}/desbloquear', fn($p) => $movimientoController->apiDesbloquear($p));
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
