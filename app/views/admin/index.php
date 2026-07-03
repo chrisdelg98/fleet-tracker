@@ -2,9 +2,8 @@
 <section class="module">
     <div class="module__head admin-head">
         <div>
-            <p class="module__eyebrow">Configuración del sistema</p>
             <h1>Administración</h1>
-            <p class="admin-head__copy muted">Gestiona sedes, usuarios y catálogos operativos desde un solo punto de control.</p>
+            <p class="module__subtitle admin-head__copy">Gestiona sedes, usuarios y catálogos operativos desde un solo punto de control.</p>
         </div>
     </div>
     <div class="admin-grid">

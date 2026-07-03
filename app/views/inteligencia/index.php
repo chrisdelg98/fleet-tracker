@@ -14,7 +14,10 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
 ?>
 <section class="module">
     <div class="module__head">
-        <h1>Inteligencia</h1>
+        <div>
+            <h1>Inteligencia</h1>
+            <p class="module__subtitle">Resume utilización, retornos, tránsito y rutas para apoyar decisiones operativas y alertas por correo.</p>
+        </div>
     </div>
 
     <?php if (!empty($flash)): ?>
@@ -39,7 +42,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
     </form>
 
     <div class="int-grid">
-        <div class="card">
+        <div class="card card--table int-card">
             <h2>Utilización por estación</h2>
             <?php if (empty($reportes['utilizacion'])): ?>
                 <p class="muted">Sin datos para el rango seleccionado.</p>
@@ -60,7 +63,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php endif; ?>
         </div>
 
-        <div class="card">
+        <div class="card card--table int-card">
             <h2>Retornos</h2>
             <div class="int-stats">
                 <div class="int-stat"><span>Aprovechados</span><strong><?= (int) $ret['conteos']['APROVECHADO'] ?></strong></div>
@@ -86,7 +89,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php endif; ?>
         </div>
 
-        <div class="card">
+        <div class="card card--table int-card">
             <h2>Días en tránsito por unidad</h2>
             <?php if (empty($reportes['dias_transito'])): ?>
                 <p class="muted">Sin movimientos completados para este rango.</p>
@@ -108,7 +111,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php endif; ?>
         </div>
 
-        <div class="card">
+        <div class="card card--table int-card">
             <h2>Rutas más usadas</h2>
             <?php if (empty($reportes['rutas'])): ?>
                 <p class="muted">Sin rutas completadas para este rango.</p>
@@ -130,7 +133,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
     </div>
 
     <div class="int-grid int-grid--bottom">
-        <div class="card">
+        <div class="card int-card">
             <h2>Suscripciones de correo</h2>
             <p class="muted">Los correos automáticos usan la dirección de tu usuario: <strong><?= e($usuario['email'] ?? '') ?></strong>.</p>
             <form class="form" method="post" action="/inteligencia/suscripciones">
@@ -166,7 +169,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             </form>
         </div>
 
-        <div class="card">
+        <div class="card card--table int-card">
             <h2>Suscripciones activas</h2>
             <?php if (empty($suscripciones)): ?>
                 <p class="muted">Todavía no tienes suscripciones activas.</p>

@@ -19,7 +19,10 @@ $claseEstado = [
 ?>
 <section class="module">
     <div class="module__head">
-        <h1>Flota</h1>
+        <div>
+            <h1>Flota</h1>
+            <p class="module__subtitle">Administra unidades, estados operativos, clasificación y asignaciones base de la flota.</p>
+        </div>
         <button type="button" class="btn btn--primary" data-action="nueva-unidad">＋ Nueva unidad</button>
     </div>
 

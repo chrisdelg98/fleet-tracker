@@ -420,7 +420,7 @@ fieldset.field {
 fieldset.field legend {
     padding: 0 var(--sp-2);
 }
-.field input,
+.field input:not([type="checkbox"]):not([type="radio"]),
 .field select,
 .field textarea {
     width: 100%;
@@ -445,6 +445,16 @@ fieldset.field legend {
 .field input[type="datetime-local"],
 .field input[type="number"] {
     padding-right: var(--sp-4);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    min-height: 16px;
+    margin: 0;
+    accent-color: var(--primary);
+    flex: 0 0 auto;
 }
 
 .field input::placeholder,
@@ -522,7 +532,12 @@ fieldset.field legend {
 /* ── Cabecera de módulo ── */
 .module__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-5); flex-wrap: wrap; }
 .module__head h1 { margin: 0; }
-.module__eyebrow { margin: 0 0 var(--sp-2); color: var(--primary); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.module__subtitle {
+    margin-top: var(--sp-3);
+    max-width: 92ch;
+    color: var(--color-ink-soft);
+    line-height: 1.6;
+}
 .module__actions { display: flex; gap: var(--sp-3); align-items: center; justify-content: flex-end; flex-wrap: wrap; min-width: 0; }
 .module__toolbar {
     display: flex;
@@ -651,6 +666,11 @@ fieldset.field legend {
 
 /* ── Inventario ── */
 .inv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-4); }
+.inv-card {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,250,252,0.98) 100%),
+        radial-gradient(circle at top right, rgba(26, 115, 199, 0.05), transparent 34%);
+}
 .inv-card h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-lg); }
 .inv-list { list-style: none; margin: 0; padding: 0; }
 .inv-list li { display: flex; justify-content: space-between; padding: var(--sp-2) 0; border-bottom: 1px solid var(--color-border); }
@@ -658,16 +678,94 @@ fieldset.field legend {
 .inv-list__total { font-weight: 700; border-top: 2px solid var(--color-border); }
 
 /* ── Dashboard ── */
+.dashboard__filters-card {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(251,252,253,0.98) 100%),
+        radial-gradient(circle at top right, rgba(247, 108, 0, 0.08), transparent 30%);
+}
+.dashboard__intro {
+    min-width: 0;
+    flex: 1 1 760px;
+}
+.filtros__top {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+}
 .filtros { margin-bottom: var(--sp-4); display: grid; gap: var(--sp-4); }
 .filtros__fechas { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .filtros__row { display: flex; gap: var(--sp-4); align-items: flex-end; flex-wrap: wrap; }
+.filtros__row--dashboard {
+    display: grid;
+    grid-template-columns: 1.1fr 1.1fr .9fr 1.9fr .9fr 1.1fr;
+    gap: var(--sp-4);
+    align-items: end;
+}
 .filtros__row .field { min-width: 150px; }
 .filtros__estados { display: flex; gap: var(--sp-2); padding-top: var(--sp-1); }
-.filtros__retorno { align-self: center; }
+.filtros__estados--legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2) var(--sp-3);
+    padding: var(--sp-2) 0;
+}
+.field--state-filter {
+    min-width: 0;
+}
+.field--date-compact {
+    width: 220px;
+}
+.field--date input[type="date"] {
+    min-width: 0;
+    padding-right: 42px;
+}
+.estado-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 34px;
+    font-size: var(--fs-sm);
+    color: var(--color-ink-soft);
+}
+.estado-chip input {
+    margin: 0;
+}
+.estado-chip__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+}
+.estado-chip__dot--disponible { background: var(--estado-disponible); }
+.estado-chip__dot--reservada { background: var(--estado-reservada); }
+.estado-chip__dot--transito { background: var(--estado-transito); }
+.estado-chip__dot--taller { background: var(--estado-taller); }
 .chipbtn { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--color-border); background: #fff; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-sm); }
 .chipbtn.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.dashboard__status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-4);
+    padding-top: var(--sp-4);
+    padding-bottom: var(--sp-4);
+}
+.dashboard__status-main {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+}
+.dashboard__status-main strong {
+    font-size: var(--fs-lg);
+}
 .dashboard__meta { display: flex; gap: var(--sp-3); align-items: center; margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
 .dashboard__table td { vertical-align: middle; }
+.dashboard__results-card { overflow: hidden; }
 .retorno { display: inline-block; padding: 2px var(--sp-2); border-radius: var(--radius); background: #e3f0fb; color: var(--estado-transito); font-size: 0.75rem; font-weight: 600; }
 .retorno--tomado { background: #eef1f4; color: var(--color-ink-soft); text-decoration: line-through; }
 .grid-2__full { grid-column: 1 / -1; }
@@ -750,6 +848,7 @@ fieldset.field legend {
 /* ── Inteligencia ── */
 .int-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sp-4); }
 .int-grid--bottom { margin-top: var(--sp-4); }
+.int-card h2 { margin-bottom: var(--sp-4); }
 .int-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
 .int-stat { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--sp-3); background: #f9fafb; }
 .int-stat span { display: block; color: var(--color-ink-soft); font-size: var(--fs-sm); }
@@ -757,6 +856,18 @@ fieldset.field legend {
 .inline-form { display: inline; }
 .inline-form + .inline-form { margin-left: var(--sp-2); }
 .int-actions { justify-content: flex-start; margin-top: 0; }
+
+/* ── Timeline / Histórico ── */
+.timeline-card__wrap {
+    overflow-x: auto;
+    padding-bottom: var(--sp-2);
+}
+.timeline-card {
+    overflow: hidden;
+}
+.pager {
+    justify-content: center;
+}
 
 /* ── Responsive ── */
 @media (max-width: 1180px) {
@@ -778,6 +889,15 @@ fieldset.field legend {
 
     .admin-grid {
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .dashboard__status {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .filtros__row--dashboard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .page-shell {
@@ -840,6 +960,32 @@ fieldset.field legend {
 
     .dialog__actions .btn {
         width: 100%;
+    }
+
+    .dashboard__status-main {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--sp-1);
+    }
+
+    .filtros__top {
+        align-items: stretch;
+    }
+
+    .field--date-compact {
+        width: 100%;
+    }
+
+    .filtros__row--dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .filtros__estados {
+        flex-wrap: wrap;
+    }
+
+    .filtros__estados--legend {
+        grid-template-columns: 1fr;
     }
 
     .table {

@@ -15,7 +15,7 @@ $fmtCampo = static function (string $tipo, $valor) use ($regionLabels): string {
 };
 ?>
 <section class="module">
-    <div class="module__head"><div><a href="/admin" class="link">← Administración</a><h1>Catálogos</h1></div></div>
+    <div class="module__head"><div><a href="/admin" class="link">← Administración</a><h1>Catálogos</h1><p class="module__subtitle">Mantén actualizados los parámetros base del sistema usados por formularios, reglas y validaciones operativas.</p></div></div>
 
     <?php foreach ($catalogos as $tabla => $cat): ?>
         <div class="card card--table catalogo">

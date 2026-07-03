@@ -24,7 +24,7 @@ final class DisponibilidadService
     /**
      * @param string $desdeUtc 'Y-m-d H:i:s'
      * @param string $hastaUtc 'Y-m-d H:i:s'
-     * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, retorno_hacia?
+    * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?
      */
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
@@ -86,6 +86,7 @@ final class DisponibilidadService
 
         $estadosFiltro = $filtros['estados'] ?? [];
         $soloRetorno   = !empty($filtros['solo_retorno']);
+        $sinRetorno    = !empty($filtros['sin_retorno']);
         $retornoHacia  = !empty($filtros['retorno_hacia']) ? (int) $filtros['retorno_hacia'] : null;
 
         $out = [];
@@ -97,6 +98,9 @@ final class DisponibilidadService
             }
             $tieneRetorno = $r['mov_id'] && (int) $r['retorno_disponible'] === 1;
             if ($soloRetorno && !$tieneRetorno) {
+                continue;
+            }
+            if ($sinRetorno && $tieneRetorno) {
                 continue;
             }
             if ($retornoHacia !== null && (!$tieneRetorno || (int) $r['pais_origen_id'] !== $retornoHacia)) {

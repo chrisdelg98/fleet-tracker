@@ -9,7 +9,10 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
 ?>
 <section class="module">
     <div class="module__head">
-        <h1>Histórico de actividad</h1>
+        <div>
+            <h1>Histórico de actividad</h1>
+            <p class="module__subtitle">Consulta la bitácora del sistema por entidad, acción, usuario y fecha con exportación directa a CSV.</p>
+        </div>
         <a class="btn btn--primary" href="/historico/export.csv<?= $qs ? '?' . e($qs) : '' ?>">⬇ Exportar CSV</a>
     </div>
 
@@ -35,7 +38,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
 
     <p class="dashboard__meta"><span><?= (int) $r['total'] ?> registro<?= $r['total'] === 1 ? '' : 's' ?></span> · <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span></p>
 
-    <div class="card">
+    <div class="card card--table">
         <?php if (empty($r['filas'])): ?>
             <p class="muted" style="text-align:center">Sin actividad para estos filtros.</p>
         <?php else: ?>

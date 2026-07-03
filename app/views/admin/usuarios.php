@@ -11,7 +11,7 @@ $labelRol = [
 ?>
 <section class="module">
     <div class="module__head">
-        <div><a href="/admin" class="link">← Administración</a><h1>Usuarios</h1></div>
+        <div><a href="/admin" class="link">← Administración</a><h1>Usuarios</h1><p class="module__subtitle">Administra cuentas, roles y alcance por estación para el personal con acceso al sistema.</p></div>
         <button type="button" class="btn btn--primary" data-action="nuevo-usuario">＋ Nuevo usuario</button>
     </div>
 

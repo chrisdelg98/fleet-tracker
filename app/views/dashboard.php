@@ -10,7 +10,10 @@
 ?>
 <section class="module dashboard">
     <div class="module__head">
-        <h1>Disponibilidad de flota</h1>
+        <div class="dashboard__intro">
+            <h1>Disponibilidad de flota</h1>
+            <p class="module__subtitle">Consulta flota disponible, movimientos activos y retornos aprovechables en una sola vista operativa.</p>
+        </div>
         <?php if ($puedeReservar): ?>
             <div class="module__actions">
                 <a class="btn btn--ghost-dark" href="/timeline">📅 Timeline</a>
@@ -19,14 +22,19 @@
         <?php endif; ?>
     </div>
 
-    <div class="filtros card">
-        <div class="filtros__fechas" role="group" aria-label="Fecha de consulta">
-            <button type="button" class="chipbtn is-active" data-fecha="hoy">Hoy</button>
-            <button type="button" class="chipbtn" data-fecha="manana">Mañana</button>
-            <button type="button" class="chipbtn" data-fecha="semana">Esta semana</button>
-            <input type="date" id="f-fecha" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica">
+    <div class="filtros card dashboard__filters-card">
+        <div class="filtros__top">
+            <div class="filtros__fechas" role="group" aria-label="Fecha de consulta">
+                <button type="button" class="chipbtn is-active" data-fecha="hoy">Hoy</button>
+                <button type="button" class="chipbtn" data-fecha="manana">Mañana</button>
+                <button type="button" class="chipbtn" data-fecha="semana">Esta semana</button>
+            </div>
+            <label class="field field--date field--date-compact">
+                <span class="field__label">Fecha específica</span>
+                <input type="date" id="f-fecha" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica">
+            </label>
         </div>
-        <div class="filtros__row">
+        <div class="filtros__row filtros__row--dashboard">
             <label class="field"><span class="field__label">Estación</span>
                 <select id="f-estacion">
                     <option value="">Todas</option>
@@ -39,25 +47,35 @@
                 </select></label>
             <label class="field"><span class="field__label">Placa</span>
                 <input type="search" id="f-placa" placeholder="Buscar placa…" data-no-search></label>
-            <div class="field">
+            <div class="field field--state-filter">
                 <span class="field__label">Estado</span>
-                <div class="filtros__estados">
-                    <label class="check"><input type="checkbox" class="f-estado" value="DISPONIBLE"> 🟢</label>
-                    <label class="check"><input type="checkbox" class="f-estado" value="RESERVADA"> 🟡</label>
-                    <label class="check"><input type="checkbox" class="f-estado" value="EN_TRANSITO"> 🔵</label>
-                    <label class="check"><input type="checkbox" class="f-estado" value="TALLER_BLOQUEADA"> ⚪</label>
+                <div class="filtros__estados filtros__estados--legend">
+                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="DISPONIBLE"><span class="estado-chip__dot estado-chip__dot--disponible"></span><span>Disponible</span></label>
+                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="RESERVADA"><span class="estado-chip__dot estado-chip__dot--reservada"></span><span>Reservada</span></label>
+                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_TRANSITO"><span class="estado-chip__dot estado-chip__dot--transito"></span><span>En tránsito</span></label>
+                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="TALLER_BLOQUEADA"><span class="estado-chip__dot estado-chip__dot--taller"></span><span>Taller / bloqueada</span></label>
                 </div>
             </div>
-            <label class="check filtros__retorno"><input type="checkbox" id="f-retorno"> Solo con retorno</label>
+            <label class="field"><span class="field__label">Retorno disponible</span>
+                <select id="f-retorno" data-no-search>
+                    <option value="">Todos</option>
+                    <option value="1">Sí</option>
+                    <option value="0">No</option>
+                </select></label>
             <label class="field"><span class="field__label">Retorno hacia</span>
                 <?= render_paises_select('retorno_hacia_sel', null, false, 'Cualquiera') ?></label>
         </div>
     </div>
 
-    <p class="dashboard__meta"><span id="dash-count">—</span> · <span id="dash-rango" class="muted"></span>
-        <button type="button" class="link" data-action="refrescar">Actualizar</button></p>
+    <div class="dashboard__status card">
+        <div class="dashboard__status-main">
+            <strong id="dash-count">—</strong>
+            <span id="dash-rango" class="muted"></span>
+        </div>
+        <button type="button" class="link" data-action="refrescar">Actualizar</button>
+    </div>
 
-    <div class="card">
+    <div class="card card--table dashboard__results-card">
         <table class="table dashboard__table">
             <thead>
                 <tr>
@@ -77,7 +95,11 @@
 <!-- Diálogo de reserva/movimiento -->
 <dialog id="dlg-reserva" class="dialog">
     <form method="dialog" class="form" id="form-reserva" novalidate>
-        <h2 id="dlg-reserva-title">Nueva reserva</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-reserva-title">Nueva reserva</h2>
+            <p class="dialog__lede">Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.</p>
+        </div>
+        <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Unidad *</span>
                 <select name="unidad_id" required>
@@ -122,6 +144,7 @@
             <label class="field field--check"><span class="field__label">Retorno</span>
                 <label class="check"><input type="checkbox" name="retorno_disponible" value="1"> Retorno disponible</label></label>
         </div>
+        </div>
         <p class="form__error" id="form-reserva-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
@@ -133,11 +156,16 @@
 <!-- Diálogo de motivo (cancelar / bloquear) -->
 <dialog id="dlg-motivo" class="dialog">
     <form method="dialog" class="form" id="form-motivo" novalidate>
-        <h2 id="dlg-motivo-title">Motivo</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-motivo-title">Motivo</h2>
+            <p class="dialog__lede">Documenta la razón del cambio para mantener la trazabilidad operativa en bitácora.</p>
+        </div>
         <input type="hidden" name="id" value="">
         <input type="hidden" name="accion" value="">
-        <label class="field"><span class="field__label">Motivo *</span>
-            <textarea name="motivo" rows="3" required></textarea></label>
+        <div class="dialog__body">
+            <label class="field"><span class="field__label">Motivo *</span>
+                <textarea name="motivo" rows="3" required></textarea></label>
+        </div>
         <p class="form__error" id="form-motivo-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cerrar</button>
@@ -151,8 +179,12 @@
 <!-- Diálogo apartar retorno -->
 <dialog id="dlg-retorno" class="dialog">
     <form method="dialog" class="form" id="form-retorno" novalidate>
-        <h2>Apartar retorno</h2>
+        <div class="dialog__head">
+            <h2>Apartar retorno</h2>
+            <p class="dialog__lede">Convierte un retorno disponible en un nuevo movimiento de regreso sobre la misma unidad.</p>
+        </div>
         <input type="hidden" name="id" value="">
+        <div class="dialog__body">
         <p class="muted">Se creará un movimiento de regreso sobre la misma unidad (destino → origen).</p>
         <div class="grid-2">
             <label class="field"><span class="field__label">País que lo toma</span>
@@ -163,6 +195,7 @@
                 <input type="datetime-local" name="fecha_salida" required></label>
             <label class="field"><span class="field__label">Se libera *</span>
                 <input type="datetime-local" name="fecha_fin_estimada" required></label>
+        </div>
         </div>
         <p class="form__error" id="form-retorno-error" hidden></p>
         <div class="dialog__actions">

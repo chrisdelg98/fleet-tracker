@@ -43,7 +43,9 @@ function buildQuery() {
     if (placa) p.set('placa', placa);
     const estados = [...document.querySelectorAll('.f-estado:checked')].map((c) => c.value);
     if (estados.length) p.set('estado', estados.join(','));
-    if (document.getElementById('f-retorno').checked) p.set('solo_retorno', '1');
+    const retorno = document.getElementById('f-retorno').value;
+    if (retorno === '1') p.set('solo_retorno', '1');
+    if (retorno === '0') p.set('sin_retorno', '1');
     const rh = document.querySelector('[name="retorno_hacia_sel"]');
     if (rh && rh.value) p.set('retorno_hacia', rh.value);
     return p;

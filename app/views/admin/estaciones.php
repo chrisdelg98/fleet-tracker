@@ -6,7 +6,7 @@ $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn
 ?>
 <section class="module">
     <div class="module__head">
-        <div><a href="/admin" class="link">← Administración</a><h1>Estaciones</h1></div>
+        <div><a href="/admin" class="link">← Administración</a><h1>Estaciones</h1><p class="module__subtitle">Define las sedes operativas, su país y la zona horaria que gobierna las vistas locales.</p></div>
         <button type="button" class="btn btn--primary" data-action="nueva-estacion">＋ Nueva estación</button>
     </div>
 

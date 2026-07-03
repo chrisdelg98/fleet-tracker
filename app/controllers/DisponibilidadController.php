@@ -92,6 +92,7 @@ final class DisponibilidadController
             'placa'          => $q['placa'] ?? null,
             'estados'        => $estados,
             'solo_retorno'   => !empty($q['solo_retorno']),
+            'sin_retorno'    => !empty($q['sin_retorno']),
             'retorno_hacia'  => $q['retorno_hacia'] ?? null,
         ];
     }

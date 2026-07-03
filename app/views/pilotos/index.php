@@ -8,7 +8,10 @@ $hoy = new DateTimeImmutable('today');
 ?>
 <section class="module">
     <div class="module__head">
-        <h1>Pilotos</h1>
+        <div>
+            <h1>Pilotos</h1>
+            <p class="module__subtitle">Gestiona pilotos, licencias y estación asignada para mantener la operación lista para programar movimientos.</p>
+        </div>
         <button type="button" class="btn btn--primary" data-action="nuevo-piloto">＋ Nuevo piloto</button>
     </div>
 

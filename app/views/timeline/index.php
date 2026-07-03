@@ -7,7 +7,10 @@ $claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada',
 ?>
 <section class="module">
     <div class="module__head">
-        <h1>Timeline de reservas</h1>
+        <div>
+            <h1>Timeline de reservas</h1>
+            <p class="module__subtitle">Observa por unidad las ventanas ocupadas de reservas y tránsito para anticipar disponibilidad y conflictos.</p>
+        </div>
         <a class="btn btn--ghost-dark" href="/">← Dashboard</a>
     </div>
 
@@ -22,10 +25,11 @@ $claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada',
         <button type="submit" class="btn btn--ghost-dark">Ver</button>
     </form>
 
-    <div class="card">
+    <div class="card timeline-card">
         <?php if (empty($unidades)): ?>
             <p class="muted" style="text-align:center">No hay unidades de flota operativa en el alcance.</p>
         <?php else: ?>
+        <div class="timeline-card__wrap">
         <div class="tl" style="--tl-dias: <?= (int) $diasTotal ?>">
             <div class="tl__head">
                 <div class="tl__unidad tl__corner">Unidad</div>
@@ -44,6 +48,7 @@ $claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada',
                     </div>
                 </div>
             <?php endforeach; ?>
+        </div>
         </div>
         <p class="muted" style="margin-top: var(--sp-3)">Los bloques muestran las ventanas ocupadas. Las reservas se crean desde el <a href="/" class="link">Dashboard</a>; el backend rechaza cualquier traslape.</p>
         <?php endif; ?>

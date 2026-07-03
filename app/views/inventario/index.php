@@ -11,7 +11,10 @@ $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v
 ?>
 <section class="module">
     <div class="module__head">
-        <h1>Inventario vehicular</h1>
+        <div>
+            <h1>Inventario vehicular</h1>
+            <p class="module__subtitle">Visualiza la composición de la flota e inventario por categoría, estado y estación con filtros de solo lectura.</p>
+        </div>
         <a class="btn btn--primary" href="/inventario/export.csv<?= $qs ? '?' . e($qs) : '' ?>">⬇ Exportar CSV</a>
     </div>
 
@@ -63,7 +66,7 @@ $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v
         <?php if ($qs): ?><a href="/inventario" class="link">Limpiar</a><?php endif; ?>
     </form>
 
-    <div class="card">
+    <div class="card card--table">
         <?php if (empty($unidades)): ?>
             <p class="muted" style="text-align:center">Sin unidades para estos filtros.</p>
         <?php else: ?>
