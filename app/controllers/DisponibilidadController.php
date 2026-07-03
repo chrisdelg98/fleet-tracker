@@ -11,7 +11,10 @@ final class DisponibilidadController
 {
     public function __construct(
         private DisponibilidadService $service,
-        private CatalogoModel $catalogos
+        private CatalogoModel $catalogos,
+        private UnidadModel $unidades,
+        private RutaModel $rutas,
+        private PilotoModel $pilotos
     ) {
     }
 
@@ -19,12 +22,23 @@ final class DisponibilidadController
     public function dashboard(): void
     {
         $user = require_login_web();
-        [$desde, $hasta] = $this->rangoDeConsulta($_GET);
+        // Datos para el formulario de reserva: se opera solo sobre la propia estación
+        // (el Admin Global sobre cualquiera).
+        $estacionGestion = $user['rol'] === Rol::ADMIN_GLOBAL ? null : (int) $user['estacion_id'];
+        $reservables = array_values(array_filter(
+            $this->unidades->listar($estacionGestion),
+            static fn(array $u): bool => (int) $u['en_disponibilidad'] === 1
+                && $u['estado_vehiculo'] !== EstadoVehiculo::DE_BAJA
+        ));
+
         render('dashboard', [
             'usuario'     => $user,
-            'filtros'     => $this->filtrosDeQuery($_GET),
+            'puedeReservar' => in_array($user['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true),
             'estaciones'  => $this->catalogos->activos('estaciones', 'codigo'),
             'tiposEquipo' => $this->catalogos->activos('tipos_equipo', 'orden'),
+            'reservables' => $reservables,
+            'rutas'       => $this->rutas->listar(),
+            'pilotos'     => $this->pilotos->listar($estacionGestion),
             'fechaHoy'    => (new DateTimeImmutable('now'))->format('Y-m-d'),
         ], 'Dashboard · Disponibilidad de Flota');
     }

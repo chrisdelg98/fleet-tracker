@@ -221,6 +221,21 @@ h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-4); }
 .btn--ghost-dark { background: transparent; color: var(--color-ink); border-color: var(--color-border); }
 .btn--ghost-dark:hover { background: #eef1f4; }
 
+/* ── Dashboard ── */
+.filtros { margin-bottom: var(--sp-4); display: grid; gap: var(--sp-4); }
+.filtros__fechas { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.filtros__row { display: flex; gap: var(--sp-4); align-items: flex-end; flex-wrap: wrap; }
+.filtros__row .field { min-width: 150px; }
+.filtros__estados { display: flex; gap: var(--sp-2); padding-top: var(--sp-1); }
+.filtros__retorno { align-self: center; }
+.chipbtn { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--color-border); background: #fff; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-sm); }
+.chipbtn.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.dashboard__meta { display: flex; gap: var(--sp-3); align-items: center; margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
+.dashboard__table td { vertical-align: middle; }
+.retorno { display: inline-block; padding: 2px var(--sp-2); border-radius: var(--radius); background: #e3f0fb; color: var(--estado-transito); font-size: 0.75rem; font-weight: 600; }
+.retorno--tomado { background: #eef1f4; color: var(--color-ink-soft); text-decoration: line-through; }
+.grid-2__full { grid-column: 1 / -1; }
+
 /* ── Desplegable buscable (searchable-select.js) ── */
 .ss { position: relative; }
 .ss__native { display: none; }

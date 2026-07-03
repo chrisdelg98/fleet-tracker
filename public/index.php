@@ -99,7 +99,13 @@ $movimientoModel = new MovimientoModel($pdo);
 $movimientoService = new MovimientoService($pdo, $movimientoModel, $unidadModel, $rutaModel, $pilotoModel);
 $overrideService = new OverrideService($pdo, new OverrideModel($pdo), $unidadModel);
 $movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService);
-$disponibilidadController = new DisponibilidadController(new DisponibilidadService($pdo), $catalogoModel);
+$disponibilidadController = new DisponibilidadController(
+    new DisponibilidadService($pdo),
+    $catalogoModel,
+    $unidadModel,
+    $rutaModel,
+    $pilotoModel
+);
 
 // Dashboard (visible para todos los roles) + endpoint de disponibilidad
 $router->get('/', fn() => $disponibilidadController->dashboard());
