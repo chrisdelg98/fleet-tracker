@@ -21,6 +21,10 @@
                 $items['/pilotos'] = 'Pilotos';
                 $items['/rutas'] = 'Rutas';
             }
+            // Inventario: todos los roles menos Consulta Básico (plan §7.6).
+            if ($u['rol'] !== Rol::CONSULTA_BASICO) {
+                $items['/inventario'] = 'Inventario';
+            }
             if ($u['rol'] === Rol::ADMIN_GLOBAL) {
                 $items['/admin'] = 'Administración';
             }

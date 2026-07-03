@@ -126,4 +126,9 @@ $router->get('/api/unidades/{id}/movimientos', fn($p) => $movimientoController->
 $router->post('/api/unidades/{id}/bloquear', fn($p) => $movimientoController->apiBloquear($p));
 $router->post('/api/unidades/{id}/desbloquear', fn($p) => $movimientoController->apiDesbloquear($p));
 
+// ── Fase 3: Inventario (alcance por rol) ──
+$inventarioController = new InventarioController(new InventarioService($pdo), $catalogoModel);
+$router->get('/inventario', fn() => $inventarioController->index());
+$router->get('/inventario/export.csv', fn() => $inventarioController->export());
+
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
