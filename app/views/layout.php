@@ -11,8 +11,9 @@
 <?php if (is_logged_in()): $u = current_user(); $ruta = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH); ?>
     <?php
     $puedeGestionar = in_array($u['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true);
+    $enlacePrincipal = ['/' => 'Dashboard'];
     $grupos = [
-        'Operación' => ['/' => 'Dashboard'],
+        'Operación' => [],
         'Consulta' => [],
         'Administración' => [],
     ];
@@ -57,15 +58,13 @@
     <div class="app-shell__body">
         <aside class="sidebar">
             <div class="sidebar__panel">
-                <div class="sidebar__brand">
-                    <img src="/assets/img/logo-small.png" alt="Disponibilidad de Flota" class="sidebar__logo">
-                    <div>
-                        <strong>Disponibilidad</strong>
-                        <small>Control de flota</small>
-                    </div>
-                </div>
-
                 <nav class="sidebar__nav" aria-label="Navegación principal">
+                    <?php foreach ($enlacePrincipal as $href => $label):
+                        $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
+                    ?>
+                        <a href="<?= e($href) ?>" class="sidebar__link sidebar__link--primary<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
+                    <?php endforeach; ?>
+
                     <?php foreach ($grupos as $titulo => $items): ?>
                         <?php if ($items === []): continue; endif; ?>
                         <div class="sidebar__group">

@@ -9,14 +9,16 @@
  */
 ?>
 <section class="module dashboard">
-    <div class="module__head">
-        <div class="dashboard__intro">
-            <h1>Disponibilidad de flota</h1>
-            <p class="module__subtitle">Consulta flota disponible, movimientos activos y retornos aprovechables en una sola vista operativa.</p>
-        </div>
+    <div class="module__head module__head--dashboard">
+        <p class="module__subtitle module__subtitle--solo">Consulta flota disponible, movimientos activos y retornos aprovechables en una sola vista operativa.</p>
         <?php if ($puedeReservar): ?>
             <div class="module__actions">
-                <a class="btn btn--ghost-dark" href="/timeline">📅 Timeline</a>
+                <a class="btn btn--secondary btn--icon" href="/timeline">
+                    <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                        <path d="M6 2a1 1 0 0 1 1 1v1h6V3a1 1 0 1 1 2 0v1h1.25A2.75 2.75 0 0 1 19 6.75v8.5A2.75 2.75 0 0 1 16.25 18h-12.5A2.75 2.75 0 0 1 1 15.25v-8.5A2.75 2.75 0 0 1 3.75 4H5V3a1 1 0 0 1 1-1Zm10.25 6h-12.5a.75.75 0 0 0-.75.75v6.5c0 .414.336.75.75.75h12.5a.75.75 0 0 0 .75-.75v-6.5a.75.75 0 0 0-.75-.75ZM5 10h3v2H5v-2Zm4 0h3v2H9v-2Zm4 0h2v2h-2v-2Z" fill="currentColor"/>
+                    </svg>
+                    <span>Timeline</span>
+                </a>
                 <button type="button" class="btn btn--primary" data-action="nueva-reserva">＋ Nueva reserva</button>
             </div>
         <?php endif; ?>
