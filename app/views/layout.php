@@ -1,10 +1,20 @@
-<?php /** Layout base. Recibe $title y $content ya renderizado. */ ?>
+<?php
+/**
+ * Layout base. Recibe $title y $content (ya renderizado) desde render() en helpers/view.php.
+ *
+ * @var string $title
+ * @var string $content
+ */
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?></title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="/assets/img/logo-small.png">
+    <link rel="apple-touch-icon" href="/assets/img/logo-small.png">
     <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body class="<?= is_logged_in() ? 'app-shell' : 'auth-page' ?>">
