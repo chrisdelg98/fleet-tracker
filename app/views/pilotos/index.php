@@ -16,7 +16,7 @@ $hoy = new DateTimeImmutable('today');
     </div>
 
     <?php if (empty($pilotos)): ?>
-        <div class="card empty"><p>Aún no hay pilotos. <button type="button" class="link" data-action="nuevo-piloto">Crea el primero →</button></p></div>
+        <div class="card empty"><div class="card__empty"><p>Aún no hay pilotos. <button type="button" class="link" data-action="nuevo-piloto">Crea el primero →</button></p></div></div>
     <?php else: ?>
         <div class="card card--table">
             <table class="table">

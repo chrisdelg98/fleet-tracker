@@ -68,7 +68,7 @@ $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v
 
     <div class="card card--table">
         <?php if (empty($unidades)): ?>
-            <p class="muted" style="text-align:center">Sin unidades para estos filtros.</p>
+            <div class="card__empty"><p>Sin unidades para estos filtros.</p></div>
         <?php else: ?>
         <table class="table">
             <thead><tr><th>Placa</th><th>Categoría</th><th>Marca / Modelo</th><th>Estación</th><th>Clasificación</th><th>Estado</th></tr></thead>

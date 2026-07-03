@@ -28,7 +28,9 @@ $claseEstado = [
 
     <?php if (empty($unidades)): ?>
         <div class="card empty">
-            <p>Aún no hay unidades registradas. <button type="button" class="link" data-action="nueva-unidad">Crea la primera →</button></p>
+            <div class="card__empty">
+                <p>Aún no hay unidades registradas. <button type="button" class="link" data-action="nueva-unidad">Crea la primera →</button></p>
+            </div>
         </div>
     <?php else: ?>
         <div class="card card--table">

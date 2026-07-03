@@ -40,7 +40,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
 
     <div class="card card--table">
         <?php if (empty($r['filas'])): ?>
-            <p class="muted" style="text-align:center">Sin actividad para estos filtros.</p>
+            <div class="card__empty"><p>Sin actividad para estos filtros.</p></div>
         <?php else: ?>
         <table class="table">
             <thead><tr><th>Fecha (UTC)</th><th>Usuario</th><th>Entidad</th><th>Acción</th><th>Detalle</th></tr></thead>

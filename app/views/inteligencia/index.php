@@ -42,10 +42,10 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
     </form>
 
     <div class="int-grid">
-        <div class="card card--table int-card">
+        <div class="card int-card">
             <h2>Utilización por estación</h2>
             <?php if (empty($reportes['utilizacion'])): ?>
-                <p class="muted">Sin datos para el rango seleccionado.</p>
+                <div class="card__empty"><p>Sin datos para el rango seleccionado.</p></div>
             <?php else: ?>
                 <table class="table">
                     <thead><tr><th>Estación</th><th>Unidades</th><th>Horas ocupadas</th><th>% utilización</th></tr></thead>
@@ -63,7 +63,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php endif; ?>
         </div>
 
-        <div class="card card--table int-card">
+        <div class="card int-card">
             <h2>Retornos</h2>
             <div class="int-stats">
                 <div class="int-stat"><span>Aprovechados</span><strong><?= (int) $ret['conteos']['APROVECHADO'] ?></strong></div>
@@ -71,7 +71,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
                 <div class="int-stat"><span>Sin retorno</span><strong><?= (int) $ret['conteos']['SIN_RETORNO'] ?></strong></div>
             </div>
             <?php if (empty($ret['detalle'])): ?>
-                <p class="muted">Sin movimientos internacionales completados en el rango.</p>
+                <div class="card__empty card__empty--compact"><p>Sin movimientos internacionales completados en el rango.</p></div>
             <?php else: ?>
                 <table class="table">
                     <thead><tr><th>Movimiento</th><th>Unidad</th><th>Ruta</th><th>Clasificación</th></tr></thead>
@@ -89,10 +89,10 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php endif; ?>
         </div>
 
-        <div class="card card--table int-card">
+        <div class="card int-card">
             <h2>Días en tránsito por unidad</h2>
             <?php if (empty($reportes['dias_transito'])): ?>
-                <p class="muted">Sin movimientos completados para este rango.</p>
+                <div class="card__empty"><p>Sin movimientos completados para este rango.</p></div>
             <?php else: ?>
                 <table class="table">
                     <thead><tr><th>Unidad</th><th>Estación</th><th>Movs.</th><th>Días</th><th>Horas</th></tr></thead>
@@ -111,10 +111,10 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php endif; ?>
         </div>
 
-        <div class="card card--table int-card">
+        <div class="card int-card">
             <h2>Rutas más usadas</h2>
             <?php if (empty($reportes['rutas'])): ?>
-                <p class="muted">Sin rutas completadas para este rango.</p>
+                <div class="card__empty"><p>Sin rutas completadas para este rango.</p></div>
             <?php else: ?>
                 <table class="table">
                     <thead><tr><th>Ruta</th><th>Movimientos</th><th>Horas acumuladas</th></tr></thead>
@@ -169,10 +169,10 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             </form>
         </div>
 
-        <div class="card card--table int-card">
+        <div class="card int-card">
             <h2>Suscripciones activas</h2>
             <?php if (empty($suscripciones)): ?>
-                <p class="muted">Todavía no tienes suscripciones activas.</p>
+                <div class="card__empty"><p>Todavía no tienes suscripciones activas.</p></div>
             <?php else: ?>
                 <table class="table">
                     <thead><tr><th>Tipo</th><th>Objetivo</th><th></th></tr></thead>

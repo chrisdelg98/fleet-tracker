@@ -21,8 +21,10 @@
 
     <?php if (empty($rutas)): ?>
         <div class="card empty">
-            <p><?= $q !== '' ? 'Sin resultados para «' . e($q) . '».' : 'Aún no hay rutas.' ?>
-               <button type="button" class="link" data-action="nueva-ruta">Crea la primera →</button></p>
+            <div class="card__empty">
+                <p><?= $q !== '' ? 'Sin resultados para «' . e($q) . '».' : 'Aún no hay rutas.' ?>
+                   <button type="button" class="link" data-action="nueva-ruta">Crea la primera →</button></p>
+            </div>
         </div>
     <?php else: ?>
         <div class="card card--table">

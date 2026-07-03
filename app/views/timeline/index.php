@@ -27,7 +27,7 @@ $claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada',
 
     <div class="card timeline-card">
         <?php if (empty($unidades)): ?>
-            <p class="muted" style="text-align:center">No hay unidades de flota operativa en el alcance.</p>
+            <div class="card__empty"><p>No hay unidades de flota operativa en el alcance.</p></div>
         <?php else: ?>
         <div class="timeline-card__wrap">
         <div class="tl" style="--tl-dias: <?= (int) $diasTotal ?>">
