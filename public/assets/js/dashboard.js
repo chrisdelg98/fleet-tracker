@@ -11,6 +11,10 @@ const countEl = document.getElementById('dash-count');
 const rangoEl = document.getElementById('dash-rango');
 const demoraWrapEl = document.getElementById('dash-demora');
 const demoraTextEl = document.getElementById('dash-demora-text');
+const stateSelectWrap = document.getElementById('f-estados-wrap');
+const stateSelectToggle = document.getElementById('f-estados-toggle');
+const stateSelectMenu = document.getElementById('f-estados-menu');
+const stateSelectSummary = document.getElementById('f-estados-summary');
 
 const CHIP = {
     DISPONIBLE: ['chip--disponible', '🟢 Disponible'],
@@ -21,6 +25,12 @@ const CHIP = {
 
 let fechaMode = 'hoy';
 const colspan = cfg.puedeReservar ? 9 : 8;
+
+const STATE_LABELS = {
+    DISPONIBLE: 'Disponible',
+    RESERVADA: 'Reservada',
+    EN_TRANSITO: 'En tránsito',
+};
 
 // ── Filtros → query ──
 function buildQuery() {
@@ -52,6 +62,39 @@ function buildQuery() {
     const rh = document.querySelector('[name="retorno_hacia_sel"]');
     if (rh && rh.value) p.set('retorno_hacia', rh.value);
     return p;
+}
+
+function selectedStates() {
+    return [...document.querySelectorAll('.f-estado:checked')].map((c) => c.value);
+}
+
+function syncStateSummary() {
+    const estados = selectedStates();
+    if (estados.length === 0) {
+        stateSelectSummary.textContent = 'Todos los estados';
+        return;
+    }
+    if (estados.length === 1) {
+        stateSelectSummary.textContent = STATE_LABELS[estados[0]] || estados[0];
+        return;
+    }
+    if (estados.length === 2) {
+        stateSelectSummary.textContent = estados.map((estado) => STATE_LABELS[estado] || estado).join(', ');
+        return;
+    }
+    stateSelectSummary.textContent = `${estados.length} estados seleccionados`;
+}
+
+function openStateMenu() {
+    stateSelectMenu.hidden = false;
+    stateSelectToggle.setAttribute('aria-expanded', 'true');
+    stateSelectWrap.classList.add('is-open');
+}
+
+function closeStateMenu() {
+    stateSelectMenu.hidden = true;
+    stateSelectToggle.setAttribute('aria-expanded', 'false');
+    stateSelectWrap.classList.remove('is-open');
 }
 
 async function load() {
@@ -251,15 +294,30 @@ document.getElementById('f-fecha').addEventListener('change', () => {
     load();
 });
 ['f-estacion', 'f-tipo', 'f-retorno', 'f-demora'].forEach((id) => document.getElementById(id).addEventListener('change', load));
-document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change', load));
+document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change', () => {
+    syncStateSummary();
+    load();
+}));
 const rhSel = document.querySelector('[name="retorno_hacia_sel"]');
 if (rhSel) rhSel.addEventListener('change', load);
 let placaTimer;
 document.getElementById('f-placa').addEventListener('input', () => { clearTimeout(placaTimer); placaTimer = setTimeout(load, 300); });
 document.querySelector('[data-action="refrescar"]').addEventListener('click', load);
 
+stateSelectToggle.addEventListener('click', () => {
+    if (stateSelectMenu.hidden) openStateMenu();
+    else closeStateMenu();
+});
+document.addEventListener('click', (ev) => {
+    if (!stateSelectWrap.contains(ev.target)) closeStateMenu();
+});
+document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') closeStateMenu();
+});
+
 // ── Auto-refresh 60s ──
 setInterval(load, 60000);
+syncStateSummary();
 load();
 
 // ── Utilidades de fecha (hora local de la estación con Intl) ──

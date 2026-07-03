@@ -49,10 +49,16 @@
                 <input type="search" id="f-placa" placeholder="Buscar placa…" data-no-search></label>
             <div class="field field--state-filter">
                 <span class="field__label">Estado</span>
-                <div class="filtros__estados filtros__estados--legend">
-                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="DISPONIBLE"><span class="estado-chip__dot estado-chip__dot--disponible"></span><span>Disponible</span></label>
-                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="RESERVADA"><span class="estado-chip__dot estado-chip__dot--reservada"></span><span>Reservada</span></label>
-                    <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_TRANSITO"><span class="estado-chip__dot estado-chip__dot--transito"></span><span>En tránsito</span></label>
+                <div class="state-select" id="f-estados-wrap">
+                    <button type="button" class="state-select__toggle" id="f-estados-toggle" aria-expanded="false" aria-controls="f-estados-menu">
+                        <span id="f-estados-summary">Todos los estados</span>
+                        <span class="state-select__chevron" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="state-select__menu filtros__estados filtros__estados--legend" id="f-estados-menu" hidden>
+                        <label class="estado-chip"><input type="checkbox" class="f-estado" value="DISPONIBLE"><span class="estado-chip__dot estado-chip__dot--disponible"></span><span>Disponible</span></label>
+                        <label class="estado-chip"><input type="checkbox" class="f-estado" value="RESERVADA"><span class="estado-chip__dot estado-chip__dot--reservada"></span><span>Reservada</span></label>
+                        <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_TRANSITO"><span class="estado-chip__dot estado-chip__dot--transito"></span><span>En tránsito</span></label>
+                    </div>
                 </div>
             </div>
             <label class="field"><span class="field__label">Retorno disponible</span>
