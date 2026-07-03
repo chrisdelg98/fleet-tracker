@@ -3,12 +3,9 @@
  * @var array $usuario
  * @var array $filtros
  * @var array $reportes
- * @var array $suscripciones
  * @var array $estaciones
- * @var array $paises
  * @var bool $alcanceTotal
  * @var array|null $flash
- * @var array $tiposSuscripcion
  */
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
 $ret = $reportes['retornos'];
@@ -23,7 +20,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
     <div class="module__head">
         <div>
             <h1>Inteligencia</h1>
-            <p class="module__subtitle">Resume utilización, retornos, tránsito y rutas para apoyar decisiones operativas y alertas por correo.</p>
+            <p class="module__subtitle">Resume utilización, retornos, tránsito y rutas para apoyar decisiones operativas.</p>
         </div>
     </div>
 
@@ -155,76 +152,7 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
         </div>
     </div>
 
-    <div class="int-grid int-grid--bottom">
-        <div class="card int-card">
-            <h2>Suscripciones de correo</h2>
-            <p class="muted">Los correos automáticos usan la dirección de tu usuario: <strong><?= e($usuario['email'] ?? '') ?></strong>.</p>
-            <form class="form" method="post" action="/inteligencia/suscripciones">
-                <?= csrf_field() ?>
-                <div class="grid-2">
-                    <label class="field"><span class="field__label">Tipo</span>
-                        <select name="tipo">
-                            <?php foreach ($tiposSuscripcion as $tipo): ?>
-                                <option value="<?= e($tipo) ?>"><?= e($tipo === 'UNIDAD_LIBERADA' ? 'Unidad liberada' : 'Retorno disponible') ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                    <label class="field"><span class="field__label">Estación (para unidad liberada)</span>
-                        <select name="estacion_id">
-                            <option value="">No aplica</option>
-                            <?php foreach ($estaciones as $est): ?>
-                                <option value="<?= (int) $est['id'] ?>"><?= e($est['codigo']) ?> · <?= e($est['nombre']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                    <label class="field"><span class="field__label">País (para retorno disponible)</span>
-                        <select name="pais_id">
-                            <option value="">No aplica</option>
-                            <?php foreach ($paises as $pais): ?>
-                                <option value="<?= (int) $pais['id'] ?>"><?= e($pais['nombre']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                </div>
-                <div class="dialog__actions int-actions">
-                    <button type="submit" class="btn btn--primary">Agregar suscripción</button>
-                </div>
-            </form>
-        </div>
-
-        <div class="card int-card">
-            <h2>Suscripciones activas</h2>
-            <?php if (empty($suscripciones)): ?>
-                <div class="card__empty"><p>Todavía no tienes suscripciones activas.</p></div>
-            <?php else: ?>
-                <table class="table">
-                    <thead><tr><th>Tipo</th><th>Objetivo</th><th></th></tr></thead>
-                    <tbody>
-                    <?php foreach ($suscripciones as $s): ?>
-                        <tr>
-                            <td><?= e($s['tipo'] === 'UNIDAD_LIBERADA' ? 'Unidad liberada' : 'Retorno disponible') ?></td>
-                            <td>
-                                <?php if ($s['tipo'] === 'UNIDAD_LIBERADA'): ?>
-                                    <?= e(($s['estacion_codigo'] ?? '') . ' · ' . ($s['estacion_nombre'] ?? '')) ?>
-                                <?php else: ?>
-                                    <?= e($s['pais_nombre'] ?? '') ?>
-                                <?php endif; ?>
-                            </td>
-                            <td class="row-actions">
-                                <form method="post" action="/inteligencia/suscripciones/<?= (int) $s['id'] ?>/probar" class="inline-form">
-                                    <?= csrf_field() ?>
-                                    <button type="submit" class="link">Probar correo</button>
-                                </form>
-                                <form method="post" action="/inteligencia/suscripciones/<?= (int) $s['id'] ?>/eliminar" class="inline-form">
-                                    <?= csrf_field() ?>
-                                    <button type="submit" class="link link--danger">Eliminar</button>
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
-    </div>
+    <?php /* Sección de suscripciones de correo retirada temporalmente (ver docs/fases-implementacion.md §Fase 4).
+             El backend (rutas, NotificacionService, SuscripcionCorreoModel, tabla y disparadores) queda
+             intacto; para reactivarla basta con restaurar este bloque de UI. */ ?>
 </section>
