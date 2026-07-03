@@ -25,6 +25,9 @@
             if ($u['rol'] !== Rol::CONSULTA_BASICO) {
                 $items['/inventario'] = 'Inventario';
             }
+            if (in_array($u['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true)) {
+                $items['/historico'] = 'Histórico';
+            }
             if ($u['rol'] === Rol::ADMIN_GLOBAL) {
                 $items['/admin'] = 'Administración';
             }

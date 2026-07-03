@@ -131,4 +131,9 @@ $inventarioController = new InventarioController(new InventarioService($pdo), $c
 $router->get('/inventario', fn() => $inventarioController->index());
 $router->get('/inventario/export.csv', fn() => $inventarioController->export());
 
+// ── Fase 3: Histórico ──
+$historicoController = new HistoricoController(new HistoricoService($pdo), $usuarioModel);
+$router->get('/historico', fn() => $historicoController->index());
+$router->get('/historico/export.csv', fn() => $historicoController->export());
+
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

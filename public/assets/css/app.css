@@ -221,6 +221,12 @@ h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-4); }
 .btn--ghost-dark { background: transparent; color: var(--color-ink); border-color: var(--color-border); }
 .btn--ghost-dark:hover { background: #eef1f4; }
 
+/* ── Histórico ── */
+.pager { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: var(--sp-4); }
+.pager__link { padding: var(--sp-1) var(--sp-3); border: 1px solid var(--color-border); border-radius: var(--radius); text-decoration: none; color: var(--color-primary); font-size: var(--fs-sm); }
+.pager__link.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.detalle { font-size: 0.75rem; color: var(--color-ink-soft); white-space: nowrap; }
+
 /* ── Inventario ── */
 .inv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-4); }
 .inv-card h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-lg); }
