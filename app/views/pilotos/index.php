@@ -44,8 +44,8 @@ $hoy = new DateTimeImmutable('today');
                         </td>
                         <td><?= e($p['estacion_codigo']) ?></td>
                         <td class="row-actions">
-                            <button type="button" class="link" data-action="editar-piloto" data-id="<?= (int) $p['id'] ?>">Editar</button>
-                            <button type="button" class="link link--danger" data-action="eliminar-piloto" data-id="<?= (int) $p['id'] ?>" data-nombre="<?= e($p['nombre']) ?>">Eliminar</button>
+                            <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar-piloto', 'data-id' => (int) $p['id']]]) ?>
+                            <?= action_chip('Eliminar', ['icon' => 'delete', 'variant' => 'danger', 'attrs' => ['data-action' => 'eliminar-piloto', 'data-id' => (int) $p['id'], 'data-nombre' => $p['nombre']]]) ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

@@ -11,6 +11,25 @@ const form = document.getElementById('form-catalogo');
 const err = document.getElementById('form-catalogo-error');
 const fieldsBox = document.getElementById('catalogo-fields');
 const title = document.getElementById('dlg-catalogo-title');
+const catalogTabs = Array.from(document.querySelectorAll('[data-catalogo-tab]'));
+const catalogPanels = Array.from(document.querySelectorAll('[data-catalogo-panel]'));
+
+function activateCatalog(tabla) {
+    catalogTabs.forEach((tab) => {
+        const active = tab.dataset.catalogoTab === tabla;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    catalogPanels.forEach((panel) => {
+        const active = panel.dataset.catalogoPanel === tabla;
+        panel.hidden = !active;
+        panel.classList.toggle('is-active', active);
+    });
+}
+
+if (catalogTabs.length > 0) {
+    activateCatalog(catalogTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.catalogoTab || catalogTabs[0].dataset.catalogoTab);
+}
 
 function buildFields(tabla, item) {
     const fields = specs[tabla].fields;
@@ -42,6 +61,11 @@ function buildFields(tabla, item) {
 }
 
 document.addEventListener('click', async (ev) => {
+    const catalogTab = ev.target.closest('[data-catalogo-tab]');
+    if (catalogTab) {
+        activateCatalog(catalogTab.dataset.catalogoTab);
+    }
+
     const btn = ev.target.closest('[data-action]');
     if (!btn) return;
     const tabla = btn.dataset.tabla;
@@ -71,8 +95,10 @@ document.addEventListener('click', async (ev) => {
     }
 
     if (btn.dataset.action === 'activo-catalogo') {
-        if (!confirm('¿Desactivar este registro del catálogo?')) return;
-        const resp = await api('POST', `/api/catalogos/${tabla}/${id}/activo`, { activo: false });
+        const activo = Number(btn.dataset.activo || '1') === 1;
+        const siguiente = !activo;
+        if (!confirm(siguiente ? '¿Activar este registro del catálogo?' : '¿Desactivar este registro del catálogo?')) return;
+        const resp = await api('POST', `/api/catalogos/${tabla}/${id}/activo`, { activo: siguiente });
         if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo actualizar.');
     }
 });

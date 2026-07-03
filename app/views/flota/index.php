@@ -68,9 +68,9 @@ $claseEstado = [
                         </td>
                         <td><?= e($u['piloto_asignado'] ?? '—') ?></td>
                         <td class="row-actions">
-                            <button type="button" class="link" data-action="editar" data-id="<?= (int) $u['id'] ?>">Editar</button>
-                            <button type="button" class="link" data-action="estado" data-id="<?= (int) $u['id'] ?>" data-estado="<?= e($u['estado_vehiculo']) ?>">Cambiar estado</button>
-                            <button type="button" class="link link--danger" data-action="eliminar" data-id="<?= (int) $u['id'] ?>" data-placa="<?= e($u['placa_unidad']) ?>">Eliminar</button>
+                            <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar', 'data-id' => (int) $u['id']]]) ?>
+                            <?= action_chip('Cambiar estado', ['icon' => 'state', 'attrs' => ['data-action' => 'estado', 'data-id' => (int) $u['id'], 'data-estado' => $u['estado_vehiculo']]]) ?>
+                            <?= action_chip('Eliminar', ['icon' => 'delete', 'variant' => 'danger', 'attrs' => ['data-action' => 'eliminar', 'data-id' => (int) $u['id'], 'data-placa' => $u['placa_unidad']]]) ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

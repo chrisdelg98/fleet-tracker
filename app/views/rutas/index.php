@@ -58,8 +58,8 @@
                         <td><?= $r['distancia_km'] !== null ? e(rtrim(rtrim($r['distancia_km'], '0'), '.')) : '—' ?></td>
                         <td><?= $r['horas_transito_estimadas'] !== null ? e(rtrim(rtrim($r['horas_transito_estimadas'], '0'), '.')) : '—' ?></td>
                         <td class="row-actions">
-                            <button type="button" class="link" data-action="editar-ruta" data-id="<?= (int) $r['id'] ?>">Editar</button>
-                            <button type="button" class="link link--danger" data-action="eliminar-ruta" data-id="<?= (int) $r['id'] ?>" data-nombre="<?= e($r['nombre']) ?>">Eliminar</button>
+                            <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar-ruta', 'data-id' => (int) $r['id']]]) ?>
+                            <?= action_chip('Eliminar', ['icon' => 'delete', 'variant' => 'danger', 'attrs' => ['data-action' => 'eliminar-ruta', 'data-id' => (int) $r['id'], 'data-nombre' => $r['nombre']]]) ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

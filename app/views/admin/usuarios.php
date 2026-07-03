@@ -27,8 +27,12 @@ $labelRol = [
                     <td><?= e($u['estacion_codigo'] ?? '—') ?></td>
                     <td><?= (int) $u['activo'] === 1 ? '<span class="badge badge--ok">Activo</span>' : '<span class="badge badge--muted">Inactivo</span>' ?></td>
                     <td class="row-actions">
-                        <button type="button" class="link" data-action="editar-usuario" data-id="<?= (int) $u['id'] ?>">Editar</button>
-                        <button type="button" class="link" data-action="activo-usuario" data-id="<?= (int) $u['id'] ?>" data-activo="<?= (int) $u['activo'] ?>"><?= (int) $u['activo'] === 1 ? 'Desactivar' : 'Activar' ?></button>
+                        <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar-usuario', 'data-id' => (int) $u['id']]]) ?>
+                        <?= action_chip((int) $u['activo'] === 1 ? 'Desactivar' : 'Activar', [
+                            'icon' => (int) $u['activo'] === 1 ? 'toggle-off' : 'toggle-on',
+                            'variant' => (int) $u['activo'] === 1 ? 'warning' : 'success',
+                            'attrs' => ['data-action' => 'activo-usuario', 'data-id' => (int) $u['id'], 'data-activo' => (int) $u['activo']],
+                        ]) ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

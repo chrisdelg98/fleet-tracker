@@ -22,8 +22,12 @@ $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn
                     <td><?= e($e['timezone']) ?></td>
                     <td><?= (int) $e['activo'] === 1 ? '<span class="badge badge--ok">Activa</span>' : '<span class="badge badge--muted">Inactiva</span>' ?></td>
                     <td class="row-actions">
-                        <button type="button" class="link" data-action="editar-estacion" data-id="<?= (int) $e['id'] ?>">Editar</button>
-                        <button type="button" class="link" data-action="activo-estacion" data-id="<?= (int) $e['id'] ?>" data-activo="<?= (int) $e['activo'] ?>"><?= (int) $e['activo'] === 1 ? 'Desactivar' : 'Activar' ?></button>
+                        <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar-estacion', 'data-id' => (int) $e['id']]]) ?>
+                        <?= action_chip((int) $e['activo'] === 1 ? 'Desactivar' : 'Activar', [
+                            'icon' => (int) $e['activo'] === 1 ? 'toggle-off' : 'toggle-on',
+                            'variant' => (int) $e['activo'] === 1 ? 'warning' : 'success',
+                            'attrs' => ['data-action' => 'activo-estacion', 'data-id' => (int) $e['id'], 'data-activo' => (int) $e['activo']],
+                        ]) ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
