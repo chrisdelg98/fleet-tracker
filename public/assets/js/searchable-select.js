@@ -19,6 +19,7 @@ class SearchableSelect {
     constructor(select) {
         this.select = select;
         select.dataset.ssEnhanced = '1';
+        this.boundReposition = () => this.positionList();
 
         this.wrap = document.createElement('div');
         this.wrap.className = 'ss';
@@ -36,8 +37,9 @@ class SearchableSelect {
         this.list = document.createElement('ul');
         this.list.className = 'ss__list';
         this.list.hidden = true;
+        document.body.appendChild(this.list);
 
-        this.wrap.append(this.input, this.list);
+        this.wrap.append(this.input);
 
         this.buildOptions();
         this.syncFromNative();
@@ -45,7 +47,9 @@ class SearchableSelect {
         this.input.addEventListener('focus', () => this.open());
         this.input.addEventListener('input', () => { this.open(); this.filter(this.input.value); });
         this.input.addEventListener('keydown', (e) => this.onKey(e));
-        document.addEventListener('click', (e) => { if (!this.wrap.contains(e.target)) this.close(); });
+        document.addEventListener('click', (e) => {
+            if (!this.wrap.contains(e.target) && !this.list.contains(e.target)) this.close();
+        });
         // Cuando el valor del select cambia (incluida la carga en edición) refresca la vista.
         select.addEventListener('change', () => this.syncFromNative());
     }
@@ -85,13 +89,37 @@ class SearchableSelect {
     open() {
         this.list.hidden = false;
         this.wrap.classList.add('is-open');
+        this.list.classList.add('is-open');
+        this.positionList();
+        window.addEventListener('resize', this.boundReposition);
+        document.addEventListener('scroll', this.boundReposition, true);
         this.filter('');
     }
 
     close() {
         this.list.hidden = true;
         this.wrap.classList.remove('is-open');
+        this.list.classList.remove('is-open');
+        window.removeEventListener('resize', this.boundReposition);
+        document.removeEventListener('scroll', this.boundReposition, true);
         this.syncFromNative(); // descarta texto tecleado sin elegir
+    }
+
+    positionList() {
+        if (this.list.hidden) return;
+
+        const rect = this.input.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const availableBelow = viewportHeight - rect.bottom - 12;
+        const availableAbove = rect.top - 12;
+        const openUpward = availableBelow < 220 && availableAbove > availableBelow;
+        const maxHeight = Math.max(120, Math.min(240, openUpward ? availableAbove : availableBelow));
+
+        this.list.style.left = `${rect.left}px`;
+        this.list.style.width = `${rect.width}px`;
+        this.list.style.maxHeight = `${maxHeight}px`;
+        this.list.style.top = openUpward ? 'auto' : `${rect.bottom + 2}px`;
+        this.list.style.bottom = openUpward ? `${viewportHeight - rect.top + 2}px` : 'auto';
     }
 
     filter(q) {

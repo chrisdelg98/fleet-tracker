@@ -78,12 +78,6 @@
                         </div>
                     <?php endforeach; ?>
                 </nav>
-
-                <div class="sidebar__footer">
-                    <span class="sidebar__footer-label">Sesión actual</span>
-                    <strong><?= e($u['nombre']) ?></strong>
-                    <small><?= e($u['rol']) ?></small>
-                </div>
             </div>
         </aside>
 
