@@ -127,10 +127,10 @@ final class UnidadService
     }
 
     /** Lista para la tabla de Flota. El encargado ve su estación; el admin puede filtrar. */
-    public function listar(array $user, ?int $estacionFiltro = null): array
+    public function listar(array $user, ?int $estacionFiltro = null, array $filtros = []): array
     {
         $estacion = $user['rol'] === Rol::ADMIN_GLOBAL ? $estacionFiltro : (int) $user['estacion_id'];
-        return $this->unidades->listar($estacion);
+        return $this->unidades->listar($estacion, $filtros);
     }
 
     // ── Internos ──

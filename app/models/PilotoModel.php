@@ -22,7 +22,7 @@ final class PilotoModel
     }
 
     /** Lista con nombres resueltos (tipo de licencia, estación). Filtra por estación si se indica. */
-    public function listar(?int $estacionId = null, bool $soloActivos = true): array
+    public function listar(?int $estacionId = null, array $filtros = [], bool $soloActivos = true): array
     {
         $sql = 'SELECT p.*, tl.nombre AS tipo_licencia, e.codigo AS estacion_codigo
                   FROM pilotos p
@@ -36,6 +36,27 @@ final class PilotoModel
         if ($estacionId !== null) {
             $sql .= ' AND p.estacion_id = :e';
             $params[':e'] = $estacionId;
+        }
+        if (!empty($filtros['tipo_licencia_id'])) {
+            $sql .= ' AND p.tipo_licencia_id = :tl';
+            $params[':tl'] = (int) $filtros['tipo_licencia_id'];
+        }
+        if (!empty($filtros['q'])) {
+            // CONCAT con un solo placeholder: los prepares nativos no permiten reusar :q.
+            $sql .= " AND CONCAT(p.nombre, ' ', p.no_licencia) LIKE :q";
+            $params[':q'] = '%' . $filtros['q'] . '%';
+        }
+        // Estado de licencia respecto a hoy (alerta de vencimiento, plan §7.3).
+        switch ($filtros['licencia'] ?? '') {
+            case 'vencida':
+                $sql .= ' AND p.licencia_vence IS NOT NULL AND p.licencia_vence < CURDATE()';
+                break;
+            case 'por_vencer':
+                $sql .= ' AND p.licencia_vence IS NOT NULL AND p.licencia_vence >= CURDATE() AND p.licencia_vence <= CURDATE() + INTERVAL 30 DAY';
+                break;
+            case 'vigente':
+                $sql .= ' AND (p.licencia_vence IS NULL OR p.licencia_vence > CURDATE() + INTERVAL 30 DAY)';
+                break;
         }
         $sql .= ' ORDER BY p.nombre';
         $stmt = $this->pdo->prepare($sql);

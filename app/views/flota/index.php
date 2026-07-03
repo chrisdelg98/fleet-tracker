@@ -6,6 +6,8 @@
  *
  * @var array $usuario
  * @var array $unidades
+ * @var array $filtros
+ * @var bool $verTodas
  * @var array $categorias
  * @var array $tiposEquipo
  * @var array $capacidades
@@ -33,10 +35,66 @@ $claseEstado = [
         <button type="button" class="btn btn--primary" data-action="nueva-unidad">＋ Nueva unidad</button>
     </div>
 
+    <?php $hayFiltros = implode('', $filtros) !== ''; ?>
+    <form class="filters-panel" method="get" action="/flota" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
+        <div class="filters-panel__bar">
+            <div class="filters-panel__summary">
+                <strong>Filtros</strong>
+                <span>Estación, categoría, tipo, estado, clasificación y placa</span>
+            </div>
+            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="flota-filters-more">
+                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
+                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+            </button>
+        </div>
+        <div class="filters-panel__more" id="flota-filters-more" data-filters-more hidden>
+            <div class="filters-grid">
+                <?php if ($verTodas): ?>
+                <label class="field"><span class="field__label">Estación</span>
+                    <select name="estacion_id">
+                        <option value="">Todas</option>
+                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= (string) $filtros['estacion_id'] === (string) $es['id'] ? 'selected' : '' ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <?php endif; ?>
+                <label class="field"><span class="field__label">Categoría</span>
+                    <select name="categoria_id">
+                        <option value="">Todas</option>
+                        <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (string) $filtros['categoria_id'] === (string) $c['id'] ? 'selected' : '' ?>><?= e($c['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Tipo de equipo</span>
+                    <select name="tipo_equipo_id">
+                        <option value="">Todos</option>
+                        <?php foreach ($tiposEquipo as $t): ?><option value="<?= (int) $t['id'] ?>" <?= (string) $filtros['tipo_equipo_id'] === (string) $t['id'] ? 'selected' : '' ?>><?= e($t['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Estado</span>
+                    <select name="estado_vehiculo">
+                        <option value="">Todos</option>
+                        <?php foreach ($estados as $ev): ?><option value="<?= e($ev) ?>" <?= $filtros['estado_vehiculo'] === $ev ? 'selected' : '' ?>><?= e($labelEstado[$ev] ?? $ev) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Clasificación</span>
+                    <select name="en_disponibilidad">
+                        <option value="">Todas</option>
+                        <option value="1" <?= (string) $filtros['en_disponibilidad'] === '1' ? 'selected' : '' ?>>Flota operativa</option>
+                        <option value="0" <?= (string) $filtros['en_disponibilidad'] === '0' ? 'selected' : '' ?>>Solo inventario</option>
+                    </select></label>
+                <label class="field"><span class="field__label">Buscar placa</span>
+                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Placa de unidad o furgón…" class="search"></label>
+            </div>
+            <div class="filters-actions">
+                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
+                <a href="/flota" class="link">Limpiar</a>
+            </div>
+        </div>
+    </form>
+
     <?php if (empty($unidades)): ?>
         <div class="card empty">
             <div class="card__empty">
-                <p>Aún no hay unidades registradas. <button type="button" class="link" data-action="nueva-unidad">Crea la primera →</button></p>
+                <?php if ($hayFiltros): ?>
+                    <p>Sin unidades para estos filtros. <a href="/flota" class="link">Limpiar filtros</a></p>
+                <?php else: ?>
+                    <p>Aún no hay unidades registradas. <button type="button" class="link" data-action="nueva-unidad">Crea la primera →</button></p>
+                <?php endif; ?>
             </div>
         </div>
     <?php else: ?>

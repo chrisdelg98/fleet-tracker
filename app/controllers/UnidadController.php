@@ -21,10 +21,24 @@ final class UnidadController
     {
         $user = require_login_web();
 
-        $estacionFiltro = $user['rol'] === Rol::ADMIN_GLOBAL ? null : (int) $user['estacion_id'];
+        $verTodas = $user['rol'] === Rol::ADMIN_GLOBAL;
+        $filtros = [
+            'estacion_id'       => $verTodas ? (string) ($_GET['estacion_id'] ?? '') : '',
+            'categoria_id'      => $_GET['categoria_id'] ?? '',
+            'tipo_equipo_id'    => $_GET['tipo_equipo_id'] ?? '',
+            'estado_vehiculo'   => $_GET['estado_vehiculo'] ?? '',
+            'en_disponibilidad' => $_GET['en_disponibilidad'] ?? '',
+            'q'                 => trim((string) ($_GET['q'] ?? '')),
+        ];
+        $estacionFiltro = $verTodas
+            ? (ctype_digit((string) $filtros['estacion_id']) ? (int) $filtros['estacion_id'] : null)
+            : (int) $user['estacion_id'];
+
         render('flota/index', [
             'usuario'    => $user,
-            'unidades'   => $this->service->listar($user, $estacionFiltro),
+            'unidades'   => $this->service->listar($user, $estacionFiltro, $filtros),
+            'filtros'    => $filtros,
+            'verTodas'   => $verTodas,
             'categorias' => $this->catalogos->activos('categorias_vehiculo', 'orden'),
             'tiposEquipo' => $this->catalogos->activos('tipos_equipo', 'orden'),
             'capacidades' => $this->catalogos->activos('capacidades', 'orden'),

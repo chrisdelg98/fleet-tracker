@@ -3,11 +3,15 @@
  * Pilotos (plan §7.3). Alerta visual: licencia vencida (rojo) o por vencer ≤30 días (ámbar).
  * @var array $usuario
  * @var array $pilotos
+ * @var array $filtros
+ * @var bool $verTodas
  * @var array $tiposLicencia
  * @var array $estaciones
  */
 $esAdmin = $usuario['rol'] === Rol::ADMIN_GLOBAL;
 $hoy = new DateTimeImmutable('today');
+$hayFiltros = implode('', $filtros) !== '';
+$estadosLicencia = ['vigente' => 'Vigente', 'por_vencer' => 'Por vencer (≤30 días)', 'vencida' => 'Vencida'];
 ?>
 <section class="module">
     <div class="module__head">
@@ -18,8 +22,54 @@ $hoy = new DateTimeImmutable('today');
         <button type="button" class="btn btn--primary" data-action="nuevo-piloto">＋ Nuevo piloto</button>
     </div>
 
+    <form class="filters-panel" method="get" action="/pilotos" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
+        <div class="filters-panel__bar">
+            <div class="filters-panel__summary">
+                <strong>Filtros</strong>
+                <span>Estación, tipo de licencia, estado y búsqueda por nombre o número</span>
+            </div>
+            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="pilotos-filters-more">
+                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
+                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+            </button>
+        </div>
+        <div class="filters-panel__more" id="pilotos-filters-more" data-filters-more hidden>
+            <div class="filters-grid">
+                <?php if ($verTodas): ?>
+                <label class="field"><span class="field__label">Estación</span>
+                    <select name="estacion_id">
+                        <option value="">Todas</option>
+                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= (string) $filtros['estacion_id'] === (string) $es['id'] ? 'selected' : '' ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <?php endif; ?>
+                <label class="field"><span class="field__label">Tipo de licencia</span>
+                    <select name="tipo_licencia_id">
+                        <option value="">Todos</option>
+                        <?php foreach ($tiposLicencia as $t): ?><option value="<?= (int) $t['id'] ?>" <?= (string) $filtros['tipo_licencia_id'] === (string) $t['id'] ? 'selected' : '' ?>><?= e($t['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Estado de licencia</span>
+                    <select name="licencia">
+                        <option value="">Todas</option>
+                        <?php foreach ($estadosLicencia as $val => $lbl): ?><option value="<?= e($val) ?>" <?= $filtros['licencia'] === $val ? 'selected' : '' ?>><?= e($lbl) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Buscar</span>
+                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Nombre o n.º de licencia…" class="search"></label>
+            </div>
+            <div class="filters-actions">
+                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
+                <a href="/pilotos" class="link">Limpiar</a>
+            </div>
+        </div>
+    </form>
+
     <?php if (empty($pilotos)): ?>
-        <div class="card empty"><div class="card__empty"><p>Aún no hay pilotos. <button type="button" class="link" data-action="nuevo-piloto">Crea el primero →</button></p></div></div>
+        <div class="card empty"><div class="card__empty">
+            <?php if ($hayFiltros): ?>
+                <p>Sin pilotos para estos filtros. <a href="/pilotos" class="link">Limpiar filtros</a></p>
+            <?php else: ?>
+                <p>Aún no hay pilotos. <button type="button" class="link" data-action="nuevo-piloto">Crea el primero →</button></p>
+            <?php endif; ?>
+        </div></div>
     <?php else: ?>
         <div class="card card--table">
             <table class="table">

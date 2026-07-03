@@ -64,10 +64,10 @@ final class PilotoService
         });
     }
 
-    public function listar(array $user, ?int $estacionFiltro = null): array
+    public function listar(array $user, ?int $estacionFiltro = null, array $filtros = []): array
     {
         $estacion = $user['rol'] === Rol::ADMIN_GLOBAL ? $estacionFiltro : (int) $user['estacion_id'];
-        return $this->pilotos->listar($estacion);
+        return $this->pilotos->listar($estacion, $filtros);
     }
 
     private function validar(array $input): array

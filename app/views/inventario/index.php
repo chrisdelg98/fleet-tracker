@@ -25,26 +25,6 @@ $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v
         <a class="btn btn--primary" href="/inventario/export.csv<?= $qs ? '?' . e($qs) : '' ?>">⬇ Exportar CSV</a>
     </div>
 
-    <div class="inv-cards">
-        <div class="card inv-card">
-            <h2>Por categoría</h2>
-            <ul class="inv-list">
-                <?php foreach ($conteos['por_categoria'] as $c): ?>
-                    <li><span><?= e($c['nombre']) ?></span><strong><?= (int) $c['n'] ?></strong></li>
-                <?php endforeach; ?>
-                <li class="inv-list__total"><span>Total</span><strong><?= (int) $conteos['total'] ?></strong></li>
-            </ul>
-        </div>
-        <div class="card inv-card">
-            <h2>Por estado del vehículo</h2>
-            <ul class="inv-list">
-                <?php foreach ($conteos['por_estado'] as $c): ?>
-                    <li><span><?= e($labelEstado[$c['nombre']] ?? $c['nombre']) ?></span><strong><?= (int) $c['n'] ?></strong></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
     <form class="filters-panel" method="get" action="/inventario" data-filters-panel data-initial-open="false">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">
@@ -88,6 +68,26 @@ $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v
             </div>
         </div>
     </form>
+
+    <div class="inv-cards">
+        <div class="card inv-card">
+            <h2>Por categoría</h2>
+            <ul class="inv-list">
+                <?php foreach ($conteos['por_categoria'] as $c): ?>
+                    <li><span><?= e($c['nombre']) ?></span><strong><?= (int) $c['n'] ?></strong></li>
+                <?php endforeach; ?>
+                <li class="inv-list__total"><span>Total</span><strong><?= (int) $conteos['total'] ?></strong></li>
+            </ul>
+        </div>
+        <div class="card inv-card">
+            <h2>Por estado del vehículo</h2>
+            <ul class="inv-list">
+                <?php foreach ($conteos['por_estado'] as $c): ?>
+                    <li><span><?= e($labelEstado[$c['nombre']] ?? $c['nombre']) ?></span><strong><?= (int) $c['n'] ?></strong></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
 
     <div class="card card--table">
         <?php if (empty($unidades)): ?>

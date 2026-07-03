@@ -17,10 +17,21 @@ final class PilotoController
     public function index(): void
     {
         $user = require_login_web();
-        $estacionFiltro = $user['rol'] === Rol::ADMIN_GLOBAL ? null : (int) $user['estacion_id'];
+        $verTodas = $user['rol'] === Rol::ADMIN_GLOBAL;
+        $filtros = [
+            'estacion_id'      => $verTodas ? (string) ($_GET['estacion_id'] ?? '') : '',
+            'tipo_licencia_id' => $_GET['tipo_licencia_id'] ?? '',
+            'licencia'         => $_GET['licencia'] ?? '',
+            'q'                => trim((string) ($_GET['q'] ?? '')),
+        ];
+        $estacionFiltro = $verTodas
+            ? (ctype_digit((string) $filtros['estacion_id']) ? (int) $filtros['estacion_id'] : null)
+            : (int) $user['estacion_id'];
         render('pilotos/index', [
             'usuario'        => $user,
-            'pilotos'        => $this->service->listar($user, $estacionFiltro),
+            'pilotos'        => $this->service->listar($user, $estacionFiltro, $filtros),
+            'filtros'        => $filtros,
+            'verTodas'       => $verTodas,
             'tiposLicencia'  => $this->catalogos->activos('tipos_licencia'),
             'estaciones'     => $this->catalogos->activos('estaciones'),
         ], 'Pilotos · Disponibilidad de Flota');

@@ -26,8 +26,9 @@ final class UnidadModel
         return $stmt->fetch() ?: null;
     }
 
-    /** Lista con nombres resueltos (para la tabla de Flota). Filtra por estación si se indica. */
-    public function listar(?int $estacionId = null, bool $soloActivas = true): array
+    /** Lista con nombres resueltos (para la tabla de Flota). Filtra por estación y por los
+     *  filtros opcionales (categoría, tipo de equipo, estado, clasificación, búsqueda de placa). */
+    public function listar(?int $estacionId = null, array $filtros = [], bool $soloActivas = true): array
     {
         $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.requiere_furgon,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
@@ -46,6 +47,27 @@ final class UnidadModel
         if ($estacionId !== null) {
             $sql .= ' AND u.estacion_id = :estacion_id';
             $params[':estacion_id'] = $estacionId;
+        }
+        if (!empty($filtros['categoria_id'])) {
+            $sql .= ' AND u.categoria_vehiculo_id = :cat';
+            $params[':cat'] = (int) $filtros['categoria_id'];
+        }
+        if (!empty($filtros['tipo_equipo_id'])) {
+            $sql .= ' AND u.tipo_equipo_id = :tipo';
+            $params[':tipo'] = (int) $filtros['tipo_equipo_id'];
+        }
+        if (!empty($filtros['estado_vehiculo']) && in_array($filtros['estado_vehiculo'], EstadoVehiculo::values(), true)) {
+            $sql .= ' AND u.estado_vehiculo = :ev';
+            $params[':ev'] = $filtros['estado_vehiculo'];
+        }
+        if (isset($filtros['en_disponibilidad']) && $filtros['en_disponibilidad'] !== '') {
+            $sql .= ' AND u.en_disponibilidad = :ed';
+            $params[':ed'] = (int) (bool) $filtros['en_disponibilidad'];
+        }
+        if (!empty($filtros['q'])) {
+            // CONCAT con un solo placeholder: los prepares nativos no permiten reusar :q.
+            $sql .= " AND CONCAT(u.placa_unidad, ' ', COALESCE(u.placa_furgon, '')) LIKE :q";
+            $params[':q'] = '%' . $filtros['q'] . '%';
         }
         $sql .= ' ORDER BY u.placa_unidad';
 
