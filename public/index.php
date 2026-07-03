@@ -119,6 +119,7 @@ $router->post('/api/movimientos/{id}/confirmar', fn($p) => $movimientoController
 $router->post('/api/movimientos/{id}/salida', fn($p) => $movimientoController->apiSalida($p));
 $router->post('/api/movimientos/{id}/llegada', fn($p) => $movimientoController->apiLlegada($p));
 $router->post('/api/movimientos/{id}/cancelar', fn($p) => $movimientoController->apiCancelar($p));
+$router->post('/api/movimientos/{id}/apartar-retorno', fn($p) => $movimientoController->apiApartarRetorno($p));
 $router->get('/api/unidades/{id}/movimientos', fn($p) => $movimientoController->apiPorUnidad($p));
 
 // Overrides manuales (bloquear/desbloquear)

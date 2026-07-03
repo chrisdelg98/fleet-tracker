@@ -46,6 +46,8 @@
                 </div>
             </div>
             <label class="check filtros__retorno"><input type="checkbox" id="f-retorno"> Solo con retorno</label>
+            <label class="field"><span class="field__label">Retorno hacia</span>
+                <?= render_paises_select('retorno_hacia_sel', null, false, 'Cualquiera') ?></label>
         </div>
     </div>
 
@@ -137,6 +139,32 @@
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cerrar</button>
             <button type="submit" class="btn btn--primary">Confirmar</button>
+        </div>
+    </form>
+</dialog>
+<?php endif; ?>
+
+<?php if ($puedeReservar): ?>
+<!-- Diálogo apartar retorno -->
+<dialog id="dlg-retorno" class="dialog">
+    <form method="dialog" class="form" id="form-retorno" novalidate>
+        <h2>Apartar retorno</h2>
+        <input type="hidden" name="id" value="">
+        <p class="muted">Se creará un movimiento de regreso sobre la misma unidad (destino → origen).</p>
+        <div class="grid-2">
+            <label class="field"><span class="field__label">País que lo toma</span>
+                <?= render_paises_select('pais_solicita_retorno_id', null, false, 'País destino de la ida') ?></label>
+            <label class="field"><span class="field__label">Reservado para</span>
+                <input type="text" name="reservado_para" maxlength="150"></label>
+            <label class="field"><span class="field__label">Salida del regreso *</span>
+                <input type="datetime-local" name="fecha_salida" required></label>
+            <label class="field"><span class="field__label">Se libera *</span>
+                <input type="datetime-local" name="fecha_fin_estimada" required></label>
+        </div>
+        <p class="form__error" id="form-retorno-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
+            <button type="submit" class="btn btn--primary">Apartar retorno</button>
         </div>
     </form>
 </dialog>

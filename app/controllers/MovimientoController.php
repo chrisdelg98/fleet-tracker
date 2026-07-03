@@ -72,6 +72,13 @@ final class MovimientoController
         json_ok(null, 'Movimiento cancelado.');
     }
 
+    public function apiApartarRetorno(array $p): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $id = $this->service->apartarRetorno((int) $p['id'], request_body(), $user);
+        json_ok(['id' => $id], 'Retorno apartado; movimiento de regreso creado.', 201);
+    }
+
     // ── Overrides manuales por unidad ──
 
     public function apiBloquear(array $p): void

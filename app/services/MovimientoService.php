@@ -135,6 +135,66 @@ final class MovimientoService
         });
     }
 
+    /**
+     * Aparta el retorno de un movimiento de ida (plan §6, regla 8): registra el país que lo
+     * toma en la ida y crea un NUEVO movimiento de regreso (destino → origen) sobre la misma
+     * unidad, sujeto a la validación de no-traslape. Todo en una transacción.
+     */
+    public function apartarRetorno(int $idIda, array $input, array $user): int
+    {
+        $ida = $this->movimientos->find($idIda);
+        if ($ida === null) {
+            json_error('Movimiento no encontrado', 404);
+        }
+        if ((int) $ida['retorno_disponible'] !== 1) {
+            json_unprocessable(['retorno' => 'Este movimiento no ofrece retorno disponible.']);
+        }
+        if ($ida['pais_solicita_retorno_id'] !== null) {
+            json_error('El retorno ya fue apartado por otra estación.', 409);
+        }
+
+        $unidad = $this->unidades->find((int) $ida['unidad_id']);
+        $this->assertPuedeEscribir($user, (int) $unidad['estacion_id']);
+        $tz = $this->estacionTz((int) $unidad['estacion_id']);
+
+        // Quién apartó el retorno: por defecto, el país destino de la ida (donde está el equipo).
+        $paisSolicita = !empty($input['pais_solicita_retorno_id'])
+            ? (int) $input['pais_solicita_retorno_id']
+            : (int) $ida['pais_destino_id'];
+        if (!in_array($paisSolicita, paises_ids_validos(), true)) {
+            json_unprocessable(['pais_solicita_retorno_id' => 'País solicitante inválido.']);
+        }
+
+        $plan = $this->validarPlan([
+            'fecha_salida'       => $input['fecha_salida'] ?? null,
+            'fecha_fin_estimada' => $input['fecha_fin_estimada'] ?? null,
+            'pais_origen_id'     => (int) $ida['pais_destino_id'], // el equipo regresa desde el destino
+            'pais_destino_id'    => (int) $ida['pais_origen_id'],  // hacia el origen
+            'referencia_cw'      => $input['referencia_cw'] ?? null,
+            'reservado_para'     => $input['reservado_para'] ?? null,
+            'notas'              => $input['notas'] ?? ("Retorno del movimiento #{$idIda}"),
+        ], $tz);
+
+        $regreso = $plan + [
+            'unidad_id' => (int) $ida['unidad_id'],
+            'estado'    => EstadoMovimiento::RESERVADO,
+            'piloto_id' => null,
+        ];
+
+        return tx($this->pdo, function () use ($regreso, $idIda, $paisSolicita, $user, $tz): int {
+            $this->assertSinTraslape((int) $regreso['unidad_id'], $regreso['fecha_salida'], $regreso['fecha_fin_estimada'], null, $tz);
+            $idRegreso = $this->movimientos->crear($regreso, $user['id']);
+            $this->movimientos->marcarRetornoTomado($idIda, $paisSolicita);
+            registrar_bitacora($this->pdo, $user['id'], 'movimiento', $idIda, AccionBitacora::EDITAR, [
+                'despues' => ['pais_solicita_retorno_id' => $paisSolicita, 'movimiento_regreso' => $idRegreso],
+            ]);
+            registrar_bitacora($this->pdo, $user['id'], 'movimiento', $idRegreso, AccionBitacora::CREAR, [
+                'despues' => ['retorno_de' => $idIda] + $regreso,
+            ]);
+            return $idRegreso;
+        });
+    }
+
     // ── Internos ──
 
     private function transicion(int $id, array $user, string $desde, string $hacia): void

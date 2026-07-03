@@ -93,6 +93,13 @@ final class MovimientoModel
         $stmt->execute($params);
     }
 
+    /** Marca en el movimiento de ida qué país apartó su retorno (plan §6, regla 8). */
+    public function marcarRetornoTomado(int $idIda, int $paisSolicitaId): void
+    {
+        $this->pdo->prepare('UPDATE movimientos SET pais_solicita_retorno_id = :p WHERE id = :id')
+            ->execute([':p' => $paisSolicitaId, ':id' => $idIda]);
+    }
+
     /** Historial de movimientos de una unidad, con nombres resueltos. */
     public function listarPorUnidad(int $unidadId): array
     {

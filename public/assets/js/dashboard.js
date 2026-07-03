@@ -44,6 +44,8 @@ function buildQuery() {
     const estados = [...document.querySelectorAll('.f-estado:checked')].map((c) => c.value);
     if (estados.length) p.set('estado', estados.join(','));
     if (document.getElementById('f-retorno').checked) p.set('solo_retorno', '1');
+    const rh = document.querySelector('[name="retorno_hacia_sel"]');
+    if (rh && rh.value) p.set('retorno_hacia', rh.value);
     return p;
 }
 
@@ -92,16 +94,22 @@ function rowHtml(u) {
 function accionesHtml(u) {
     const m = u.movimiento;
     const btn = (accion, txt, extra = '') => `<button type="button" class="link" data-mov="${accion}" data-unidad="${u.unidad_id}" ${m ? `data-id="${m.id}"` : ''} ${extra}>${txt}</button>`;
+    const acc = [];
     if (u.estado === 'DISPONIBLE') {
-        return btn('reservar', 'Reservar') + btn('bloquear', 'Bloquear');
+        acc.push(btn('reservar', 'Reservar'), btn('bloquear', 'Bloquear'));
+    } else if (u.override && u.override.tipo === 'BLOQUEADA') {
+        acc.push(btn('desbloquear', 'Desbloquear'));
+    } else if (m && m.estado === 'RESERVADO') {
+        acc.push(btn('confirmar', 'Confirmar'), btn('cancelar', 'Cancelar', 'class="link link--danger"'));
+    } else if (m && m.estado === 'PROGRAMADO') {
+        acc.push(btn('salida', 'Marcar salida'), btn('cancelar', 'Cancelar', 'class="link link--danger"'));
+    } else if (m && m.estado === 'EN_TRANSITO') {
+        acc.push(btn('llegada', 'Marcar llegada'), btn('cancelar', 'Cancelar', 'class="link link--danger"'));
     }
-    if (u.override && u.override.tipo === 'BLOQUEADA') {
-        return btn('desbloquear', 'Desbloquear');
+    if (m && m.retorno_disponible && !m.pais_solicita_retorno_id) {
+        acc.push(btn('apartar-retorno', 'Apartar retorno'));
     }
-    if (m && m.estado === 'RESERVADO') return btn('confirmar', 'Confirmar') + btn('cancelar', 'Cancelar', 'class="link link--danger"');
-    if (m && m.estado === 'PROGRAMADO') return btn('salida', 'Marcar salida') + btn('cancelar', 'Cancelar', 'class="link link--danger"');
-    if (m && m.estado === 'EN_TRANSITO') return btn('llegada', 'Marcar llegada') + btn('cancelar', 'Cancelar', 'class="link link--danger"');
-    return '';
+    return acc.join('');
 }
 
 // ── Acciones por fila ──
@@ -113,6 +121,7 @@ if (cfg.puedeReservar) {
         if (mov === 'reservar') return abrirReserva(unidad);
         if (mov === 'bloquear') return abrirMotivo('bloquear', unidad);
         if (mov === 'cancelar') return abrirMotivo('cancelar', id);
+        if (mov === 'apartar-retorno') return abrirRetorno(id);
         if (mov === 'desbloquear') return postAccion(`/api/unidades/${unidad}/desbloquear`);
         if (mov === 'confirmar') return postAccion(`/api/movimientos/${id}/confirmar`);
         if (mov === 'llegada') return postAccion(`/api/movimientos/${id}/llegada`);
@@ -191,6 +200,33 @@ if (formMotivo) {
     });
 }
 
+// ── Apartar retorno ──
+const dlgRetorno = document.getElementById('dlg-retorno');
+const formRetorno = document.getElementById('form-retorno');
+const errRetorno = document.getElementById('form-retorno-error');
+
+function abrirRetorno(id) {
+    if (!formRetorno) return;
+    formRetorno.reset();
+    formRetorno.elements['id'].value = id;
+    formRetorno.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
+    errRetorno.hidden = true;
+    dlgRetorno.showModal();
+}
+
+if (formRetorno) {
+    formRetorno.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = formRetorno.elements['id'].value;
+        const p = {};
+        for (const el of formRetorno.elements) {
+            if (el.name && el.name !== 'id' && el.value !== '') p[el.name] = el.value;
+        }
+        const r = await api('POST', `/api/movimientos/${id}/apartar-retorno`, p);
+        if (r.ok) { dlgRetorno.close(); load(); } else showError(errRetorno, r);
+    });
+}
+
 document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 
 // ── Filtros ──
@@ -207,6 +243,8 @@ document.getElementById('f-fecha').addEventListener('change', () => {
 });
 ['f-estacion', 'f-tipo', 'f-retorno'].forEach((id) => document.getElementById(id).addEventListener('change', load));
 document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change', load));
+const rhSel = document.querySelector('[name="retorno_hacia_sel"]');
+if (rhSel) rhSel.addEventListener('change', load);
 let placaTimer;
 document.getElementById('f-placa').addEventListener('input', () => { clearTimeout(placaTimer); placaTimer = setTimeout(load, 300); });
 document.querySelector('[data-action="refrescar"]').addEventListener('click', load);
