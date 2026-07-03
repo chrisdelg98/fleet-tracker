@@ -90,6 +90,7 @@
 <?php else: ?>
     <?= $content ?>
 <?php endif; ?>
+    <script src="/assets/js/filter-panel.js" type="module"></script>
     <script src="/assets/js/searchable-select.js" type="module"></script>
 </body>
 </html>

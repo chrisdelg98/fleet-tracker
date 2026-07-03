@@ -38,32 +38,48 @@ $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v
         </div>
     </div>
 
-    <form class="module__toolbar" method="get" action="/inventario">
-        <?php if ($verTodas): ?>
-        <label class="field"><span class="field__label">Estación</span>
-            <select name="estacion_id">
-                <option value="">Todas</option>
-                <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= (string) ($filtros['estacion_id'] ?? '') === (string) $es['id'] ? 'selected' : '' ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
-            </select></label>
-        <?php endif; ?>
-        <label class="field"><span class="field__label">Categoría</span>
-            <select name="categoria_id">
-                <option value="">Todas</option>
-                <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (string) ($filtros['categoria_id'] ?? '') === (string) $c['id'] ? 'selected' : '' ?>><?= e($c['nombre']) ?></option><?php endforeach; ?>
-            </select></label>
-        <label class="field"><span class="field__label">Estado</span>
-            <select name="estado_vehiculo">
-                <option value="">Todos</option>
-                <?php foreach ($estados as $ev): ?><option value="<?= e($ev) ?>" <?= ($filtros['estado_vehiculo'] ?? '') === $ev ? 'selected' : '' ?>><?= e($labelEstado[$ev] ?? $ev) ?></option><?php endforeach; ?>
-            </select></label>
-        <label class="field"><span class="field__label">Clasificación</span>
-            <select name="en_disponibilidad">
-                <option value="">Todas</option>
-                <option value="1" <?= ($filtros['en_disponibilidad'] ?? '') === '1' ? 'selected' : '' ?>>Flota operativa</option>
-                <option value="0" <?= ($filtros['en_disponibilidad'] ?? '') === '0' ? 'selected' : '' ?>>Solo inventario</option>
-            </select></label>
-        <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
-        <?php if ($qs): ?><a href="/inventario" class="link">Limpiar</a><?php endif; ?>
+    <form class="filters-panel" method="get" action="/inventario" data-filters-panel data-initial-open="false">
+        <div class="filters-panel__bar">
+            <div class="filters-panel__summary">
+                <strong>Filtros</strong>
+                <span>Estación, categoría, estado y clasificación</span>
+            </div>
+            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="inventario-filters-more">
+                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
+                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+            </button>
+        </div>
+        <div class="filters-panel__more" id="inventario-filters-more" data-filters-more hidden>
+            <div class="filters-grid">
+                <?php if ($verTodas): ?>
+                <label class="field"><span class="field__label">Estación</span>
+                    <select name="estacion_id">
+                        <option value="">Todas</option>
+                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= (string) ($filtros['estacion_id'] ?? '') === (string) $es['id'] ? 'selected' : '' ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <?php endif; ?>
+                <label class="field"><span class="field__label">Categoría</span>
+                    <select name="categoria_id">
+                        <option value="">Todas</option>
+                        <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (string) ($filtros['categoria_id'] ?? '') === (string) $c['id'] ? 'selected' : '' ?>><?= e($c['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Estado</span>
+                    <select name="estado_vehiculo">
+                        <option value="">Todos</option>
+                        <?php foreach ($estados as $ev): ?><option value="<?= e($ev) ?>" <?= ($filtros['estado_vehiculo'] ?? '') === $ev ? 'selected' : '' ?>><?= e($labelEstado[$ev] ?? $ev) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Clasificación</span>
+                    <select name="en_disponibilidad">
+                        <option value="">Todas</option>
+                        <option value="1" <?= ($filtros['en_disponibilidad'] ?? '') === '1' ? 'selected' : '' ?>>Flota operativa</option>
+                        <option value="0" <?= ($filtros['en_disponibilidad'] ?? '') === '0' ? 'selected' : '' ?>>Solo inventario</option>
+                    </select></label>
+            </div>
+            <div class="filters-actions">
+                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
+                <a href="/inventario" class="link">Limpiar</a>
+            </div>
+        </div>
     </form>
 
     <div class="card card--table">

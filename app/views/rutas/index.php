@@ -13,10 +13,28 @@
         <button type="button" class="btn btn--primary" data-action="nueva-ruta">＋ Nueva ruta</button>
     </div>
 
-    <form class="module__toolbar" method="get" action="/rutas">
-        <input type="search" name="q" value="<?= e($q) ?>" placeholder="Buscar por nombre, ciudad o país…" class="search">
-        <button type="submit" class="btn btn--ghost-dark">Buscar</button>
-        <?php if ($q !== ''): ?><a href="/rutas" class="link">Limpiar</a><?php endif; ?>
+    <form class="filters-panel" method="get" action="/rutas" data-filters-panel data-initial-open="false">
+        <div class="filters-panel__bar">
+            <div class="filters-panel__summary">
+                <strong>Filtros</strong>
+                <span>Búsqueda por nombre, ciudad o país</span>
+            </div>
+            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="rutas-filters-more">
+                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
+                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+            </button>
+        </div>
+        <div class="filters-panel__more" id="rutas-filters-more" data-filters-more hidden>
+            <div class="filters-grid">
+                <label class="field"><span class="field__label">Buscar rutas</span>
+                    <input type="search" name="q" value="<?= e($q) ?>" placeholder="Buscar por nombre, ciudad o país…" class="search">
+                </label>
+            </div>
+            <div class="filters-actions">
+                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
+                <a href="/rutas" class="link">Limpiar</a>
+            </div>
+        </div>
     </form>
 
     <?php if (empty($rutas)): ?>

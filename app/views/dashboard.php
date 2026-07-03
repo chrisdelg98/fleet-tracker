@@ -22,19 +22,28 @@
         <?php endif; ?>
     </div>
 
-    <div class="filtros card dashboard__filters-card">
-        <div class="filtros__top">
-            <div class="filtros__fechas" role="group" aria-label="Fecha de consulta">
-                <button type="button" class="chipbtn is-active" data-fecha="hoy">Hoy</button>
-                <button type="button" class="chipbtn" data-fecha="manana">Mañana</button>
-                <button type="button" class="chipbtn" data-fecha="semana">Esta semana</button>
+    <div class="filters-panel filters-panel--split card dashboard__filters-card" data-filters-panel data-initial-open="false">
+        <div class="filters-panel__always">
+            <div class="filters-panel__always-row">
+                <div class="filters-panel__always-main">
+                    <div class="filtros__fechas" role="group" aria-label="Fecha de consulta">
+                        <button type="button" class="chipbtn is-active" data-fecha="hoy">Hoy</button>
+                        <button type="button" class="chipbtn" data-fecha="manana">Mañana</button>
+                        <button type="button" class="chipbtn" data-fecha="semana">Esta semana</button>
+                    </div>
+                    <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="dashboard-filters-more">
+                        <span data-filters-toggle-label data-open-label="Más filtros" data-close-label="Ocultar filtros">Más filtros</span>
+                        <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+                    </button>
+                </div>
+                <label class="field field--date field--date-compact">
+                    <span class="field__label">Fecha específica</span>
+                    <input type="date" id="f-fecha" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica">
+                </label>
             </div>
-            <label class="field field--date field--date-compact">
-                <span class="field__label">Fecha específica</span>
-                <input type="date" id="f-fecha" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica">
-            </label>
         </div>
-        <div class="filtros__row filtros__row--dashboard">
+        <div class="filters-panel__more" id="dashboard-filters-more" data-filters-more hidden>
+        <div class="filters-grid filters-grid--dashboard">
             <label class="field"><span class="field__label">Estación</span>
                 <select id="f-estacion">
                     <option value="">Todas</option>
@@ -72,6 +81,7 @@
             </label>
             <label class="field"><span class="field__label">Retorno hacia</span>
                 <?= render_paises_select('retorno_hacia_sel', null, false, 'Cualquiera') ?></label>
+        </div>
         </div>
     </div>
 
