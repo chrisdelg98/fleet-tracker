@@ -28,7 +28,7 @@ $claseEstado = [
             <p>Aún no hay unidades registradas. <button type="button" class="link" data-action="nueva-unidad">Crea la primera →</button></p>
         </div>
     <?php else: ?>
-        <div class="card">
+        <div class="card card--table">
             <table class="table" id="tabla-unidades">
                 <thead>
                     <tr>
@@ -78,8 +78,12 @@ $claseEstado = [
 <!-- Diálogo alta/edición -->
 <dialog id="dlg-unidad" class="dialog">
     <form method="dialog" class="form" id="form-unidad" novalidate>
-        <h2 id="dlg-unidad-title">Nueva unidad</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-unidad-title">Nueva unidad</h2>
+            <p class="dialog__lede">Define la unidad, su categoría operativa, estación base y permisos especiales en un solo formulario.</p>
+        </div>
         <input type="hidden" name="id" value="">
+        <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Placa de unidad *</span>
                 <input type="text" name="placa_unidad" maxlength="30" required></label>
@@ -131,6 +135,7 @@ $claseEstado = [
                 <?php endforeach; ?>
             </div>
         </fieldset>
+        </div>
         <p class="form__error" id="form-unidad-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
@@ -142,15 +147,20 @@ $claseEstado = [
 <!-- Diálogo cambio de estado (poka-yoke) -->
 <dialog id="dlg-estado" class="dialog">
     <form method="dialog" class="form" id="form-estado" novalidate>
-        <h2>Cambiar estado del vehículo</h2>
+        <div class="dialog__head">
+            <h2>Cambiar estado del vehículo</h2>
+            <p class="dialog__lede">Toda unidad no operativa debe dejar el motivo documentado para proteger la disponibilidad calculada del sistema.</p>
+        </div>
         <input type="hidden" name="id" value="">
-        <label class="field"><span class="field__label">Nuevo estado *</span>
-            <select name="estado_vehiculo" required>
-                <?php foreach ($estados as $e): ?><option value="<?= e($e) ?>"><?= e($labelEstado[$e] ?? $e) ?></option><?php endforeach; ?>
-            </select></label>
-        <label class="field" id="estado-notas-field"><span class="field__label">Notas <span data-req>*</span></span>
-            <textarea name="estado_notas" rows="3" placeholder="Motivo del mantenimiento, avería o baja"></textarea>
-            <small class="muted">Obligatorio cuando el vehículo no está operativo.</small></label>
+        <div class="dialog__body">
+            <label class="field"><span class="field__label">Nuevo estado *</span>
+                <select name="estado_vehiculo" required>
+                    <?php foreach ($estados as $e): ?><option value="<?= e($e) ?>"><?= e($labelEstado[$e] ?? $e) ?></option><?php endforeach; ?>
+                </select></label>
+            <label class="field" id="estado-notas-field"><span class="field__label">Notas <span data-req>*</span></span>
+                <textarea name="estado_notas" rows="3" placeholder="Motivo del mantenimiento, avería o baja"></textarea>
+                <small>Obligatorio cuando el vehículo no está operativo.</small></label>
+        </div>
         <p class="form__error" id="form-estado-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>

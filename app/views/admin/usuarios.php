@@ -15,7 +15,7 @@ $labelRol = [
         <button type="button" class="btn btn--primary" data-action="nuevo-usuario">＋ Nuevo usuario</button>
     </div>
 
-    <div class="card">
+    <div class="card card--table">
         <table class="table">
             <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estación</th><th>Estado</th><th></th></tr></thead>
             <tbody>
@@ -39,8 +39,12 @@ $labelRol = [
 
 <dialog id="dlg-usuario" class="dialog" data-roles-sin-estacion='<?= e(json_encode($rolesSinEstacion)) ?>'>
     <form method="dialog" class="form" id="form-usuario" novalidate>
-        <h2 id="dlg-usuario-title">Nuevo usuario</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-usuario-title">Nuevo usuario</h2>
+            <p class="dialog__lede">Configura acceso, rol y alcance por estación. La autorización final siempre se valida en backend.</p>
+        </div>
         <input type="hidden" name="id" value="">
+        <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Nombre *</span>
                 <input type="text" name="nombre" maxlength="150" required></label>
@@ -58,6 +62,7 @@ $labelRol = [
             <label class="field"><span class="field__label">Contraseña <span id="pass-req">*</span></span>
                 <input type="password" name="password" autocomplete="new-password">
                 <small class="muted" id="pass-hint" hidden>Déjala en blanco para no cambiarla.</small></label>
+        </div>
         </div>
         <p class="form__error" id="form-usuario-error" hidden></p>
         <div class="dialog__actions">

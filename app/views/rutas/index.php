@@ -22,7 +22,7 @@
                <button type="button" class="link" data-action="nueva-ruta">Crea la primera →</button></p>
         </div>
     <?php else: ?>
-        <div class="card">
+        <div class="card card--table">
             <table class="table">
                 <thead><tr><th>Nombre</th><th>Origen</th><th>Destino</th><th>Tipo</th><th>Km</th><th>Horas</th><th></th></tr></thead>
                 <tbody>
@@ -48,25 +48,30 @@
 
 <dialog id="dlg-ruta" class="dialog">
     <form method="dialog" class="form" id="form-ruta" novalidate>
-        <h2 id="dlg-ruta-title">Nueva ruta</h2>
-        <input type="hidden" name="id" value="">
-        <label class="field"><span class="field__label">Nombre *</span>
-            <input type="text" name="nombre" maxlength="200" required placeholder="ej. SAL → GUA (frontera Pedro de Alvarado)"></label>
-        <div class="grid-2">
-            <label class="field"><span class="field__label">País de origen *</span>
-                <?= render_paises_select('pais_origen_id') ?></label>
-            <label class="field"><span class="field__label">Ciudad de origen *</span>
-                <input type="text" name="ciudad_origen" maxlength="120" required></label>
-            <label class="field"><span class="field__label">País de destino *</span>
-                <?= render_paises_select('pais_destino_id') ?></label>
-            <label class="field"><span class="field__label">Ciudad de destino *</span>
-                <input type="text" name="ciudad_destino" maxlength="120" required></label>
-            <label class="field"><span class="field__label">Distancia (km)</span>
-                <input type="number" name="distancia_km" min="0" step="0.01"></label>
-            <label class="field"><span class="field__label">Horas de tránsito estimadas</span>
-                <input type="number" name="horas_transito_estimadas" min="0" step="0.5"></label>
+        <div class="dialog__head">
+            <h2 id="dlg-ruta-title">Nueva ruta</h2>
+            <p class="dialog__lede">Documenta el trayecto y sus tiempos estimados para que el sistema pueda reutilizarlo en reservas y programación.</p>
         </div>
-        <p class="muted">El tipo (nacional/internacional) se determina solo según los países.</p>
+        <input type="hidden" name="id" value="">
+        <div class="dialog__body">
+            <label class="field"><span class="field__label">Nombre *</span>
+                <input type="text" name="nombre" maxlength="200" required placeholder="ej. SAL → GUA (frontera Pedro de Alvarado)"></label>
+            <div class="grid-2">
+                <label class="field"><span class="field__label">País de origen *</span>
+                    <?= render_paises_select('pais_origen_id') ?></label>
+                <label class="field"><span class="field__label">Ciudad de origen *</span>
+                    <input type="text" name="ciudad_origen" maxlength="120" required></label>
+                <label class="field"><span class="field__label">País de destino *</span>
+                    <?= render_paises_select('pais_destino_id') ?></label>
+                <label class="field"><span class="field__label">Ciudad de destino *</span>
+                    <input type="text" name="ciudad_destino" maxlength="120" required></label>
+                <label class="field"><span class="field__label">Distancia (km)</span>
+                    <input type="number" name="distancia_km" min="0" step="0.01"></label>
+                <label class="field"><span class="field__label">Horas de tránsito estimadas</span>
+                    <input type="number" name="horas_transito_estimadas" min="0" step="0.5"></label>
+            </div>
+            <p class="dialog__lede">El tipo nacional o internacional se determina automáticamente según los países seleccionados.</p>
+        </div>
         <p class="form__error" id="form-ruta-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>

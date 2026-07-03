@@ -18,7 +18,7 @@ $fmtCampo = static function (string $tipo, $valor) use ($regionLabels): string {
     <div class="module__head"><div><a href="/admin" class="link">← Administración</a><h1>Catálogos</h1></div></div>
 
     <?php foreach ($catalogos as $tabla => $cat): ?>
-        <div class="card catalogo">
+        <div class="card card--table catalogo">
             <div class="catalogo__head">
                 <h2><?= e($cat['spec']['label']) ?></h2>
                 <button type="button" class="btn btn--primary btn--sm" data-action="nuevo-catalogo" data-tabla="<?= e($tabla) ?>">＋ Agregar</button>
@@ -50,10 +50,15 @@ $fmtCampo = static function (string $tipo, $valor) use ($regionLabels): string {
 
 <dialog id="dlg-catalogo" class="dialog">
     <form method="dialog" class="form" id="form-catalogo" novalidate>
-        <h2 id="dlg-catalogo-title">Catálogo</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-catalogo-title">Catálogo</h2>
+            <p class="dialog__lede">Edita parámetros base del sistema sin romper consistencia entre formularios, reglas y catálogos operativos.</p>
+        </div>
         <input type="hidden" name="id" value="">
         <input type="hidden" name="__tabla" value="">
-        <div id="catalogo-fields" class="form"></div>
+        <div class="dialog__body">
+            <div id="catalogo-fields" class="form"></div>
+        </div>
         <p class="form__error" id="form-catalogo-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>

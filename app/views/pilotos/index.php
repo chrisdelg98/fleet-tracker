@@ -15,7 +15,7 @@ $hoy = new DateTimeImmutable('today');
     <?php if (empty($pilotos)): ?>
         <div class="card empty"><p>Aún no hay pilotos. <button type="button" class="link" data-action="nuevo-piloto">Crea el primero →</button></p></div>
     <?php else: ?>
-        <div class="card">
+        <div class="card card--table">
             <table class="table">
                 <thead><tr><th>Nombre</th><th>Licencia</th><th>N.º</th><th>Vencimiento</th><th>Estación</th><th></th></tr></thead>
                 <tbody>
@@ -54,8 +54,12 @@ $hoy = new DateTimeImmutable('today');
 
 <dialog id="dlg-piloto" class="dialog">
     <form method="dialog" class="form" id="form-piloto" novalidate>
-        <h2 id="dlg-piloto-title">Nuevo piloto</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-piloto-title">Nuevo piloto</h2>
+            <p class="dialog__lede">Registra al piloto con su licencia y estación operativa para mantener la asignación disponible en los movimientos.</p>
+        </div>
         <input type="hidden" name="id" value="">
+        <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Nombre *</span>
                 <input type="text" name="nombre" maxlength="150" required></label>
@@ -77,6 +81,7 @@ $hoy = new DateTimeImmutable('today');
             <?php else: ?>
                 <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>">
             <?php endif; ?>
+        </div>
         </div>
         <p class="form__error" id="form-piloto-error" hidden></p>
         <div class="dialog__actions">

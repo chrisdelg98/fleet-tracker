@@ -10,7 +10,7 @@ $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn
         <button type="button" class="btn btn--primary" data-action="nueva-estacion">＋ Nueva estación</button>
     </div>
 
-    <div class="card">
+    <div class="card card--table">
         <table class="table">
             <thead><tr><th>Código</th><th>Nombre</th><th>País</th><th>Zona horaria</th><th>Estado</th><th></th></tr></thead>
             <tbody>
@@ -34,8 +34,12 @@ $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn
 
 <dialog id="dlg-estacion" class="dialog">
     <form method="dialog" class="form" id="form-estacion" novalidate>
-        <h2 id="dlg-estacion-title">Nueva estación</h2>
+        <div class="dialog__head">
+            <h2 id="dlg-estacion-title">Nueva estación</h2>
+            <p class="dialog__lede">Registra la sede con país y zona horaria IANA para que todos los cálculos y vistas respeten su contexto operativo.</p>
+        </div>
         <input type="hidden" name="id" value="">
+        <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Código *</span>
                 <input type="text" name="codigo" maxlength="10" required placeholder="ej. GUA"></label>
@@ -48,6 +52,7 @@ $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn
                     <option value="">Selecciona…</option>
                     <?php foreach ($zonasAmerica as $z): ?><option value="<?= e($z) ?>"><?= e($z) ?></option><?php endforeach; ?>
                 </select></label>
+        </div>
         </div>
         <p class="form__error" id="form-estacion-error" hidden></p>
         <div class="dialog__actions">

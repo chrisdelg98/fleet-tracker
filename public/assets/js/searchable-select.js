@@ -20,6 +20,7 @@ class SearchableSelect {
         this.select = select;
         select.dataset.ssEnhanced = '1';
         this.boundReposition = () => this.positionList();
+        this.portalRoot = select.closest('dialog') || document.body;
 
         this.wrap = document.createElement('div');
         this.wrap.className = 'ss';
@@ -37,7 +38,7 @@ class SearchableSelect {
         this.list = document.createElement('ul');
         this.list.className = 'ss__list';
         this.list.hidden = true;
-        document.body.appendChild(this.list);
+    this.portalRoot.appendChild(this.list);
 
         this.wrap.append(this.input);
 
