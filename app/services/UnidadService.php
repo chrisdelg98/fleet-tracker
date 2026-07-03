@@ -16,7 +16,8 @@ final class UnidadService
         private PDO $pdo,
         private UnidadModel $unidades,
         private OverrideModel $overrides,
-        private CatalogoModel $catalogos
+        private CatalogoModel $catalogos,
+        private ?NotificacionService $notificaciones = null
     ) {
     }
 
@@ -102,6 +103,10 @@ final class UnidadService
                 'despues' => ['estado_vehiculo' => $nuevo, 'estado_notas' => $notasFinal],
             ]);
         });
+
+        if ($esOperativo && (int) $unidad['en_disponibilidad'] === 1) {
+            $this->notificaciones?->notificarUnidadLiberadaPorUnidad($id);
+        }
     }
 
     /** Soft-delete (registros erróneos/duplicados). El retiro real es estado DE_BAJA. */

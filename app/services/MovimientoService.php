@@ -17,7 +17,8 @@ final class MovimientoService
         private MovimientoModel $movimientos,
         private UnidadModel $unidades,
         private RutaModel $rutas,
-        private PilotoModel $pilotos
+        private PilotoModel $pilotos,
+        private ?NotificacionService $notificaciones = null
     ) {
     }
 
@@ -38,12 +39,17 @@ final class MovimientoService
             'piloto_id'      => $this->pilotoOpcional($input, $unidad),
         ];
 
-        return tx($this->pdo, function () use ($data, $user, $tz): int {
+        $id = tx($this->pdo, function () use ($data, $user, $tz): int {
             $this->assertSinTraslape((int) $data['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
             $id = $this->movimientos->crear($data, $user['id']);
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CREAR, ['despues' => $data]);
             return $id;
         });
+
+        if ((int) $data['retorno_disponible'] === 1) {
+            $this->notificaciones?->notificarRetornoDisponible($id);
+        }
+        return $id;
     }
 
     /** Edita el plan (ruta/fechas/flags) de un movimiento aún activo; re-valida no-traslape. */
@@ -66,6 +72,10 @@ final class MovimientoService
                 'despues' => $data,
             ]);
         });
+
+        if ((int) $data['retorno_disponible'] === 1) {
+            $this->notificaciones?->notificarRetornoDisponible($id);
+        }
     }
 
     /** RESERVADO → PROGRAMADO. */
@@ -116,6 +126,8 @@ final class MovimientoService
                 'despues' => ['estado' => EstadoMovimiento::COMPLETADO, 'fecha_fin_real' => $ahora],
             ]);
         });
+
+        $this->notificaciones?->notificarUnidadLiberadaPorUnidad((int) $mov['unidad_id']);
     }
 
     /** Activo → CANCELADO (motivo obligatorio, regla 6). */
@@ -333,6 +345,8 @@ final class MovimientoService
         } catch (Exception $e) {
             json_unprocessable([$campo => 'Fecha/hora no válida.']);
         }
+
+        return '';
     }
 
     private function estacionTz(int $estacionId): string

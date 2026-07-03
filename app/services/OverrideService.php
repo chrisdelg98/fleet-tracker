@@ -12,7 +12,8 @@ final class OverrideService
     public function __construct(
         private PDO $pdo,
         private OverrideModel $overrides,
-        private UnidadModel $unidades
+        private UnidadModel $unidades,
+        private ?NotificacionService $notificaciones = null
     ) {
     }
 
@@ -36,12 +37,17 @@ final class OverrideService
     public function desbloquear(int $unidadId, array $user): void
     {
         $this->unidadOperable($unidadId, $user);
-        tx($this->pdo, function () use ($unidadId, $user): void {
+        $cerrados = tx($this->pdo, function () use ($unidadId, $user): int {
             $n = $this->overrides->cerrarManualesAbiertos($unidadId);
             registrar_bitacora($this->pdo, $user['id'], 'override', $unidadId, AccionBitacora::CAMBIO_ESTADO, [
                 'despues' => ['unidad_id' => $unidadId, 'bloqueos_cerrados' => $n],
             ]);
+            return $n;
         });
+
+        if ($cerrados > 0) {
+            $this->notificaciones?->notificarUnidadLiberadaPorUnidad($unidadId);
+        }
     }
 
     private function unidadOperable(int $unidadId, array $user): array

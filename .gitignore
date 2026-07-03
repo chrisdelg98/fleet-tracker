@@ -21,6 +21,7 @@ composer.lock
 *.tar.zst
 /backups/
 /docs/
+/public/assets/img/logo*
 
 # ── Sistema operativo ──────────────────────────────────────
 .DS_Store

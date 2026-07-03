@@ -27,9 +27,26 @@ $router->get('/api/me', function (): void {
 // ── Flota / Unidades (Fase 1) ──
 $unidadModel = new UnidadModel($pdo);
 $catalogoModel = new CatalogoModel($pdo);
+$overrideModel = new OverrideModel($pdo);
+$suscripcionCorreoModel = new SuscripcionCorreoModel($pdo);
+$correoService = new CorreoService([
+    'host' => $env['MAIL_HOST'] ?? '',
+    'port' => $env['MAIL_PORT'] ?? 25,
+    'username' => $env['MAIL_USERNAME'] ?? '',
+    'password' => $env['MAIL_PASSWORD'] ?? '',
+    'from' => $env['MAIL_FROM'] ?? '',
+    'from_name' => $env['APP_NAME'] ?? 'Disponibilidad de Flota',
+    'encryption' => $env['MAIL_ENCRYPTION'] ?? '',
+]);
+$notificacionService = new NotificacionService(
+    $pdo,
+    $suscripcionCorreoModel,
+    $correoService,
+    (string) ($env['APP_URL'] ?? 'http://localhost:8000')
+);
 $unidadController = new UnidadController(
     $pdo,
-    new UnidadService($pdo, $unidadModel, new OverrideModel($pdo), $catalogoModel),
+    new UnidadService($pdo, $unidadModel, $overrideModel, $catalogoModel, $notificacionService),
     $unidadModel,
     $catalogoModel
 );
@@ -96,8 +113,8 @@ $router->post('/api/catalogos/{tabla}/{id}/activo', fn($p) => $adminController->
 
 // ── Fase 2: Motor de disponibilidad (movimientos, dashboard, overrides) ──
 $movimientoModel = new MovimientoModel($pdo);
-$movimientoService = new MovimientoService($pdo, $movimientoModel, $unidadModel, $rutaModel, $pilotoModel);
-$overrideService = new OverrideService($pdo, new OverrideModel($pdo), $unidadModel);
+$movimientoService = new MovimientoService($pdo, $movimientoModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService);
+$overrideService = new OverrideService($pdo, $overrideModel, $unidadModel, $notificacionService);
 $movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService);
 $disponibilidadController = new DisponibilidadController(
     new DisponibilidadService($pdo),
@@ -139,5 +156,14 @@ $router->get('/historico/export.csv', fn() => $historicoController->export());
 // ── Fase 3: Timeline por unidad ──
 $timelineController = new TimelineController($pdo, $catalogoModel);
 $router->get('/timeline', fn() => $timelineController->index());
+
+// ── Fase 4: Inteligencia (reportes + notificaciones) ──
+$inteligenciaController = new InteligenciaController(
+    new InteligenciaService($pdo, $catalogoModel, $estacionModel, $suscripcionCorreoModel, $notificacionService)
+);
+$router->get('/inteligencia', fn() => $inteligenciaController->index());
+$router->post('/inteligencia/suscripciones', fn() => $inteligenciaController->crearSuscripcion());
+$router->post('/inteligencia/suscripciones/{id}/eliminar', fn($p) => $inteligenciaController->eliminarSuscripcion($p));
+$router->post('/inteligencia/suscripciones/{id}/probar', fn($p) => $inteligenciaController->probarSuscripcion($p));
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
