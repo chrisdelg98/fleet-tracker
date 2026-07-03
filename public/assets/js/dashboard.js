@@ -9,6 +9,8 @@ const cfg = JSON.parse(document.getElementById('dash-config').textContent);
 const body = document.getElementById('dash-body');
 const countEl = document.getElementById('dash-count');
 const rangoEl = document.getElementById('dash-rango');
+const demoraWrapEl = document.getElementById('dash-demora');
+const demoraTextEl = document.getElementById('dash-demora-text');
 
 const CHIP = {
     DISPONIBLE: ['chip--disponible', '🟢 Disponible'],
@@ -46,6 +48,7 @@ function buildQuery() {
     const retorno = document.getElementById('f-retorno').value;
     if (retorno === '1') p.set('solo_retorno', '1');
     if (retorno === '0') p.set('sin_retorno', '1');
+    if (document.getElementById('f-demora').checked) p.set('solo_demora', '1');
     const rh = document.querySelector('[name="retorno_hacia_sel"]');
     if (rh && rh.value) p.set('retorno_hacia', rh.value);
     return p;
@@ -60,6 +63,9 @@ async function load() {
 function render(unidades, meta) {
     countEl.textContent = `${unidades.length} unidad${unidades.length === 1 ? '' : 'es'}`;
     rangoEl.textContent = `${fmtDia(meta.desde)} → ${fmtDia(meta.hasta)}`;
+    const demoraCount = unidades.filter((u) => u.con_demora).length;
+    demoraWrapEl.hidden = demoraCount === 0;
+    demoraTextEl.textContent = `${demoraCount} ${demoraCount === 1 ? 'unidad con demora' : 'unidades con demora'}`;
     if (!unidades.length) {
         body.innerHTML = `<tr><td colspan="${colspan}" class="muted" style="text-align:center">Sin unidades para estos filtros.</td></tr>`;
         return;
@@ -70,7 +76,7 @@ function render(unidades, meta) {
 function rowHtml(u) {
     const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
     const m = u.movimiento;
-    const demora = u.con_demora ? '<span class="badge badge--alert">Con demora</span>' : '';
+    const demora = u.con_demora ? '<span class="delay-flag"><span class="delay-flag__icon" aria-hidden="true">!</span><span>Con demora</span></span>' : '';
     const actividad = m
         ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} <small class="muted">· sale ${fmtLibera(m.fecha_salida, u.timezone)}</small>`
         : (u.override ? `<span class="muted">${esc(u.override.motivo || u.override.tipo)}</span>` : '—');
@@ -85,7 +91,7 @@ function rowHtml(u) {
         <td><strong>${esc(u.placa_unidad)}</strong>${u.placa_furgon ? `<small class="muted block">${esc(u.placa_furgon)}</small>` : ''}</td>
         <td>${esc(u.tipo_equipo || '—')}${u.capacidad ? ` · ${esc(u.capacidad)}` : ''}</td>
         <td>${esc(u.estacion_codigo)}</td>
-        <td><span class="chip ${cls}">${label}</span>${demora ? `<small class="block" style="margin-top:6px">${demora}</small>` : ''}</td>
+        <td><span class="chip ${cls}">${label}</span>${demora ? `<small class="block delay-flag__wrap">${demora}</small>` : ''}</td>
         <td>${actividad}</td>
         <td>${libera}</td>
         <td>${retorno}</td>
@@ -244,7 +250,7 @@ document.getElementById('f-fecha').addEventListener('change', () => {
     fechaMode = 'fecha';
     load();
 });
-['f-estacion', 'f-tipo', 'f-retorno'].forEach((id) => document.getElementById(id).addEventListener('change', load));
+['f-estacion', 'f-tipo', 'f-retorno', 'f-demora'].forEach((id) => document.getElementById(id).addEventListener('change', load));
 document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change', load));
 const rhSel = document.querySelector('[name="retorno_hacia_sel"]');
 if (rhSel) rhSel.addEventListener('change', load);

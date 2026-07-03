@@ -24,7 +24,7 @@ final class DisponibilidadService
     /**
     * @param string $desdeUtc 'Y-m-d H:i:s'
     * @param string $hastaUtc 'Y-m-d H:i:s'
-    * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?, ocultar_fuera_operacion?
+    * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?, ocultar_fuera_operacion?, solo_demora?
      */
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
@@ -89,6 +89,7 @@ final class DisponibilidadService
         $sinRetorno    = !empty($filtros['sin_retorno']);
         $retornoHacia  = !empty($filtros['retorno_hacia']) ? (int) $filtros['retorno_hacia'] : null;
         $ocultarFueraOperacion = !empty($filtros['ocultar_fuera_operacion']);
+        $soloDemora = !empty($filtros['solo_demora']);
         $ahoraUtc = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
 
         $out = [];
@@ -110,6 +111,9 @@ final class DisponibilidadService
                 continue;
             }
             if ($sinRetorno && $tieneRetorno) {
+                continue;
+            }
+            if ($soloDemora && !$conDemora) {
                 continue;
             }
             if ($retornoHacia !== null && (!$tieneRetorno || (int) $r['pais_origen_id'] !== $retornoHacia)) {

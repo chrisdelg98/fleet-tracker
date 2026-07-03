@@ -61,6 +61,9 @@
                     <option value="1">Sí</option>
                     <option value="0">No</option>
                 </select></label>
+            <label class="field field--delay-filter"><span class="field__label">Demora</span>
+                <label class="delay-toggle"><input type="checkbox" id="f-demora" value="1"><span>Solo con demora</span></label>
+            </label>
             <label class="field"><span class="field__label">Retorno hacia</span>
                 <?= render_paises_select('retorno_hacia_sel', null, false, 'Cualquiera') ?></label>
         </div>
@@ -70,6 +73,7 @@
         <div class="dashboard__status-main">
             <strong id="dash-count">—</strong>
             <span id="dash-rango" class="muted"></span>
+            <span id="dash-demora" class="dashboard__delay" hidden><span class="dashboard__delay-icon" aria-hidden="true">!</span><span id="dash-demora-text">0 con demora</span></span>
         </div>
         <button type="button" class="link" data-action="refrescar">Actualizar</button>
     </div>

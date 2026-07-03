@@ -93,6 +93,7 @@ final class DisponibilidadController
             'estados'        => $estados,
             'solo_retorno'   => !empty($q['solo_retorno']),
             'sin_retorno'    => !empty($q['sin_retorno']),
+            'solo_demora'    => !empty($q['solo_demora']),
             'retorno_hacia'  => $q['retorno_hacia'] ?? null,
             'ocultar_fuera_operacion' => true,
         ];
