@@ -995,7 +995,10 @@ input[type="radio"] {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding-right: var(--sp-1);
+    /* Espacio interior para que el anillo de foco (3px) no se recorte al desplazar;
+       el margen negativo compensa para mantener la alineación con la cabecera. */
+    padding: 3px var(--sp-2);
+    margin: -3px calc(var(--sp-2) * -1);
 }
 .dialog__actions {
     display: flex;
