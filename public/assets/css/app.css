@@ -1004,7 +1004,18 @@ input[type="radio"] {
 .pager { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: var(--sp-4); }
 .pager__link { padding: var(--sp-1) var(--sp-3); border: 1px solid var(--color-border); border-radius: var(--radius); text-decoration: none; color: var(--color-primary); font-size: var(--fs-sm); }
 .pager__link.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-.detalle { font-size: 0.75rem; color: var(--color-ink-soft); white-space: nowrap; }
+/* Histórico → detalle legible (celda con resumen + modal antes/después) */
+.detalle-btn { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 0; background: none; border: none; cursor: pointer; font: inherit; text-align: left; color: var(--color-ink); }
+.detalle-btn__text { font-weight: 600; }
+.detalle-btn__more { font-size: var(--fs-xs); color: var(--color-primary); font-weight: 600; }
+.detalle-btn:hover .detalle-btn__more { text-decoration: underline; }
+.detalle-dl { display: block; margin: 0; }
+.detalle-dl__row { display: grid; grid-template-columns: minmax(120px, 38%) 1fr; gap: var(--sp-4); padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+.detalle-dl__row:last-child { border-bottom: none; }
+.detalle-dl dt { margin: 0; color: var(--color-ink-soft); font-weight: 600; font-size: var(--fs-sm); }
+.detalle-dl dd { margin: 0; word-break: break-word; }
+.detalle-was { color: var(--color-ink-soft); text-decoration: line-through; }
+.detalle-arrow { color: var(--color-ink-soft); margin: 0 2px; }
 
 /* ── Inventario ── */
 .inv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-4); }

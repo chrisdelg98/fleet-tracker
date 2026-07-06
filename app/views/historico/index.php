@@ -11,6 +11,112 @@
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
 $r = $resultado;
 $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
+
+// ── Traducción del JSON crudo de la bitácora a algo legible (etiquetas + enums en español) ──
+$estadoMov = [
+    'RESERVADO' => 'Reservado', 'PROGRAMADO' => 'Programado', 'EN_TRANSITO' => 'En tránsito',
+    'COMPLETADO' => 'Completado', 'CANCELADO' => 'Cancelado',
+];
+$estadoVeh = [
+    'OPERATIVO' => 'Operativo', 'EN_MANTENIMIENTO' => 'En mantenimiento',
+    'INOPERATIVO' => 'Inoperativo', 'DE_BAJA' => 'De baja',
+];
+$labelCampo = [
+    'estado' => 'Estado', 'estado_vehiculo' => 'Estado del vehículo', 'estado_notas' => 'Notas',
+    'unidad_id' => 'Unidad', 'piloto_id' => 'Piloto', 'ruta_id' => 'Ruta', 'estacion_id' => 'Estación',
+    'motivo' => 'Motivo', 'motivo_cancelacion' => 'Motivo de cancelación',
+    'origen' => 'Origen', 'destino' => 'Destino', 'tipo' => 'Tipo', 'activo' => 'Activo',
+    'fecha_salida' => 'Salida', 'fecha_fin_estimada' => 'Fin estimado', 'fecha_fin_real' => 'Fin real',
+    'pais_solicita_retorno_id' => 'País solicita retorno', 'movimiento_regreso' => 'Mov. de regreso',
+    'retorno_de' => 'Retorno de', 'bloqueos_cerrados' => 'Bloqueos cerrados',
+    'codigo' => 'Código', 'nombre' => 'Nombre', 'pais' => 'País', 'pais_id' => 'País',
+    'timezone' => 'Zona horaria', 'capacidad' => 'Capacidad', 'tipo_equipo_id' => 'Tipo de equipo',
+    'email' => 'Correo', 'rol' => 'Rol', 'placa_unidad' => 'Placa', 'placa_furgon' => 'Placa furgón',
+    'unidad_id_regreso' => 'Unidad de regreso',
+];
+$fmtVal = static function (string $key, $val) use ($estadoMov, $estadoVeh) {
+    if ($val === null) {
+        return '—';
+    }
+    if (is_bool($val)) {
+        return $val ? 'Sí' : 'No';
+    }
+    if (is_array($val)) {
+        return json_encode($val, JSON_UNESCAPED_UNICODE);
+    }
+    if ($key === 'estado') {
+        return $estadoMov[$val] ?? (string) $val;
+    }
+    if ($key === 'estado_vehiculo') {
+        return $estadoVeh[$val] ?? (string) $val;
+    }
+    if ($key === 'activo') {
+        return ((int) $val === 1) ? 'Sí' : 'No';
+    }
+    if (str_ends_with($key, '_id') && is_numeric($val)) {
+        return '#' . $val;
+    }
+    return (string) $val;
+};
+/** Convierte el detalle JSON en filas legibles [label, antes, despues, cambio]. */
+$detalleFilas = static function (?string $json) use ($labelCampo, $fmtVal): array {
+    $data = json_decode((string) $json, true);
+    if (!is_array($data)) {
+        return [];
+    }
+    $antes = (isset($data['antes']) && is_array($data['antes'])) ? $data['antes'] : [];
+    $despues = (isset($data['despues']) && is_array($data['despues'])) ? $data['despues'] : [];
+    if ($antes === [] && $despues === [] && $data !== []) {
+        $despues = $data; // detalle plano sin antes/después
+    }
+    $filas = [];
+    foreach (array_keys($antes + $despues) as $k) {
+        $filas[] = [
+            'label'   => $labelCampo[$k] ?? ucfirst(str_replace('_', ' ', (string) $k)),
+            'antes'   => array_key_exists($k, $antes) ? $fmtVal($k, $antes[$k]) : null,
+            'despues' => array_key_exists($k, $despues) ? $fmtVal($k, $despues[$k]) : null,
+            'cambio'  => array_key_exists($k, $antes) && array_key_exists($k, $despues),
+        ];
+    }
+    return $filas;
+};
+/** Resumen de una línea para la celda de la tabla. */
+$detalleResumen = static function (array $filas, string $accion): string {
+    foreach ($filas as $f) {
+        if ($f['label'] === 'Estado' && $f['antes'] !== null && $f['despues'] !== null) {
+            return $f['antes'] . ' → ' . $f['despues'];
+        }
+    }
+    foreach ($filas as $f) {
+        if ($f['label'] === 'Estado' && $f['despues'] !== null) {
+            return (string) $f['despues'];
+        }
+    }
+    foreach ($filas as $f) {
+        if (in_array($f['label'], ['Motivo de cancelación', 'Motivo'], true) && $f['despues'] !== null) {
+            return (string) $f['despues'];
+        }
+    }
+    $acc = ['CREAR' => 'Creación', 'EDITAR' => 'Edición', 'CAMBIO_ESTADO' => 'Cambio de estado', 'CANCELAR' => 'Cancelación', 'ELIMINAR' => 'Eliminación'];
+    $n = count($filas);
+    return ($acc[$accion] ?? $accion) . ' · ' . $n . ' campo' . ($n === 1 ? '' : 's');
+};
+/** HTML del cuerpo del modal (lista antes → después). */
+$detalleHtml = static function (array $filas): string {
+    $h = '<dl class="detalle-dl">';
+    foreach ($filas as $f) {
+        $h .= '<div class="detalle-dl__row"><dt>' . e($f['label']) . '</dt><dd>';
+        if ($f['cambio']) {
+            $h .= '<span class="detalle-was">' . e((string) $f['antes']) . '</span> <span class="detalle-arrow">→</span> <strong>' . e((string) $f['despues']) . '</strong>';
+        } elseif ($f['despues'] !== null) {
+            $h .= '<strong>' . e((string) $f['despues']) . '</strong>';
+        } else {
+            $h .= '<span class="detalle-was">' . e((string) $f['antes']) . '</span>';
+        }
+        $h .= '</dd></div>';
+    }
+    return $h . '</dl>';
+};
 ?>
 <section class="module">
     <div class="module__head">
@@ -72,7 +178,18 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
                     <td><?= e($f['usuario'] ?? 'sistema') ?></td>
                     <td><?= e($f['entidad']) ?> #<?= (int) $f['entidad_id'] ?></td>
                     <td><span class="badge badge--muted"><?= e($f['accion']) ?></span></td>
-                    <td><code class="detalle" title="<?= e((string) $f['detalle']) ?>"><?= e(mb_strimwidth((string) $f['detalle'], 0, 90, '…')) ?></code></td>
+                    <td>
+                        <?php $filas = $detalleFilas($f['detalle']); ?>
+                        <?php if ($filas): ?>
+                            <button type="button" class="detalle-btn" data-detalle-open="det-<?= (int) $f['id'] ?>">
+                                <span class="detalle-btn__text"><?= e($detalleResumen($filas, $f['accion'])) ?></span>
+                                <span class="detalle-btn__more">Ver detalle</span>
+                            </button>
+                            <template id="det-<?= (int) $f['id'] ?>"><?= $detalleHtml($filas) ?></template>
+                        <?php else: ?>
+                            <span class="muted">—</span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -88,3 +205,16 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
     </nav>
     <?php endif; ?>
 </section>
+
+<dialog id="dlg-detalle" class="dialog">
+    <div class="dialog__head">
+        <h2>Detalle del registro</h2>
+        <p class="dialog__lede">Cambios registrados en la bitácora (antes → después).</p>
+    </div>
+    <div class="dialog__body" id="detalle-body"></div>
+    <div class="dialog__actions">
+        <button type="button" class="btn btn--primary" data-detalle-close>Cerrar</button>
+    </div>
+</dialog>
+
+<script src="/assets/js/historico.js" type="module"></script>
