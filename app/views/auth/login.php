@@ -1,39 +1,26 @@
 <?php
 /**
+ * Login (plan §10). Diseño split: imagen de marca a un lado, formulario al otro.
+ *
  * @var string|null $error Mensaje genérico de credenciales inválidas.
  * @var string|null $email Correo reingresado tras un intento fallido.
  */
 ?>
-<main class="auth-layout">
-    <section class="auth-hero">
-        <div class="auth-hero__inner">
-            <img src="/assets/img/logo.png" alt="Disponibilidad de Flota" class="auth-hero__logo">
-            <p class="auth-hero__eyebrow">Plataforma operativa regional</p>
-            <h1 class="auth-hero__title">Disponibilidad de Flota</h1>
-            <p class="auth-hero__copy">
-                Consulta disponibilidad, programa movimientos, aprovecha retornos y mantén visibilidad
-                ejecutiva de la operación desde una sola plataforma.
-            </p>
-
-            <div class="auth-hero__highlights">
-                <article class="auth-highlight">
-                    <strong>Disponibilidad en tiempo real</strong>
-                    <span>Visibilidad clara por estación, fecha y estado operativo.</span>
-                </article>
-                <article class="auth-highlight">
-                    <strong>Operación unificada</strong>
-                    <span>Movimientos, reservas, inventario e inteligencia en una sola capa.</span>
-                </article>
-            </div>
+<main class="auth-split">
+    <aside class="auth-visual">
+        <div class="auth-visual__brand">
+            <img src="/assets/img/logo-small.png" alt="EFL" class="auth-visual__brand-mark">
+            <strong>Disponibilidad de Flota</strong>
+            <span>Plataforma operativa regional</span>
         </div>
-    </section>
+    </aside>
 
-    <section class="auth-panel">
-        <div class="auth-card">
-            <div class="auth-card__head">
-                <p class="auth-card__eyebrow">Acceso seguro</p>
-                <h2 class="auth-card__title">Ingresar al sistema</h2>
-                <p class="auth-card__subtitle">Usa tu cuenta corporativa para entrar a la operación.</p>
+    <section class="auth-form-side">
+        <div class="auth-form-wrap">
+            <img src="/assets/img/logo-small.png" alt="EFL" class="auth-form__logo">
+            <div class="auth-form__head">
+                <p class="auth-form__eyebrow">Acceso seguro</p>
+                <h1 class="auth-form__title">Ingresar a la plataforma</h1>
             </div>
 
             <?php if (!empty($error)): ?>
@@ -51,7 +38,7 @@
                     <span class="field__label">Contraseña</span>
                     <input type="password" name="password" required autocomplete="current-password" placeholder="Ingresa tu contraseña">
                 </label>
-                <button type="submit" class="btn btn--primary btn--block">Ingresar al sistema</button>
+                <button type="submit" class="btn btn--primary btn--block">Ingresar</button>
             </form>
         </div>
     </section>

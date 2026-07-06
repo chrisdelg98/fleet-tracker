@@ -304,114 +304,78 @@ a { color: inherit; }
 }
 
 /* ── Login ── */
-.auth-page {
-    min-height: 100vh;
-    background:
-        radial-gradient(circle at left top, rgba(247, 108, 0, 0.10), transparent 28%),
-        linear-gradient(180deg, #fafbfd 0%, var(--color-bg) 100%);
-}
+/* ── Login split: imagen a un lado, formulario al otro ── */
+.auth-page { min-height: 100vh; background: var(--color-surface); }
 
-.auth-layout {
+.auth-split {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 1.08fr .92fr;
+    grid-template-columns: 1.05fr 1fr;
 }
 
-.auth-hero,
-.auth-panel {
+/* Lado de la imagen (loginbg.webp) con fallback de marca y degradado para legibilidad. */
+.auth-visual {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
     padding: var(--sp-10);
+    color: #fff;
+    background-color: var(--color-topbar-dark);
+    background-image:
+        linear-gradient(155deg, rgba(18, 38, 60, 0.28) 0%, rgba(12, 24, 40, 0.74) 100%),
+        url("/assets/img/loginbg.webp");
+    background-size: cover;
+    background-position: center;
 }
 
-.auth-hero {
+.auth-visual__brand { display: grid; gap: var(--sp-2); max-width: 30ch; }
+.auth-visual__brand-mark {
+    height: 40px;
+    width: auto;
+    border-radius: var(--radius);
+    margin-bottom: var(--sp-2);
+}
+.auth-visual__brand strong { font-size: var(--fs-xl); font-weight: 700; letter-spacing: .01em; }
+.auth-visual__brand span {
+    color: rgba(255, 255, 255, 0.76);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+/* Lado del formulario: limpio y centrado. */
+.auth-form-side {
     display: grid;
     place-items: center;
+    padding: var(--sp-8);
+    background: var(--color-surface);
 }
 
-.auth-hero__inner {
-    width: min(100%, 640px);
+.auth-form-wrap {
+    width: min(100%, 372px);
     display: grid;
     gap: var(--sp-6);
 }
 
-.auth-hero__logo {
-    width: min(100%, 280px);
-    height: auto;
-}
+.auth-form__logo { width: 50px; height: auto; border-radius: var(--radius); }
 
-.auth-hero__eyebrow,
-.auth-card__eyebrow {
+.auth-form__head { display: grid; gap: var(--sp-2); }
+.auth-form__eyebrow {
     color: var(--primary);
     font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
 }
+.auth-form__title { font-size: 1.75rem; }
+.auth-form__subtitle { color: var(--color-ink-soft); }
 
-.auth-hero__title {
-    font-size: clamp(2.25rem, 3vw, 3.85rem);
-    margin: 0;
-}
-
-.auth-hero__copy {
-    max-width: 56ch;
-    color: var(--color-ink-soft);
-    font-size: var(--fs-lg);
-    line-height: 1.6;
-}
-
-.auth-hero__highlights {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-4);
-}
-
-.auth-highlight {
-    display: grid;
-    gap: var(--sp-2);
-    padding: var(--sp-5);
-    border: 1px solid rgba(247, 108, 0, 0.14);
-    border-radius: var(--radius-lg);
-    background: rgba(255,255,255,0.72);
-    box-shadow: var(--shadow);
-}
-
-.auth-highlight strong {
-    font-size: var(--fs-base);
-}
-
-.auth-highlight span {
-    color: var(--color-ink-soft);
-    font-size: var(--fs-sm);
-    line-height: 1.55;
-}
-
-.auth-panel {
-    display: grid;
-    place-items: center;
-}
-
-.auth-card {
-    width: min(100%, 460px);
-    display: grid;
-    gap: var(--sp-6);
-    padding: var(--sp-8);
-    border: 1px solid rgba(255,255,255,0.84);
-    border-radius: var(--radius-xl);
-    background: rgba(255,255,255,0.94);
-    box-shadow: var(--shadow-soft);
-}
-
-.auth-card__head {
-    display: grid;
-    gap: var(--sp-2);
-}
-
-.auth-card__title {
-    font-size: 1.85rem;
-}
-
-.auth-card__subtitle {
-    color: var(--color-ink-soft);
+/* Tablet / móvil: sin imagen, el formulario ocupa el foco. */
+@media (max-width: 860px) {
+    .auth-split { grid-template-columns: 1fr; }
+    .auth-visual { display: none; }
+    .auth-form-side { min-height: 100vh; padding: var(--sp-6); }
 }
 
 /* ── Formularios ── */
@@ -1582,10 +1546,6 @@ input[type="radio"] {
     .page-shell {
         padding-left: var(--sp-6);
     }
-
-    .auth-layout {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 1040px) {
@@ -1620,22 +1580,12 @@ input[type="radio"] {
     }
 
     .page-shell,
-    .sidebar,
-    .auth-hero,
-    .auth-panel {
+    .sidebar {
         padding: var(--sp-4);
     }
 
     .page-shell__inner {
         width: 100%;
-    }
-
-    .auth-hero__highlights {
-        grid-template-columns: 1fr;
-    }
-
-    .auth-card {
-        padding: var(--sp-6);
     }
 
     .dialog {
