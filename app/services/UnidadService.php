@@ -186,7 +186,7 @@ final class UnidadService
             'categoria_vehiculo_id' => (int) $v->value('categoria_vehiculo_id'),
             'en_disponibilidad'     => $enDisponibilidad,
             'capacidad_id'          => $capacidadId,
-            'tipo_equipo_id'        => $v->value('tipo_equipo_id') ? (int) $v->value('tipo_equipo_id') : null,
+            'tipo_equipo_id'        => $v->value('tipo_equipo_id') ? (int) $v->value('tipo_equipo_id') : $this->tipoEquipoStandardId(),
             'estacion_id'           => (int) $v->value('estacion_id'),
             'piloto_asignado_id'    => $v->value('piloto_asignado_id') ? (int) $v->value('piloto_asignado_id') : null,
             'estado_vehiculo'       => $estado,
@@ -219,5 +219,12 @@ final class UnidadService
     private function nullable(?string $v): ?string
     {
         return $v === null || $v === '' ? null : $v;
+    }
+
+    /** ID del tipo de equipo "Standard": default cuando el formulario lo deja vacío. Null si no existe. */
+    private function tipoEquipoStandardId(): ?int
+    {
+        $id = $this->pdo->query("SELECT id FROM tipos_equipo WHERE nombre = 'Standard' AND activo = 1 LIMIT 1")->fetchColumn();
+        return $id !== false ? (int) $id : null;
     }
 }
