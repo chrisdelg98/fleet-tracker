@@ -162,9 +162,9 @@ body.mural {
 .mural-modal::backdrop { background: rgba(8, 18, 30, 0.6); backdrop-filter: blur(3px); }
 .mural-modal__inner { position: relative; }
 .mural-modal__panel { padding: clamp(18px, 3vh, 30px); }
-.mural-modal__close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--panel-line); background: transparent; color: var(--ink-soft); cursor: pointer; font-size: 1rem; }
-.mural-modal__close:hover { color: var(--dm); }
-.mm__head { display: flex; align-items: center; gap: 14px; margin-bottom: var(--radius); }
+.mural-modal__close { position: absolute; top: 16px; right: 16px; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; border: none; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-soft); cursor: pointer; font-size: 0.95rem; line-height: 1; transition: background .15s, color .15s; }
+.mural-modal__close:hover { background: color-mix(in srgb, var(--dm) 16%, transparent); color: var(--dm); }
+.mm__head { display: flex; align-items: center; gap: 14px; margin-bottom: var(--radius); padding-right: 42px; }
 .mm__icon { flex: 0 0 auto; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--c) 20%, transparent); color: var(--c); }
 .mm__icon svg { width: 58%; height: 58%; }
 .mm__title { line-height: 1.15; }
