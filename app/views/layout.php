@@ -45,18 +45,22 @@
     }
     ?>
     <header class="topbar">
-        <div class="topbar__brand">
-            <img src="/assets/img/logo-small.png" alt="Disponibilidad de Flota" class="topbar__logo">
-            <div class="topbar__brand-copy">
-                <strong>Disponibilidad de Flota</strong>
-                <small>Operación regional</small>
+        <div class="topbar__left">
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-controls="app-sidebar" aria-expanded="false">
+                <span class="nav-toggle__bars" aria-hidden="true"></span>
+            </button>
+            <div class="topbar__brand">
+                <img src="/assets/img/logo-small.png" alt="Disponibilidad de Flota" class="topbar__logo">
+                <div class="topbar__brand-copy">
+                    <strong>Disponibilidad de Flota</strong>
+                </div>
             </div>
         </div>
 
         <div class="topbar__nav">
             <div class="topbar__user-block">
                 <strong class="topbar__user-name"><?= e($u['nombre']) ?></strong>
-                <span class="topbar__user-role"><?= e($u['rol']) ?></span>
+                <span class="topbar__user-role">(<?= e($u['rol']) ?>)</span>
             </div>
             <form method="post" action="/logout" class="topbar__logout">
                 <?= csrf_field() ?>
@@ -66,8 +70,12 @@
     </header>
 
     <div class="app-shell__body">
-        <aside class="sidebar">
+        <aside class="sidebar" id="app-sidebar">
             <div class="sidebar__panel">
+                <button type="button" class="sidebar__collapse" id="nav-close" aria-label="Ocultar menú" title="Ocultar menú">
+                    <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M12 5 7 10l5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>Ocultar</span>
+                </button>
                 <nav class="sidebar__nav" aria-label="Navegación principal">
                     <?php foreach ($enlacePrincipal as $href => $label):
                         $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
@@ -96,9 +104,11 @@
             </div>
         </main>
     </div>
+    <div class="nav-backdrop" id="nav-backdrop"></div>
 <?php else: ?>
     <?= $content ?>
 <?php endif; ?>
+    <script src="/assets/js/nav.js" type="module"></script>
     <script src="/assets/js/filter-panel.js" type="module"></script>
     <script src="/assets/js/searchable-select.js" type="module"></script>
 </body>
