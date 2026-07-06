@@ -6,11 +6,13 @@
 const dlg = document.getElementById('dlg-detalle');
 if (dlg) {
     const body = document.getElementById('detalle-body');
+    const title = document.getElementById('detalle-title');
     document.addEventListener('click', (ev) => {
         const open = ev.target.closest('[data-detalle-open]');
         if (open) {
             const tpl = document.getElementById(open.dataset.detalleOpen);
             body.innerHTML = tpl ? tpl.innerHTML : '<p class="muted">Sin detalle.</p>';
+            if (title && open.dataset.detalleTitle) title.textContent = `Historial · ${open.dataset.detalleTitle}`;
             dlg.showModal();
             return;
         }

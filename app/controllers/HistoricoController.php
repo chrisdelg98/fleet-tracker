@@ -29,10 +29,11 @@ final class HistoricoController
         }
         $filtros = $this->filtros($_GET);
         $pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
+        $porPagina = HistoricoService::porPaginaValido((int) ($_GET['por_pagina'] ?? 0));
         render('historico/index', [
             'usuario'   => $user,
             'filtros'   => $filtros,
-            'resultado' => $this->service->listar($filtros, $pagina),
+            'resultado' => $this->service->listar($filtros, $pagina, $porPagina),
             'usuarios'  => $this->usuarios->listar(),
             'entidades' => ['movimiento', 'unidad', 'piloto', 'ruta', 'override', 'estacion', 'usuario'],
             'acciones'  => [AccionBitacora::CREAR, AccionBitacora::EDITAR, AccionBitacora::CAMBIO_ESTADO, AccionBitacora::CANCELAR, AccionBitacora::ELIMINAR],
@@ -69,6 +70,7 @@ final class HistoricoController
             'accion'     => $q['accion'] ?? null,
             'usuario_id' => $q['usuario_id'] ?? null,
             'entidad_id' => $q['entidad_id'] ?? null,
+            'por_pagina' => $q['por_pagina'] ?? null,
         ];
     }
 }

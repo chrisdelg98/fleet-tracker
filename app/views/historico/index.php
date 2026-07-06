@@ -80,28 +80,7 @@ $detalleFilas = static function (?string $json) use ($labelCampo, $fmtVal): arra
     }
     return $filas;
 };
-/** Resumen de una línea para la celda de la tabla. */
-$detalleResumen = static function (array $filas, string $accion): string {
-    foreach ($filas as $f) {
-        if ($f['label'] === 'Estado' && $f['antes'] !== null && $f['despues'] !== null) {
-            return $f['antes'] . ' → ' . $f['despues'];
-        }
-    }
-    foreach ($filas as $f) {
-        if ($f['label'] === 'Estado' && $f['despues'] !== null) {
-            return (string) $f['despues'];
-        }
-    }
-    foreach ($filas as $f) {
-        if (in_array($f['label'], ['Motivo de cancelación', 'Motivo'], true) && $f['despues'] !== null) {
-            return (string) $f['despues'];
-        }
-    }
-    $acc = ['CREAR' => 'Creación', 'EDITAR' => 'Edición', 'CAMBIO_ESTADO' => 'Cambio de estado', 'CANCELAR' => 'Cancelación', 'ELIMINAR' => 'Eliminación'];
-    $n = count($filas);
-    return ($acc[$accion] ?? $accion) . ' · ' . $n . ' campo' . ($n === 1 ? '' : 's');
-};
-/** HTML del cuerpo del modal (lista antes → después). */
+/** HTML del bloque de cambios de un evento (lista antes → después). */
 $detalleHtml = static function (array $filas): string {
     $h = '<dl class="detalle-dl">';
     foreach ($filas as $f) {
@@ -116,6 +95,24 @@ $detalleHtml = static function (array $filas): string {
         $h .= '</dd></div>';
     }
     return $h . '</dl>';
+};
+/** Línea de tiempo con todos los eventos de una entidad (para el modal). */
+$accLabel = ['CREAR' => 'Creación', 'EDITAR' => 'Edición', 'CAMBIO_ESTADO' => 'Cambio de estado', 'CANCELAR' => 'Cancelación', 'ELIMINAR' => 'Eliminación'];
+$timelineHtml = static function (array $eventos) use ($detalleFilas, $detalleHtml, $accLabel): string {
+    $h = '<ol class="timeline">';
+    foreach ($eventos as $ev) {
+        $filas = $detalleFilas($ev['detalle']);
+        $h .= '<li class="timeline__item">';
+        $h .= '<div class="timeline__head">';
+        $h .= '<span class="badge badge--muted">' . e($accLabel[$ev['accion']] ?? $ev['accion']) . '</span>';
+        $h .= '<span class="timeline__meta">' . e($ev['timestamp']) . ' · ' . e($ev['usuario'] ?? 'sistema') . '</span>';
+        $h .= '</div>';
+        if ($filas) {
+            $h .= $detalleHtml($filas);
+        }
+        $h .= '</li>';
+    }
+    return $h . '</ol>';
 };
 ?>
 <section class="module">
@@ -155,6 +152,10 @@ $detalleHtml = static function (array $filas): string {
                         <?php foreach ($usuarios as $us): ?><option value="<?= (int) $us['id'] ?>" <?= $sel($filtros['usuario_id'] ?? '', $us['id']) ?>><?= e($us['nombre']) ?></option><?php endforeach; ?>
                     </select></label>
                 <label class="field"><span class="field__label">ID de entidad</span><input type="number" name="entidad_id" value="<?= e($filtros['entidad_id'] ?? '') ?>" placeholder="ej. mov. #12" min="1"></label>
+                <label class="field"><span class="field__label">Por página</span>
+                    <select name="por_pagina" onchange="this.form.submit()">
+                        <?php foreach (HistoricoService::POR_PAGINA_OPCIONES as $op): ?><option value="<?= $op ?>" <?= $sel($r['por_pagina'], $op) ?>><?= $op ?></option><?php endforeach; ?>
+                    </select></label>
             </div>
             <div class="filters-actions">
                 <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
@@ -163,32 +164,26 @@ $detalleHtml = static function (array $filas): string {
         </div>
     </form>
 
-    <p class="dashboard__meta"><span><?= (int) $r['total'] ?> registro<?= $r['total'] === 1 ? '' : 's' ?></span> · <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span></p>
+    <p class="dashboard__meta"><span><?= (int) $r['total'] ?> entidad<?= $r['total'] === 1 ? '' : 'es' ?> con actividad</span> · <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span></p>
 
     <div class="card card--table">
         <?php if (empty($r['filas'])): ?>
             <div class="card__empty"><p>Sin actividad para estos filtros.</p></div>
         <?php else: ?>
         <table class="table">
-            <thead><tr><th>Fecha (UTC)</th><th>Usuario</th><th>Entidad</th><th>Acción</th><th>Detalle</th></tr></thead>
+            <thead><tr><th>Entidad</th><th>Eventos</th><th>Último usuario</th><th>Última actividad (UTC)</th><th>Historial</th></tr></thead>
             <tbody>
-            <?php foreach ($r['filas'] as $f): ?>
+            <?php foreach ($r['filas'] as $g): $key = $g['entidad'] . '#' . $g['entidad_id']; $tid = 'hist-' . $g['entidad'] . '-' . (int) $g['entidad_id']; ?>
                 <tr>
-                    <td><?= e($f['timestamp']) ?></td>
-                    <td><?= e($f['usuario'] ?? 'sistema') ?></td>
-                    <td><?= e($f['entidad']) ?> #<?= (int) $f['entidad_id'] ?></td>
-                    <td><span class="badge badge--muted"><?= e($f['accion']) ?></span></td>
+                    <td><strong><?= e($g['entidad']) ?> #<?= (int) $g['entidad_id'] ?></strong></td>
+                    <td><?= (int) $g['eventos'] ?></td>
+                    <td><?= e($g['ultimo_usuario'] ?? 'sistema') ?></td>
+                    <td><?= e($g['ultima']) ?><small class="block"><span class="badge badge--muted"><?= e($accLabel[$g['ultima_accion']] ?? $g['ultima_accion']) ?></span></small></td>
                     <td>
-                        <?php $filas = $detalleFilas($f['detalle']); ?>
-                        <?php if ($filas): ?>
-                            <button type="button" class="detalle-btn" data-detalle-open="det-<?= (int) $f['id'] ?>">
-                                <span class="detalle-btn__text"><?= e($detalleResumen($filas, $f['accion'])) ?></span>
-                                <span class="detalle-btn__more">Ver detalle</span>
-                            </button>
-                            <template id="det-<?= (int) $f['id'] ?>"><?= $detalleHtml($filas) ?></template>
-                        <?php else: ?>
-                            <span class="muted">—</span>
-                        <?php endif; ?>
+                        <button type="button" class="detalle-btn" data-detalle-open="<?= e($tid) ?>" data-detalle-title="<?= e($g['entidad'] . ' #' . $g['entidad_id']) ?>">
+                            <span class="detalle-btn__more">Ver historial (<?= (int) $g['eventos'] ?>)</span>
+                        </button>
+                        <template id="<?= e($tid) ?>"><?= $timelineHtml($r['eventos'][$key] ?? []) ?></template>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -206,14 +201,16 @@ $detalleHtml = static function (array $filas): string {
     <?php endif; ?>
 </section>
 
-<dialog id="dlg-detalle" class="dialog">
-    <div class="dialog__head">
-        <h2>Detalle del registro</h2>
-        <p class="dialog__lede">Cambios registrados en la bitácora (antes → después).</p>
-    </div>
-    <div class="dialog__body" id="detalle-body"></div>
-    <div class="dialog__actions">
-        <button type="button" class="btn btn--primary" data-detalle-close>Cerrar</button>
+<dialog id="dlg-detalle" class="dialog dialog--full">
+    <div class="dialog__panel">
+        <div class="dialog__head">
+            <h2 id="detalle-title">Historial</h2>
+            <p class="dialog__lede">Todos los eventos registrados para esta entidad, en orden cronológico (antes → después).</p>
+        </div>
+        <div class="dialog__body" id="detalle-body"></div>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--primary" data-detalle-close>Cerrar</button>
+        </div>
     </div>
 </dialog>
 
