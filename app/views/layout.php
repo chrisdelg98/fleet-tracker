@@ -78,11 +78,13 @@
                     <span>Ocultar</span>
                 </button>
                 <nav class="sidebar__nav" aria-label="Navegación principal">
-                    <?php foreach ($enlacePrincipal as $href => $label):
-                        $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
-                    ?>
-                        <a href="<?= e($href) ?>" class="sidebar__link sidebar__link--primary<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
-                    <?php endforeach; ?>
+                    <div class="sidebar__primary">
+                        <?php foreach ($enlacePrincipal as $href => $label):
+                            $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
+                        ?>
+                            <a href="<?= e($href) ?>" class="sidebar__link sidebar__link--primary<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
+                        <?php endforeach; ?>
+                    </div>
 
                     <?php foreach ($grupos as $titulo => $items): ?>
                         <?php if ($items === []): continue; endif; ?>
