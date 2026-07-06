@@ -15,6 +15,11 @@ $clasesRetorno = [
     'SIN_RETORNO' => 'badge--muted',
 ];
 $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
+$PREVIEW = 5;
+$util = $reportes['utilizacion'];
+$dias = $reportes['dias_transito'];
+$rutas = $reportes['rutas'];
+$fmtDias = static fn($v) => rtrim(rtrim(number_format((float) $v, 1, '.', ''), '0'), '.');
 ?>
 <section class="module">
     <div class="module__head">
@@ -64,22 +69,24 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
     <div class="int-grid">
         <div class="card int-card">
             <h2>Utilización por estación</h2>
-            <?php if (empty($reportes['utilizacion'])): ?>
+            <?php if (empty($util)): ?>
                 <div class="card__empty"><p>Sin datos para el rango seleccionado.</p></div>
             <?php else: ?>
-                <table class="table">
-                    <thead><tr><th>Estación</th><th>Unidades</th><th>Horas ocupadas</th><th>% utilización</th></tr></thead>
-                    <tbody>
-                    <?php foreach ($reportes['utilizacion'] as $fila): ?>
-                        <tr>
-                            <td><strong><?= e($fila['codigo']) ?></strong><small class="muted block"><?= e($fila['nombre']) ?></small></td>
-                            <td><?= (int) $fila['unidades'] ?></td>
-                            <td><?= e((string) $fila['horas_ocupadas']) ?></td>
-                            <td><strong><?= e((string) $fila['utilizacion_pct']) ?>%</strong></td>
-                        </tr>
+                <ul class="int-list">
+                    <?php foreach (array_slice($util, 0, $PREVIEW) as $fila): $pct = max(0, min(100, (float) $fila['utilizacion_pct'])); ?>
+                        <li class="int-list__row">
+                            <div class="int-list__main">
+                                <strong><?= e($fila['codigo']) ?></strong>
+                                <small class="block"><?= e($fila['nombre']) ?></small>
+                                <div class="int-bar"><span style="width: <?= e((string) $pct) ?>%"></span></div>
+                            </div>
+                            <div class="int-list__val"><?= e((string) $fila['utilizacion_pct']) ?>%<small><?= (int) $fila['unidades'] ?> u · <?= e((string) $fila['horas_ocupadas']) ?> h</small></div>
+                        </li>
                     <?php endforeach; ?>
-                    </tbody>
-                </table>
+                </ul>
+                <div class="int-card__foot">
+                    <button type="button" class="int-more" data-modal-open="dlg-util">Ver detalle completo<?= count($util) > $PREVIEW ? ' (' . count($util) . ')' : '' ?> →</button>
+                </div>
             <?php endif; ?>
         </div>
 
@@ -93,61 +100,51 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
             <?php if (empty($ret['detalle'])): ?>
                 <div class="card__empty card__empty--compact"><p>Sin movimientos internacionales completados en el rango.</p></div>
             <?php else: ?>
-                <table class="table">
-                    <thead><tr><th>Movimiento</th><th>Unidad</th><th>Ruta</th><th>Clasificación</th></tr></thead>
-                    <tbody>
-                    <?php foreach ($ret['detalle'] as $fila): ?>
-                        <tr>
-                            <td>#<?= (int) $fila['id'] ?><small class="muted block"><?= e($fila['estacion_codigo']) ?></small></td>
-                            <td><?= e($fila['placa_unidad']) ?></td>
-                            <td><?= e($fila['ruta']) ?></td>
-                            <td><span class="badge <?= e($clasesRetorno[$fila['clasificacion']] ?? 'badge--muted') ?>"><?= e($fila['clasificacion']) ?></span></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <p class="int-hint"><?= count($ret['detalle']) ?> movimiento<?= count($ret['detalle']) === 1 ? '' : 's' ?> internacional<?= count($ret['detalle']) === 1 ? '' : 'es' ?> con retorno evaluado.</p>
+                <div class="int-card__foot">
+                    <button type="button" class="int-more" data-modal-open="dlg-retornos">Ver movimientos (<?= count($ret['detalle']) ?>) →</button>
+                </div>
             <?php endif; ?>
         </div>
 
         <div class="card int-card">
             <h2>Días en tránsito por unidad</h2>
-            <?php if (empty($reportes['dias_transito'])): ?>
+            <?php if (empty($dias)): ?>
                 <div class="card__empty"><p>Sin movimientos completados para este rango.</p></div>
             <?php else: ?>
-                <table class="table">
-                    <thead><tr><th>Unidad</th><th>Estación</th><th>Movs.</th><th>Días</th><th>Horas</th></tr></thead>
-                    <tbody>
-                    <?php foreach ($reportes['dias_transito'] as $fila): ?>
-                        <tr>
-                            <td><strong><?= e($fila['placa_unidad']) ?></strong><?php if (!empty($fila['placa_furgon'])): ?><small class="muted block"><?= e($fila['placa_furgon']) ?></small><?php endif; ?></td>
-                            <td><?= e($fila['estacion_codigo']) ?></td>
-                            <td><?= (int) $fila['movimientos'] ?></td>
-                            <td><?= e((string) $fila['dias']) ?></td>
-                            <td><?= e((string) $fila['horas']) ?></td>
-                        </tr>
+                <ul class="int-list">
+                    <?php foreach (array_slice($dias, 0, $PREVIEW) as $fila): ?>
+                        <li class="int-list__row">
+                            <div class="int-list__main">
+                                <strong><?= e($fila['placa_unidad']) ?></strong>
+                                <small class="block"><?= e($fila['estacion_codigo']) ?> · <?= (int) $fila['movimientos'] ?> mov</small>
+                            </div>
+                            <div class="int-list__val"><?= e($fmtDias($fila['dias'])) ?> d<small><?= e((string) $fila['horas']) ?> h</small></div>
+                        </li>
                     <?php endforeach; ?>
-                    </tbody>
-                </table>
+                </ul>
+                <div class="int-card__foot">
+                    <button type="button" class="int-more" data-modal-open="dlg-dias">Ver todas las unidades<?= count($dias) > $PREVIEW ? ' (' . count($dias) . ')' : '' ?> →</button>
+                </div>
             <?php endif; ?>
         </div>
 
         <div class="card int-card">
             <h2>Rutas más usadas</h2>
-            <?php if (empty($reportes['rutas'])): ?>
+            <?php if (empty($rutas)): ?>
                 <div class="card__empty"><p>Sin rutas completadas para este rango.</p></div>
             <?php else: ?>
-                <table class="table">
-                    <thead><tr><th>Ruta</th><th>Movimientos</th><th>Horas acumuladas</th></tr></thead>
-                    <tbody>
-                    <?php foreach ($reportes['rutas'] as $fila): ?>
-                        <tr>
-                            <td><?= e($fila['ruta']) ?></td>
-                            <td><?= (int) $fila['movimientos'] ?></td>
-                            <td><?= e((string) $fila['horas']) ?></td>
-                        </tr>
+                <ul class="int-list">
+                    <?php foreach (array_slice($rutas, 0, $PREVIEW) as $fila): ?>
+                        <li class="int-list__row">
+                            <div class="int-list__main"><strong><?= e($fila['ruta']) ?></strong></div>
+                            <div class="int-list__val"><?= (int) $fila['movimientos'] ?> mov<small><?= e((string) $fila['horas']) ?> h</small></div>
+                        </li>
                     <?php endforeach; ?>
-                    </tbody>
-                </table>
+                </ul>
+                <div class="int-card__foot">
+                    <button type="button" class="int-more" data-modal-open="dlg-rutas">Ver todas las rutas<?= count($rutas) > $PREVIEW ? ' (' . count($rutas) . ')' : '' ?> →</button>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -156,3 +153,101 @@ $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
              El backend (rutas, NotificacionService, SuscripcionCorreoModel, tabla y disparadores) queda
              intacto; para reactivarla basta con restaurar este bloque de UI. */ ?>
 </section>
+
+<?php if (!empty($util)): ?>
+<dialog class="dialog dialog--full" id="dlg-util">
+    <div class="dialog__panel">
+        <div class="dialog__head"><h2>Utilización por estación</h2><p class="dialog__lede">Horas ocupadas y porcentaje de utilización por estación en el rango seleccionado.</p></div>
+        <div class="dialog__body">
+            <table class="table">
+                <thead><tr><th>Estación</th><th>Unidades</th><th>Horas ocupadas</th><th>% utilización</th></tr></thead>
+                <tbody>
+                <?php foreach ($util as $fila): ?>
+                    <tr>
+                        <td><strong><?= e($fila['codigo']) ?></strong><small class="muted block"><?= e($fila['nombre']) ?></small></td>
+                        <td><?= (int) $fila['unidades'] ?></td>
+                        <td><?= e((string) $fila['horas_ocupadas']) ?></td>
+                        <td><strong><?= e((string) $fila['utilizacion_pct']) ?>%</strong></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="dialog__actions"><button type="button" class="btn btn--primary" data-modal-close>Cerrar</button></div>
+    </div>
+</dialog>
+<?php endif; ?>
+
+<?php if (!empty($ret['detalle'])): ?>
+<dialog class="dialog dialog--full" id="dlg-retornos">
+    <div class="dialog__panel">
+        <div class="dialog__head"><h2>Retornos por movimiento</h2><p class="dialog__lede">Clasificación del retorno de cada movimiento internacional completado.</p></div>
+        <div class="dialog__body">
+            <table class="table">
+                <thead><tr><th>Movimiento</th><th>Unidad</th><th>Ruta</th><th>Clasificación</th></tr></thead>
+                <tbody>
+                <?php foreach ($ret['detalle'] as $fila): ?>
+                    <tr>
+                        <td>#<?= (int) $fila['id'] ?><small class="muted block"><?= e($fila['estacion_codigo']) ?></small></td>
+                        <td><?= e($fila['placa_unidad']) ?></td>
+                        <td><?= e($fila['ruta']) ?></td>
+                        <td><span class="badge <?= e($clasesRetorno[$fila['clasificacion']] ?? 'badge--muted') ?>"><?= e($fila['clasificacion']) ?></span></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="dialog__actions"><button type="button" class="btn btn--primary" data-modal-close>Cerrar</button></div>
+    </div>
+</dialog>
+<?php endif; ?>
+
+<?php if (!empty($dias)): ?>
+<dialog class="dialog dialog--full" id="dlg-dias">
+    <div class="dialog__panel">
+        <div class="dialog__head"><h2>Días en tránsito por unidad</h2><p class="dialog__lede">Tiempo acumulado en tránsito de cada unidad en el rango seleccionado.</p></div>
+        <div class="dialog__body">
+            <table class="table">
+                <thead><tr><th>Unidad</th><th>Estación</th><th>Movs.</th><th>Días</th><th>Horas</th></tr></thead>
+                <tbody>
+                <?php foreach ($dias as $fila): ?>
+                    <tr>
+                        <td><strong><?= e($fila['placa_unidad']) ?></strong><?php if (!empty($fila['placa_furgon'])): ?><small class="muted block"><?= e($fila['placa_furgon']) ?></small><?php endif; ?></td>
+                        <td><?= e($fila['estacion_codigo']) ?></td>
+                        <td><?= (int) $fila['movimientos'] ?></td>
+                        <td><?= e($fmtDias($fila['dias'])) ?></td>
+                        <td><?= e((string) $fila['horas']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="dialog__actions"><button type="button" class="btn btn--primary" data-modal-close>Cerrar</button></div>
+    </div>
+</dialog>
+<?php endif; ?>
+
+<?php if (!empty($rutas)): ?>
+<dialog class="dialog dialog--full" id="dlg-rutas">
+    <div class="dialog__panel">
+        <div class="dialog__head"><h2>Rutas más usadas</h2><p class="dialog__lede">Movimientos y horas acumuladas por ruta en el rango seleccionado.</p></div>
+        <div class="dialog__body">
+            <table class="table">
+                <thead><tr><th>Ruta</th><th>Movimientos</th><th>Horas acumuladas</th></tr></thead>
+                <tbody>
+                <?php foreach ($rutas as $fila): ?>
+                    <tr>
+                        <td><?= e($fila['ruta']) ?></td>
+                        <td><?= (int) $fila['movimientos'] ?></td>
+                        <td><?= e((string) $fila['horas']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="dialog__actions"><button type="button" class="btn btn--primary" data-modal-close>Cerrar</button></div>
+    </div>
+</dialog>
+<?php endif; ?>
+
+<script src="/assets/js/modal.js" type="module"></script>

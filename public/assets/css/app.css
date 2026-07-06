@@ -936,6 +936,19 @@ input[type="radio"] {
     overflow: hidden;
 }
 .dialog::backdrop { background: rgba(28,39,51,0.45); }
+/* Contenedor con padding para modales sin <form> (histórico, inteligencia). */
+.dialog__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+    padding: var(--sp-6);
+    max-height: min(84vh, 940px);
+    overflow: hidden;
+    overscroll-behavior: contain;
+}
+/* Modal amplio (a pantalla casi completa) para tablas extensas. */
+.dialog--full { max-width: 1100px; width: min(96vw, 1100px); }
+.dialog--full .dialog__panel { max-height: min(90vh, 1100px); }
 .dialog > .form {
     display: flex;
     flex-direction: column;
@@ -1411,13 +1424,13 @@ input[type="radio"] {
 .module__head h1 { margin: var(--sp-1) 0 0; }
 
 /* ── Inteligencia ── */
-.int-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sp-4); }
+.int-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
 .int-grid--bottom { margin-top: var(--sp-4); }
+@media (max-width: 820px) { .int-grid { grid-template-columns: 1fr; } }
 .int-card {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: var(--sp-4);
-    align-content: start;
-    min-height: 100%;
     padding: var(--sp-5);
     border-color: rgba(29, 75, 117, 0.10);
     background:
@@ -1435,7 +1448,7 @@ input[type="radio"] {
     overflow: hidden;
     background: rgba(255,255,255,0.9);
 }
-.int-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.int-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
 .int-stat {
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
@@ -1459,6 +1472,21 @@ input[type="radio"] {
 .int-card .muted strong {
     color: var(--color-ink);
 }
+/* Preview compacto dentro de cada tarjeta de Inteligencia (evita tablas anchas cortadas). */
+.int-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.int-list__row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+.int-list__row:last-child { border-bottom: none; }
+.int-list__main { min-width: 0; }
+.int-list__main strong { display: block; word-break: break-word; }
+.int-list__main small { color: var(--color-ink-soft); font-size: var(--fs-sm); }
+.int-list__val { flex: 0 0 auto; text-align: right; white-space: nowrap; font-weight: 700; color: #173d60; }
+.int-list__val small { display: block; margin-top: 2px; font-weight: 500; color: var(--color-ink-soft); font-size: var(--fs-xs); }
+.int-bar { height: 6px; margin-top: 8px; border-radius: 999px; background: rgba(29, 75, 117, 0.12); overflow: hidden; }
+.int-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary), #f7a15a); }
+.int-hint { color: var(--color-ink-soft); font-size: var(--fs-sm); }
+.int-card__foot { margin-top: auto; padding-top: var(--sp-1); }
+.int-more { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: var(--color-primary); cursor: pointer; }
+.int-more:hover { text-decoration: underline; }
 .inline-form { display: inline; }
 .inline-form + .inline-form { margin-left: var(--sp-2); }
 .int-actions { justify-content: flex-start; margin-top: 0; }
