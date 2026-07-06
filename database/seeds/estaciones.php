@@ -7,7 +7,7 @@
 declare(strict_types=1);
 
 return [
-    ['Trucking',                'SAL', 'SV', 'America/El_Salvador'],
+    ['EFL Trucking',            'TRK', 'SV', 'America/El_Salvador'],
     ['EFL Global El Salvador',  'SAL', 'SV', 'America/El_Salvador'],
     ['EFL Global Guatemala',    'GUA', 'GT', 'America/Guatemala'],
     ['EFL Global Honduras',     'TGU', 'HN', 'America/Tegucigalpa'],
