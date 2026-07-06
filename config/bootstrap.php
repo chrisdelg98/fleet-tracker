@@ -42,6 +42,12 @@ $debug = ($env['APP_DEBUG'] ?? 'false') === 'true';
 ini_set('display_errors', $debug ? '1' : '0');
 error_reporting(E_ALL);
 
+// Plataforma interna: nunca indexar en buscadores (refuerza robots.txt y la meta robots).
+// Cubre también respuestas no-HTML (API JSON, exports CSV).
+if (!headers_sent()) {
+    header('X-Robots-Tag: noindex, nofollow, noarchive, nosnippet', true);
+}
+
 // ── Sesión con cookie endurecida (AGENTS.md §Seguridad 5) ──
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_set_cookie_params([
