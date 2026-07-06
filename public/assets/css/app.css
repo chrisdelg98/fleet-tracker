@@ -1291,14 +1291,17 @@ input[type="radio"] {
 /* ── Desplegable buscable (searchable-select.js) ── */
 .ss { position: relative; }
 .ss::after {
-    content: '▾';
+    content: '';
     position: absolute;
     top: 50%;
-    right: 14px;
-    transform: translateY(-50%);
-    color: var(--color-ink-soft);
-    font-size: 0.78rem;
+    right: 15px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--color-ink-soft);
+    border-bottom: 2px solid var(--color-ink-soft);
+    transform: translateY(-70%) rotate(45deg);
     pointer-events: none;
+    transition: transform 0.16s ease, border-color 0.16s ease;
 }
 .ss__native { display: none; }
 .ss__input {
@@ -1314,7 +1317,8 @@ input[type="radio"] {
 .ss__input:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--focus-ring); }
 .ss.is-open .ss__input { border-color: var(--color-primary); box-shadow: var(--focus-ring); }
 .ss.is-open::after {
-    color: var(--color-primary);
+    border-color: var(--color-primary);
+    transform: translateY(-30%) rotate(225deg);
 }
 .ss__list {
     position: fixed; z-index: 250; margin: 0; padding: var(--sp-1);

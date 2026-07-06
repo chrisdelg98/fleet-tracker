@@ -46,6 +46,9 @@ class SearchableSelect {
         this.syncFromNative();
 
         this.input.addEventListener('focus', () => this.open());
+        // Reabrir con clic aunque el input ya tenga el foco (tras elegir una opción no se
+        // dispara 'focus' de nuevo, por eso antes no reabría sin salir y volver a entrar).
+        this.input.addEventListener('click', () => this.open());
         this.input.addEventListener('input', () => { this.open(); this.filter(this.input.value); });
         this.input.addEventListener('keydown', (e) => this.onKey(e));
         document.addEventListener('click', (e) => {
