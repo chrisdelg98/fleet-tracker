@@ -512,11 +512,12 @@ input[type="radio"] {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
-    padding: var(--sp-1) var(--sp-3);
+    padding: var(--sp-1) 10px;
     border-radius: 999px;
     font-size: var(--fs-sm);
     font-weight: 600;
     color: #fff;
+    white-space: nowrap;      /* el estado nunca se parte en dos líneas */
 }
 .chip--disponible { background: var(--estado-disponible); }
 .chip--reservada  { background: var(--estado-reservada); }
@@ -729,6 +730,8 @@ input[type="radio"] {
 .card--table .table {
     margin: 0;
 }
+/* Envoltura para scroll horizontal en anchos intermedios (la agrega responsive-table.js). */
+.table-scroll { overflow-x: auto; }
 .table-wrap {
     overflow: hidden;
     border: 1px solid var(--color-border);
@@ -816,7 +819,7 @@ input[type="radio"] {
 .rowmenu__item--danger:hover { background: var(--color-error-bg); }
 
 /* ── Badges ── */
-.badge { display: inline-block; padding: 2px var(--sp-2); border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.badge { display: inline-block; padding: 2px var(--sp-2); border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .badge--ok { background: #e3f4ea; color: var(--estado-disponible); }
 .badge--warn { background: #fbf1d8; color: #8a6d00; }
 .badge--muted { background: #eef1f4; color: var(--color-ink-soft); }
@@ -1179,6 +1182,8 @@ input[type="radio"] {
 }
 .dashboard__meta { display: flex; gap: var(--sp-3); align-items: center; margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
 .dashboard__table td { vertical-align: middle; }
+/* La placa de la unidad (1ª columna) siempre en una sola línea. */
+.dashboard__table td:first-child { white-space: nowrap; }
 .dashboard__results-card { overflow: hidden; }
 .dashboard__delay {
     display: inline-flex;
@@ -1244,9 +1249,10 @@ input[type="radio"] {
     color: #9a4b00;
     font-size: 0.74rem;
     font-weight: 700;
+    white-space: nowrap;
     border: 1px solid rgba(247, 108, 0, 0.16);
 }
-.retorno { display: inline-block; padding: 2px var(--sp-2); border-radius: var(--radius); background: #e3f0fb; color: var(--estado-transito); font-size: 0.75rem; font-weight: 600; }
+.retorno { display: inline-block; padding: 2px var(--sp-2); border-radius: var(--radius); background: #e3f0fb; color: var(--estado-transito); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .retorno--tomado { background: #eef1f4; color: var(--color-ink-soft); text-decoration: line-through; }
 .grid-2__full { grid-column: 1 / -1; }
 
@@ -1695,9 +1701,60 @@ input[type="radio"] {
         margin-top: var(--sp-2);
         box-shadow: none;
     }
+}
 
-    .table {
+/* Tablas → tarjetas apiladas solo en teléfono; en tablet se mantiene la tabla. */
+@media (max-width: 760px) {
+    .table-scroll { overflow-x: visible; }
+    .table,
+    .table tbody { display: block; width: 100%; }
+    .table thead { display: none; }
+    .table tr {
         display: block;
-        overflow-x: auto;
+        margin-bottom: var(--sp-3);
+        padding: var(--sp-1) var(--sp-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
     }
+    .table tbody tr:hover { background: var(--color-surface); }
+    .table td {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px var(--sp-4);
+        align-items: center;
+        justify-content: flex-end;
+        padding: 9px 0;
+        border: none;
+        border-bottom: 1px solid var(--color-border);
+        text-align: right;
+        line-height: 1.35;
+    }
+    .table tr td:last-child { border-bottom: none; }
+    .table td::before {
+        content: attr(data-label);
+        margin-right: auto;              /* empuja el valor a la derecha */
+        text-align: left;
+        white-space: nowrap;
+        color: var(--color-ink-soft);
+        font-weight: 700;
+        font-size: var(--fs-xs);
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+    /* Subtítulos y flags (placa de furgón, "Con demora") caen en su propia línea a la derecha. */
+    .table td > .block,
+    .table td .delay-flag__wrap { flex-basis: 100%; margin: 2px 0 0; text-align: right; }
+    .table td[data-label=""]::before { content: none; }
+    .table td[colspan] { display: block; text-align: center; }
+    .table td.row-actions { justify-content: flex-end; }
+    .table td .detalle,
+    .table td code { white-space: normal; word-break: break-word; }
+
+    /* Pills un poco más compactos en móvil. */
+    .table .chip,
+    .table .badge,
+    .table .retorno,
+    .table .delay-flag { font-size: var(--fs-xs); }
+    .table .chip { padding: var(--sp-1) 10px; }
 }
