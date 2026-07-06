@@ -22,7 +22,7 @@
 <?php if (is_logged_in()): $u = current_user(); $ruta = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH); ?>
     <?php
     $puedeGestionar = in_array($u['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true);
-    $enlacePrincipal = ['/' => 'Dashboard'];
+    $enlacePrincipal = ['/' => 'Dashboard', '/mural' => 'Mural en vivo'];
     $grupos = [
         'Operación' => [],
         'Consulta' => [],
