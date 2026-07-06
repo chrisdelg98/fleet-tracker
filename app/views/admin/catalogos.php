@@ -55,22 +55,9 @@ $catalogoActivo = $tablas[0] ?? null;
                                 <td><?= e($fmtCampo($tipo, $item[$campo] ?? '')) ?></td>
                             <?php endforeach; ?>
                             <td class="row-actions">
-                                <?= action_chip('Editar', [
-                                    'attrs' => [
-                                        'data-action' => 'editar-catalogo',
-                                        'data-tabla' => $tabla,
-                                        'data-id' => (int) $item['id'],
-                                    ],
-                                ]) ?>
-                                <?= action_chip($activo === 1 ? 'Desactivar' : 'Activar', [
-                                    'icon' => $activo === 1 ? 'toggle-off' : 'toggle-on',
-                                    'variant' => $activo === 1 ? 'warning' : 'success',
-                                    'attrs' => [
-                                        'data-action' => 'activo-catalogo',
-                                        'data-tabla' => $tabla,
-                                        'data-id' => (int) $item['id'],
-                                        'data-activo' => $activo,
-                                    ],
+                                <?= row_menu([
+                                    ['label' => 'Editar', 'attrs' => ['data-action' => 'editar-catalogo', 'data-tabla' => $tabla, 'data-id' => (int) $item['id']]],
+                                    ['label' => $activo === 1 ? 'Desactivar' : 'Activar', 'attrs' => ['data-action' => 'activo-catalogo', 'data-tabla' => $tabla, 'data-id' => (int) $item['id'], 'data-activo' => $activo]],
                                 ]) ?>
                             </td>
                         </tr>

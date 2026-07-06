@@ -97,8 +97,10 @@ $estadosLicencia = ['vigente' => 'Vigente', 'por_vencer' => 'Por vencer (≤30 d
                         </td>
                         <td><?= e($p['estacion_codigo']) ?></td>
                         <td class="row-actions">
-                            <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar-piloto', 'data-id' => (int) $p['id']]]) ?>
-                            <?= action_chip('Eliminar', ['icon' => 'delete', 'variant' => 'danger', 'attrs' => ['data-action' => 'eliminar-piloto', 'data-id' => (int) $p['id'], 'data-nombre' => $p['nombre']]]) ?>
+                            <?= row_menu([
+                                ['label' => 'Editar', 'attrs' => ['data-action' => 'editar-piloto', 'data-id' => (int) $p['id']]],
+                                ['label' => 'Eliminar', 'danger' => true, 'attrs' => ['data-action' => 'eliminar-piloto', 'data-id' => (int) $p['id'], 'data-nombre' => $p['nombre']]],
+                            ]) ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

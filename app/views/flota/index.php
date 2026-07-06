@@ -133,9 +133,11 @@ $claseEstado = [
                         </td>
                         <td><?= e($u['piloto_asignado'] ?? '—') ?></td>
                         <td class="row-actions">
-                            <?= action_chip('Editar', ['attrs' => ['data-action' => 'editar', 'data-id' => (int) $u['id']]]) ?>
-                            <?= action_chip('Cambiar estado', ['icon' => 'state', 'attrs' => ['data-action' => 'estado', 'data-id' => (int) $u['id'], 'data-estado' => $u['estado_vehiculo']]]) ?>
-                            <?= action_chip('Eliminar', ['icon' => 'delete', 'variant' => 'danger', 'attrs' => ['data-action' => 'eliminar', 'data-id' => (int) $u['id'], 'data-placa' => $u['placa_unidad']]]) ?>
+                            <?= row_menu([
+                                ['label' => 'Editar', 'attrs' => ['data-action' => 'editar', 'data-id' => (int) $u['id']]],
+                                ['label' => 'Cambiar estado', 'attrs' => ['data-action' => 'estado', 'data-id' => (int) $u['id'], 'data-estado' => $u['estado_vehiculo']]],
+                                ['label' => 'Eliminar', 'danger' => true, 'attrs' => ['data-action' => 'eliminar', 'data-id' => (int) $u['id'], 'data-placa' => $u['placa_unidad']]],
+                            ]) ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

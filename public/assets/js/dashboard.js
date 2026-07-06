@@ -104,6 +104,7 @@ async function load() {
 }
 
 function render(unidades, meta) {
+    window.closeRowMenus?.();
     countEl.textContent = `${unidades.length} unidad${unidades.length === 1 ? '' : 'es'}`;
     rangoEl.textContent = `${fmtDia(meta.desde)} → ${fmtDia(meta.hasta)}`;
     const demoraCount = unidades.filter((u) => u.con_demora).length;
@@ -143,30 +144,41 @@ function rowHtml(u) {
     </tr>`;
 }
 
+const KEBAB = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 6.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm0 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm0 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" fill="currentColor"/></svg>';
+
 function accionesHtml(u) {
     const m = u.movimiento;
-    const btn = (accion, txt, extra = '') => `<button type="button" class="link" data-mov="${accion}" data-unidad="${u.unidad_id}" ${m ? `data-id="${m.id}"` : ''} ${extra}>${txt}</button>`;
+    const item = (accion, txt, danger = false) => `<button type="button" role="menuitem" class="rowmenu__item${danger ? ' rowmenu__item--danger' : ''}" data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${txt}</button>`;
     const acc = [];
+    let cancelar = null; // Cancelar siempre va al final del menú.
     if (u.estado === 'DISPONIBLE') {
-        acc.push(btn('reservar', 'Reservar'), btn('bloquear', 'Bloquear'));
+        acc.push(item('reservar', 'Reservar'), item('bloquear', 'Bloquear'));
     } else if (u.override && u.override.tipo === 'BLOQUEADA') {
-        acc.push(btn('desbloquear', 'Desbloquear'));
+        acc.push(item('desbloquear', 'Desbloquear'));
     } else if (m && m.estado === 'RESERVADO') {
-        acc.push(btn('confirmar', 'Confirmar'), btn('cancelar', 'Cancelar', 'class="link link--danger"'));
+        acc.push(item('confirmar', 'Confirmar'));
+        cancelar = item('cancelar', 'Cancelar', true);
     } else if (m && m.estado === 'PROGRAMADO') {
-        acc.push(btn('salida', 'Marcar salida'), btn('cancelar', 'Cancelar', 'class="link link--danger"'));
+        acc.push(item('salida', 'Marcar salida'));
+        cancelar = item('cancelar', 'Cancelar', true);
     } else if (m && m.estado === 'EN_TRANSITO') {
-        acc.push(btn('llegada', 'Marcar llegada'), btn('cancelar', 'Cancelar', 'class="link link--danger"'));
+        acc.push(item('llegada', 'Marcar llegada'));
+        cancelar = item('cancelar', 'Cancelar', true);
     }
     if (m && m.retorno_disponible && !m.pais_solicita_retorno_id) {
-        acc.push(btn('apartar-retorno', 'Apartar retorno'));
+        acc.push(item('apartar-retorno', 'Apartar retorno'));
     }
-    return acc.join('');
+    if (cancelar) acc.push(cancelar);
+    if (!acc.length) return '<span class="muted">—</span>';
+    return `<div class="rowmenu" data-rowmenu>
+        <button type="button" class="rowmenu__trigger" data-rowmenu-trigger aria-haspopup="true" aria-expanded="false" aria-label="Acciones">${KEBAB}</button>
+        <div class="rowmenu__menu" role="menu">${acc.join('')}</div>
+    </div>`;
 }
 
-// ── Acciones por fila ──
+// ── Acciones por fila (delegación en document: cubre el menú porteado a <body>) ──
 if (cfg.puedeReservar) {
-    body.addEventListener('click', async (ev) => {
+    document.addEventListener('click', async (ev) => {
         const b = ev.target.closest('[data-mov]');
         if (!b) return;
         const { mov, id, unidad } = b.dataset;

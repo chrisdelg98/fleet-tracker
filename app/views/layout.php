@@ -112,5 +112,6 @@
     <script src="/assets/js/nav.js" type="module"></script>
     <script src="/assets/js/filter-panel.js" type="module"></script>
     <script src="/assets/js/searchable-select.js" type="module"></script>
+    <script src="/assets/js/rowmenu.js" type="module"></script>
 </body>
 </html>

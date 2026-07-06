@@ -62,6 +62,40 @@ function action_chip_icon(string $icon): string
 }
 
 /**
+ * Menú de acciones por fila (estándar reutilizable para todas las tablas). Emite el markup
+ * que consume rowmenu.js (botón "⋮" + menú porteado a <body>). Cada item:
+ *   ['label' => 'Editar', 'danger' => false, 'attrs' => ['data-action' => 'editar', 'data-id' => 5]]
+ * Los data-* los maneja el JS del módulo (delegación en document). Poner acciones destructivas
+ * al final (ej. Eliminar) marcadas con 'danger' => true.
+ */
+function row_menu(array $items): string
+{
+    $items = array_values(array_filter($items));
+    if ($items === []) {
+        return '<span class="muted">—</span>';
+    }
+
+    $kebab = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 6.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm0 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm0 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" fill="currentColor"/></svg>';
+    $html = '<div class="rowmenu" data-rowmenu>'
+        . '<button type="button" class="rowmenu__trigger" data-rowmenu-trigger aria-haspopup="true" aria-expanded="false" aria-label="Acciones">' . $kebab . '</button>'
+        . '<div class="rowmenu__menu" role="menu">';
+
+    foreach ($items as $item) {
+        $class = 'rowmenu__item' . (!empty($item['danger']) ? ' rowmenu__item--danger' : '');
+        $attrs = '';
+        foreach (($item['attrs'] ?? []) as $name => $value) {
+            if ($value === null || $value === false) {
+                continue;
+            }
+            $attrs .= ' ' . e((string) $name) . '="' . e((string) $value) . '"';
+        }
+        $html .= '<button type="button" role="menuitem" class="' . $class . '"' . $attrs . '>' . e((string) $item['label']) . '</button>';
+    }
+
+    return $html . '</div></div>';
+}
+
+/**
  * Renderiza una plantilla de app/views/ envuelta en el layout.
  *
  * @param string $template Ruta relativa sin extensión, ej. "auth/login".
