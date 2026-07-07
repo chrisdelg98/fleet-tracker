@@ -37,6 +37,7 @@
                     <?php endforeach; ?>
                 </select>
             </label>
+            <button type="button" class="live__icon-btn" id="live-panel-toggle" aria-label="Mostrar u ocultar la distribución" title="Distribución de la flota" aria-pressed="false"></button>
             <button type="button" class="live__icon-btn" id="live-theme" aria-label="Cambiar tema" title="Cambiar tema"></button>
         </div>
 

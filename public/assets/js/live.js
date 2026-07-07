@@ -17,6 +17,7 @@ const SVG = {
     sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z"/></svg>',
     box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 20v-6"/><path d="M12 20V6"/><path d="M18 20v-9"/></svg>',
 };
 
 // Metadatos por estado (color en hex igual a las variables de live.css).
@@ -51,6 +52,24 @@ function initTheme() {
         const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
         localStorage.setItem('live-theme', next);
         applyTheme(next);
+    });
+}
+
+// ── Panel de distribución (colapsable; oculto por defecto para dar más ancho a la rejilla) ──
+function applyPanel(visible) {
+    document.body.classList.toggle('panel-hidden', !visible);
+    const btn = $('live-panel-toggle');
+    btn.innerHTML = SVG.chart;
+    btn.classList.toggle('is-on', visible);
+    btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    btn.title = visible ? 'Ocultar distribución' : 'Mostrar distribución';
+}
+function initPanel() {
+    applyPanel(localStorage.getItem('live-panel') === 'shown');
+    $('live-panel-toggle').addEventListener('click', () => {
+        const next = document.body.classList.contains('panel-hidden');
+        localStorage.setItem('live-panel', next ? 'shown' : 'hidden');
+        applyPanel(next);
     });
 }
 
@@ -263,6 +282,7 @@ function wireEvents() {
 }
 
 initTheme();
+initPanel();
 wireEvents();
 tick();
 setInterval(tick, 1000);
