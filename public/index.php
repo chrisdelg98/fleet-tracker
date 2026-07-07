@@ -126,7 +126,7 @@ $disponibilidadController = new DisponibilidadController(
 
 // Dashboard (visible para todos los roles) + endpoint de disponibilidad
 $router->get('/', fn() => $disponibilidadController->dashboard());
-$router->get('/mural', fn() => $disponibilidadController->mural());
+$router->get('/live', fn() => $disponibilidadController->live());
 $router->get('/api/disponibilidad', fn() => $disponibilidadController->apiDisponibilidad());
 
 // Movimientos y máquina de estados

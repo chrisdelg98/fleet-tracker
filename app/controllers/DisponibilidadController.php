@@ -43,13 +43,13 @@ final class DisponibilidadController
         ], 'Dashboard · Disponibilidad de Flota');
     }
 
-    /** GET /mural — pantalla mural (wallboard) en vivo para pantalla de oficina (kiosk). */
-    public function mural(): void
+    /** GET /live — pantalla Live (wallboard) en vivo para pantalla de oficina (kiosk). */
+    public function live(): void
     {
         $user = require_login_web();
         $estaciones = $this->catalogos->activos('estaciones', 'codigo');
-        $title = 'Mural en vivo · Disponibilidad de Flota';
-        require BASE_PATH . '/app/views/mural.php';
+        $title = 'Live · Disponibilidad de Flota';
+        require BASE_PATH . '/app/views/live.php';
     }
 
     /** GET /api/disponibilidad — flota con su estado calculado para el rango consultado. */

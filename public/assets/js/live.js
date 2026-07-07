@@ -1,5 +1,5 @@
 /**
- * Mural en vivo (wallboard). Sondea /api/disponibilidad cada pocos segundos y pinta un
+ * Live en vivo (wallboard). Sondea /api/disponibilidad cada pocos segundos y pinta un
  * tablero gráfico: KPIs (que además filtran por categoría), dona de distribución y una
  * rejilla de unidades. Filtro por estación, tema claro/oscuro y detalle en modal al hacer
  * clic en una unidad. Sin interacción: se actualiza solo.
@@ -18,7 +18,7 @@ const SVG = {
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z"/></svg>',
 };
 
-// Metadatos por estado (color en hex igual a las variables de mural.css).
+// Metadatos por estado (color en hex igual a las variables de live.css).
 const ESTADOS = {
     DISPONIBLE:       { label: 'Disponible',  color: '#1eae62', orden: 2 },
     EN_TRANSITO:      { label: 'En tránsito', color: '#2f7ff0', orden: 0 },
@@ -40,15 +40,15 @@ let lastOk = 0;
 // ── Tema ──
 function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
-    const btn = $('mural-theme');
+    const btn = $('live-theme');
     btn.innerHTML = theme === 'dark' ? SVG.sun : SVG.moon;
     btn.title = theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
 }
 function initTheme() {
-    applyTheme(localStorage.getItem('mural-theme') || 'light');
-    $('mural-theme').addEventListener('click', () => {
+    applyTheme(localStorage.getItem('live-theme') || 'light');
+    $('live-theme').addEventListener('click', () => {
         const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        localStorage.setItem('mural-theme', next);
+        localStorage.setItem('live-theme', next);
         applyTheme(next);
     });
 }
@@ -56,12 +56,12 @@ function initTheme() {
 // ── Reloj + frescura ──
 function tick() {
     const now = new Date();
-    $('mural-time').textContent = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-    $('mural-date').textContent = now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('live-time').textContent = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    $('live-date').textContent = now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
     if (lastOk) {
         const secs = Math.round((Date.now() - lastOk) / 1000);
-        $('mural-updated').textContent = `actualizado hace ${secs}s`;
-        $('mural-dot').classList.toggle('is-stale', Date.now() - lastOk > STALE_MS);
+        $('live-updated').textContent = `actualizado hace ${secs}s`;
+        $('live-dot').classList.toggle('is-stale', Date.now() - lastOk > STALE_MS);
     }
 }
 
@@ -81,7 +81,7 @@ function renderKpis(scoped) {
         { cat: 'RESERVADA',   c: '#e0982a', icon: SVG.clock, num: n('RESERVADA'),   label: 'Reservadas' },
         { cat: 'DEMORA',      c: '#ef5b39', icon: SVG.alert, num: scoped.filter((u) => u.con_demora).length, label: 'Con demora' },
     ];
-    $('mural-kpis').innerHTML = cards.map((k) => `
+    $('live-kpis').innerHTML = cards.map((k) => `
         <button type="button" class="kpi${cat === k.cat ? ' is-active' : ''}" data-cat="${k.cat}" style="--c:${k.c}">
             <span class="kpi__icon">${k.icon}</span>
             <span class="kpi__body">
@@ -94,7 +94,7 @@ function renderKpis(scoped) {
 // ── Dona de distribución (SVG) ──
 function renderDonut(scoped) {
     const total = scoped.length;
-    $('mural-total').textContent = total;
+    $('live-total').textContent = total;
     const orden = ['EN_TRANSITO', 'RESERVADA', 'DISPONIBLE', 'TALLER_BLOQUEADA'];
     const conteos = orden.map((e) => ({ e, count: scoped.filter((u) => u.estado === e).length })).filter((s) => s.count > 0);
 
@@ -109,9 +109,9 @@ function renderDonut(scoped) {
             acc += pct;
             return `<circle class="seg" cx="21" cy="21" r="${R}" stroke="${meta(e).color}" stroke-dasharray="${dash}" stroke-dashoffset="${off.toFixed(2)}"></circle>`;
         }).join('');
-    $('mural-donut').innerHTML = segs;
+    $('live-donut').innerHTML = segs;
 
-    $('mural-legend').innerHTML = orden.map((e) => {
+    $('live-legend').innerHTML = orden.map((e) => {
         const count = scoped.filter((u) => u.estado === e).length;
         if (count === 0) return '';
         const pct = total ? Math.round((count / total) * 100) : 0;
@@ -136,12 +136,11 @@ function tileHtml(u) {
     }
     const demora = u.con_demora ? `<span class="tile__demora">${SVG.alert}<span>demora</span></span>` : '';
     const changed = prev.has(u.unidad_id) && prev.get(u.unidad_id) !== u.estado ? ' is-changed' : '';
-    const sub = u.placa_furgon
-        ? esc(u.placa_furgon)
-        : `${esc(u.tipo_equipo || '')}${u.capacidad ? ' · ' + esc(u.capacidad) : ''}`;
+    // Solo la capacidad.
+    const sub = u.capacidad ? esc(u.capacidad) : '—';
     return `<button type="button" class="tile${changed}" data-id="${u.unidad_id}" style="--c:${m.color}">
         <span class="tile__top">
-            <span class="tile__icon">${SVG.truck}</span>
+            <span class="tile__station" title="Estación ${esc(u.estacion_codigo || '')}">${esc(u.estacion_codigo || '—')}</span>
             <span class="tile__state">${esc(m.label)}</span>
         </span>
         <span class="tile__plate"><strong title="${esc(u.placa_unidad)}">${esc(u.placa_unidad)}</strong><small>${sub}</small></span>
@@ -150,9 +149,9 @@ function tileHtml(u) {
 }
 
 function renderGrid(units) {
-    const grid = $('mural-grid');
+    const grid = $('live-grid');
     if (!units.length) {
-        grid.innerHTML = '<div class="mural__empty">Sin unidades para este filtro.</div>';
+        grid.innerHTML = '<div class="live__empty">Sin unidades para este filtro.</div>';
         return;
     }
     const ordenadas = [...units].sort((a, b) =>
@@ -173,7 +172,7 @@ function apply() {
     const partes = [];
     if (station) partes.push(`Estación ${station}`);
     if (cat) partes.push(cat === 'DEMORA' ? 'Con demora' : meta(cat).label);
-    $('mural-filterinfo').textContent = partes.length ? `Filtro: ${partes.join(' · ')}` : '';
+    $('live-filterinfo').textContent = partes.length ? `Filtro: ${partes.join(' · ')}` : '';
 }
 
 // ── Modal de detalle ──
@@ -194,7 +193,7 @@ function openModal(u) {
     if (u.override && u.override.motivo) rows.push(['Motivo', esc(u.override.motivo)]);
     if (u.con_demora) rows.push(['Demora', `<span class="mm__demora">${SVG.alert} Con demora</span>`]);
 
-    $('mural-modal-body').innerHTML = `
+    $('live-modal-body').innerHTML = `
         <div class="mm__head" style="--c:${m.color}">
             <div class="mm__icon">${SVG.truck}</div>
             <div class="mm__title"><strong>${esc(u.placa_unidad)}</strong>${u.placa_furgon ? `<small>${esc(u.placa_furgon)}</small>` : ''}</div>
@@ -203,41 +202,41 @@ function openModal(u) {
         <dl class="mm__list">
             ${rows.map(([k, v]) => `<div class="mm__row"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}
         </dl>`;
-    $('mural-modal').showModal();
+    $('live-modal').showModal();
 }
 
 // ── Sondeo ──
 async function load() {
     const resp = await api('GET', '/api/disponibilidad');
     if (!resp.ok || !resp.data) {
-        $('mural-status').textContent = 'Sin conexión · reintentando…';
-        $('mural-status').classList.add('is-error');
+        $('live-status').textContent = 'Sin conexión · reintentando…';
+        $('live-status').classList.add('is-error');
         return;
     }
     data = resp.data.unidades || [];
     lastOk = Date.now();
-    $('mural-status').textContent = 'En línea';
-    $('mural-status').classList.remove('is-error');
+    $('live-status').textContent = 'En línea';
+    $('live-status').classList.remove('is-error');
     apply();
     prev = new Map(data.map((u) => [u.unidad_id, u.estado]));
 }
 
 // ── Eventos (delegación, se registran una sola vez) ──
 function wireEvents() {
-    $('mural-kpis').addEventListener('click', (ev) => {
+    $('live-kpis').addEventListener('click', (ev) => {
         const b = ev.target.closest('[data-cat]');
         if (!b) return;
         cat = cat === b.dataset.cat ? '' : b.dataset.cat;
         apply();
     });
-    $('mural-estacion').addEventListener('change', (ev) => { station = ev.target.value; apply(); });
-    $('mural-grid').addEventListener('click', (ev) => {
+    $('live-estacion').addEventListener('change', (ev) => { station = ev.target.value; apply(); });
+    $('live-grid').addEventListener('click', (ev) => {
         const t = ev.target.closest('[data-id]');
         if (!t) return;
         const u = data.find((x) => String(x.unidad_id) === t.dataset.id);
         if (u) openModal(u);
     });
-    const dlg = $('mural-modal');
+    const dlg = $('live-modal');
     dlg.addEventListener('click', (ev) => {
         if (ev.target === dlg || ev.target.closest('[data-modal-close]')) dlg.close();
     });

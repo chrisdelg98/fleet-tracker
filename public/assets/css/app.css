@@ -217,7 +217,7 @@ a { color: inherit; }
     gap: var(--sp-4);
 }
 
-/* Par de accesos destacados (Dashboard / Mural): mismo estilo, juntos. */
+/* Par de accesos destacados (Dashboard / Live): mismo estilo, juntos. */
 .sidebar__primary {
     display: grid;
     gap: var(--sp-2);
