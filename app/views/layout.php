@@ -47,7 +47,7 @@
     ?>
     <header class="topbar">
         <div class="topbar__left">
-            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-controls="app-sidebar" aria-expanded="false">
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Mostrar u ocultar el menú" title="Menú" aria-controls="app-sidebar" aria-expanded="false">
                 <span class="nav-toggle__bars" aria-hidden="true"></span>
             </button>
             <div class="topbar__brand">
@@ -73,10 +73,6 @@
     <div class="app-shell__body">
         <aside class="sidebar" id="app-sidebar">
             <div class="sidebar__panel">
-                <button type="button" class="sidebar__collapse" id="nav-close" aria-label="Ocultar menú" title="Ocultar menú">
-                    <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M12 5 7 10l5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span>Ocultar</span>
-                </button>
                 <nav class="sidebar__nav" aria-label="Navegación principal">
                     <div class="sidebar__primary">
                         <?php foreach ($enlacePrincipal as $href => $label):
@@ -88,15 +84,35 @@
 
                     <?php foreach ($grupos as $titulo => $items): ?>
                         <?php if ($items === []): continue; endif; ?>
-                        <div class="sidebar__group">
-                            <p class="sidebar__group-title"><?= e($titulo) ?></p>
-                            <?php foreach ($items as $href => $label):
-                                $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
-                            ?>
-                                <a href="<?= e($href) ?>" class="sidebar__link<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
-                            <?php endforeach; ?>
+                        <?php
+                        // La sección que contiene la ruta activa arranca abierta; las demás, cerradas.
+                        $abierto = false;
+                        foreach (array_keys($items) as $href) {
+                            if ($href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href)) { $abierto = true; break; }
+                        }
+                        $slug = strtolower(str_replace(' ', '-', $titulo));
+                        ?>
+                        <div class="sidebar__group<?= $abierto ? ' is-open' : '' ?>" data-section="<?= e($slug) ?>">
+                            <button type="button" class="sidebar__group-toggle" aria-expanded="<?= $abierto ? 'true' : 'false' ?>">
+                                <span><?= e($titulo) ?></span>
+                                <svg class="sidebar__chevron" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                            <div class="sidebar__group-links">
+                                <div class="sidebar__group-inner">
+                                    <?php foreach ($items as $href => $label):
+                                        $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
+                                    ?>
+                                        <a href="<?= e($href) ?>" class="sidebar__link<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                         </div>
                     <?php endforeach; ?>
+
+                    <button type="button" class="sidebar__collapse" id="nav-close" aria-label="Ocultar menú" title="Ocultar menú">
+                        <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M11 5l-4 5 4 5M15.5 5l-4 5 4 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Ocultar Menú</span>
+                    </button>
                 </nav>
             </div>
         </aside>

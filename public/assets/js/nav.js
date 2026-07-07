@@ -39,4 +39,25 @@ if (shell) {
 
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobile(); });
     window.addEventListener('resize', () => { if (isDesktop()) closeMobile(); });
+
+    // ── Secciones colapsables del menú (acordeón). Recuerda qué secciones dejaste abiertas. ──
+    const readSections = () => { try { return JSON.parse(localStorage.getItem('navSections') || '{}'); } catch { return {}; } };
+    const saved = readSections();
+    shell.querySelectorAll('.sidebar__group').forEach((group) => {
+        const key = group.dataset.section;
+        if (key && key in saved) {
+            group.classList.toggle('is-open', saved[key]);
+            group.querySelector('.sidebar__group-toggle')?.setAttribute('aria-expanded', saved[key] ? 'true' : 'false');
+        }
+    });
+    shell.querySelectorAll('.sidebar__group-toggle').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const group = btn.closest('.sidebar__group');
+            const open = group.classList.toggle('is-open');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            const state = readSections();
+            state[group.dataset.section] = open;
+            localStorage.setItem('navSections', JSON.stringify(state));
+        });
+    });
 }
