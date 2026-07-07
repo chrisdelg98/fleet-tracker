@@ -33,7 +33,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 
 let data = [];            // últimas unidades del API
 let station = '';         // filtro estación (codigo) o ''
-let cat = '';             // filtro categoría: '', DISPONIBLE, EN_TRANSITO, RESERVADA, DEMORA
+const cats = new Set();   // categorías seleccionadas: DISPONIBLE, EN_TRANSITO, RESERVADA, DEMORA (multi)
 let prev = new Map();     // unidad_id -> estado (para detectar cambios)
 let lastOk = 0;
 
@@ -82,7 +82,7 @@ function renderKpis(scoped) {
         { cat: 'DEMORA',      c: '#ef5b39', icon: SVG.alert, num: scoped.filter((u) => u.con_demora).length, label: 'Con demora' },
     ];
     $('live-kpis').innerHTML = cards.map((k) => `
-        <button type="button" class="kpi${cat === k.cat ? ' is-active' : ''}" data-cat="${k.cat}" style="--c:${k.c}">
+        <button type="button" class="kpi${cats.has(k.cat) ? ' is-active' : ''}" data-cat="${k.cat}" style="--c:${k.c}">
             <span class="kpi__icon">${k.icon}</span>
             <span class="kpi__body">
                 <span class="kpi__num">${k.num}</span>
@@ -180,14 +180,15 @@ function apply() {
     renderKpis(scoped);
     renderDonut(scoped);
     renderSummary(scoped);
-    const units = cat
-        ? scoped.filter((u) => (cat === 'DEMORA' ? u.con_demora : u.estado === cat))
+    const matchCat = (u, c) => (c === 'DEMORA' ? u.con_demora : u.estado === c);
+    const units = cats.size
+        ? scoped.filter((u) => [...cats].some((c) => matchCat(u, c)))
         : scoped;
     renderGrid(units);
 
     const partes = [];
     if (station) partes.push(`Estación ${station}`);
-    if (cat) partes.push(cat === 'DEMORA' ? 'Con demora' : meta(cat).label);
+    if (cats.size) partes.push([...cats].map((c) => (c === 'DEMORA' ? 'Con demora' : meta(c).label)).join(' + '));
     $('live-filterinfo').textContent = partes.length ? `Filtro: ${partes.join(' · ')}` : '';
 }
 
@@ -242,7 +243,7 @@ function wireEvents() {
     $('live-kpis').addEventListener('click', (ev) => {
         const b = ev.target.closest('[data-cat]');
         if (!b) return;
-        cat = cat === b.dataset.cat ? '' : b.dataset.cat;
+        cats.has(b.dataset.cat) ? cats.delete(b.dataset.cat) : cats.add(b.dataset.cat);
         apply();
     });
     $('live-estacion').addEventListener('change', (ev) => { station = ev.target.value; apply(); });

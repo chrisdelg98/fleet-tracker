@@ -98,15 +98,15 @@ body.live {
 
 /* ── KPIs (también actúan como filtros de categoría) ── */
 .live__kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(10px, 1.4vw, 20px); }
-.kpi { position: relative; overflow: hidden; padding: clamp(12px, 1.8vh, 22px) clamp(16px, 1.6vw, 26px); border-radius: var(--radius); background: var(--panel); border: 1px solid var(--panel-line); box-shadow: var(--shadow); display: flex; align-items: center; gap: clamp(12px, 1.4vw, 22px); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: transform .15s, box-shadow .15s, border-color .15s; }
+.kpi { position: relative; overflow: hidden; padding: clamp(10px, 1.4vh, 16px) clamp(16px, 1.6vw, 26px); border-radius: var(--radius); background: var(--panel); border: 1px solid var(--panel-line); box-shadow: var(--shadow); display: flex; align-items: center; gap: clamp(12px, 1.4vw, 22px); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: transform .15s, box-shadow .15s, border-color .15s; }
 .kpi:hover { transform: translateY(-2px); }
 .kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--c, var(--ink-soft)); }
 .kpi.is-active { border-color: var(--c); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 55%, transparent), var(--shadow); }
 .kpi__icon { flex: 0 0 auto; width: clamp(40px, 5.4vh, 64px); height: clamp(40px, 5.4vh, 64px); display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); }
 .kpi__icon svg { width: 58%; height: 58%; }
-.kpi__body { display: flex; flex-direction: column; line-height: 1; min-width: 0; }
-.kpi__num { font-size: clamp(1.8rem, 5.2vh, 3.9rem); font-weight: 800; font-variant-numeric: tabular-nums; }
-.kpi__label { margin-top: 6px; color: var(--ink-soft); font-size: clamp(0.74rem, 1.5vh, 1.02rem); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+.kpi__body { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: clamp(6px, 0.7vw, 12px); line-height: 1; min-width: 0; }
+.kpi__num { font-size: clamp(1.7rem, 4.4vh, 3.2rem); font-weight: 800; font-variant-numeric: tabular-nums; }
+.kpi__label { color: var(--ink-soft); font-size: clamp(0.74rem, 1.5vh, 1.02rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
 
 /* ── Cuerpo: gráfico + rejilla ── */
 .live__body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: clamp(260px, 22vw, 380px) 1fr; gap: clamp(12px, 1.4vw, 22px); }
