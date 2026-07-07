@@ -205,6 +205,29 @@ async function postAccion(url) {
 const dlgReserva = document.getElementById('dlg-reserva');
 const formReserva = document.getElementById('form-reserva');
 const errReserva = document.getElementById('form-reserva-error');
+const warnReserva = document.getElementById('reserva-conflicto');
+
+// Aviso en vivo: al elegir unidad + fechas, consulta si el rango se traslapa con otro
+// movimiento activo de esa unidad (el guardado igual lo valida en el servidor).
+let conflictoTimer;
+async function checkConflicto() {
+    if (!formReserva || !warnReserva) return;
+    const unidad = formReserva.elements['unidad_id'].value;
+    const salida = formReserva.elements['fecha_salida'].value;
+    const fin = formReserva.elements['fecha_fin_estimada'].value;
+    if (!unidad || !salida || !fin) { warnReserva.hidden = true; return; }
+    const qs = new URLSearchParams({ unidad_id: unidad, fecha_salida: salida, fecha_fin_estimada: fin });
+    const r = await api('GET', `/api/movimientos/conflictos?${qs}`);
+    const cs = (r.ok && r.data) ? r.data.conflictos : [];
+    if (cs && cs.length) {
+        const c = cs[0];
+        warnReserva.innerHTML = `⚠ Esta unidad ya tiene un movimiento <strong>${esc(c.estado)}</strong> del <strong>${esc(c.desde)}</strong> al <strong>${esc(c.hasta)}</strong> (mov. #${esc(c.id)})${cs.length > 1 ? ` y ${cs.length - 1} más` : ''}. Ese horario se rechazará al guardar.`;
+        warnReserva.hidden = false;
+    } else {
+        warnReserva.hidden = true;
+    }
+}
+const scheduleConflicto = () => { clearTimeout(conflictoTimer); conflictoTimer = setTimeout(checkConflicto, 350); };
 
 function abrirReserva(unidadId) {
     if (!formReserva) return;
@@ -213,6 +236,7 @@ function abrirReserva(unidadId) {
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     errReserva.hidden = true;
+    if (warnReserva) warnReserva.hidden = true;
     dlgReserva.showModal();
 }
 
@@ -224,6 +248,12 @@ function toggleRutaCustom() {
 if (formReserva) {
     formReserva.elements['ruta_id'].addEventListener('change', toggleRutaCustom);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
+
+    ['unidad_id', 'fecha_salida', 'fecha_fin_estimada'].forEach((name) => {
+        const el = formReserva.elements[name];
+        el?.addEventListener('change', scheduleConflicto);
+        el?.addEventListener('input', scheduleConflicto);
+    });
 
     formReserva.addEventListener('submit', async (ev) => {
         ev.preventDefault();

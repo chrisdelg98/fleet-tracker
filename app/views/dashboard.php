@@ -172,6 +172,7 @@
                 <label class="check"><input type="checkbox" name="retorno_disponible" value="1"> Retorno disponible</label></label>
         </div>
         </div>
+        <p class="form__warn" id="reserva-conflicto" hidden></p>
         <p class="form__error" id="form-reserva-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>

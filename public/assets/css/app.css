@@ -1035,6 +1035,7 @@ input[type="radio"] {
 .check { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: normal; min-height: var(--control-h); }
 .checks { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 .form__error { color: var(--color-error); background: var(--color-error-bg); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); font-size: var(--fs-sm); }
+.form__warn { color: #8a5a00; background: #fbf1d8; border: 1px solid rgba(224, 152, 42, 0.35); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); font-size: var(--fs-sm); line-height: 1.5; }
 .btn--ghost-dark { background: var(--color-surface); color: var(--color-ink); border-color: var(--color-border); }
 .btn--ghost-dark:hover { background: var(--color-surface-soft); border-color: var(--primary-border); color: var(--primary); }
 

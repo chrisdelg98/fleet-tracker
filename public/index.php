@@ -131,6 +131,7 @@ $router->get('/api/disponibilidad', fn() => $disponibilidadController->apiDispon
 
 // Movimientos y máquina de estados
 $router->post('/api/movimientos', fn() => $movimientoController->apiCreate());
+$router->get('/api/movimientos/conflictos', fn() => $movimientoController->apiConflictos());
 $router->get('/api/movimientos/{id}', fn($p) => $movimientoController->apiShow($p));
 $router->put('/api/movimientos/{id}', fn($p) => $movimientoController->apiUpdate($p));
 $router->post('/api/movimientos/{id}/confirmar', fn($p) => $movimientoController->apiConfirmar($p));

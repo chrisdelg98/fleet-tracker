@@ -37,6 +37,13 @@ final class MovimientoController
         json_ok(['id' => $id], 'Movimiento creado.', 201);
     }
 
+    /** GET /api/movimientos/conflictos — aviso en vivo de traslape para el formulario. */
+    public function apiConflictos(): void
+    {
+        require_role_api(self::ESCRITURA);
+        json_ok(['conflictos' => $this->service->conflictosPropuestos($_GET)]);
+    }
+
     public function apiUpdate(array $p): void
     {
         $user = require_role_api(self::ESCRITURA);

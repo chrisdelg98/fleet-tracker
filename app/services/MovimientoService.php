@@ -52,6 +52,44 @@ final class MovimientoService
         return $id;
     }
 
+    /**
+     * Traslapes de un rango propuesto para una unidad — solo lectura, para el aviso en vivo
+     * del formulario. No lanza si faltan/están mal los datos: devuelve [] (sin aviso).
+     *
+     * @return array<int, array{id:int, estado:string, desde:string, hasta:string}>
+     */
+    public function conflictosPropuestos(array $q): array
+    {
+        $unidadId = (int) ($q['unidad_id'] ?? 0);
+        $salida = trim((string) ($q['fecha_salida'] ?? ''));
+        $fin = trim((string) ($q['fecha_fin_estimada'] ?? ''));
+        if ($unidadId <= 0 || $salida === '' || $fin === '') {
+            return [];
+        }
+        $unidad = $this->unidades->find($unidadId);
+        if ($unidad === null) {
+            return [];
+        }
+        $tz = $this->estacionTz((int) $unidad['estacion_id']);
+        try {
+            $salidaUtc = local_to_utc($salida, $tz)->format('Y-m-d H:i:s');
+            $finUtc = local_to_utc($fin, $tz)->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            return [];
+        }
+        if ($finUtc <= $salidaUtc) {
+            return [];
+        }
+        $exceptId = isset($q['except_id']) && $q['except_id'] !== '' ? (int) $q['except_id'] : null;
+
+        return array_map(static fn(array $c): array => [
+            'id'     => (int) $c['id'],
+            'estado' => (string) $c['estado'],
+            'desde'  => format_local($c['fecha_salida'], $tz, 'd M H:i'),
+            'hasta'  => format_local($c['fecha_fin_estimada'], $tz, 'd M H:i'),
+        ], $this->movimientos->conflictos($unidadId, $salidaUtc, $finUtc, $exceptId));
+    }
+
     /** Edita el plan (ruta/fechas/flags) de un movimiento aún activo; re-valida no-traslape. */
     public function editar(int $id, array $input, array $user): void
     {
