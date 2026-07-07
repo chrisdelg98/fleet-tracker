@@ -16,6 +16,7 @@ const SVG = {
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 15.5H3z"/><path d="M12 10v4.5"/><path d="M12 17.5h.01"/></svg>',
     sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z"/></svg>',
+    box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
 };
 
 // Metadatos por estado (color en hex igual a las variables de live.css).
@@ -151,14 +152,16 @@ function tileHtml(u) {
     }
     const demora = u.con_demora ? `<span class="tile__demora">${SVG.alert}<span>demora</span></span>` : '';
     const changed = prev.has(u.unidad_id) && prev.get(u.unidad_id) !== u.estado ? ' is-changed' : '';
-    // Solo la capacidad.
-    const sub = u.capacidad ? esc(u.capacidad) : '—';
+    // La capacidad es el dato clave: chip destacado con ícono.
+    const cap = u.capacidad
+        ? `<span class="tile__cap" title="Capacidad">${SVG.box}<span>${esc(u.capacidad)}</span></span>`
+        : '';
     return `<button type="button" class="tile${changed}" data-id="${u.unidad_id}" style="--c:${m.color}">
         <span class="tile__top">
             <span class="tile__station" title="Estación ${esc(u.estacion_codigo || '')}">${esc(u.estacion_codigo || '—')}</span>
             <span class="tile__state">${esc(m.label)}</span>
         </span>
-        <span class="tile__plate"><strong title="${esc(u.placa_unidad)}">${esc(u.placa_unidad)}</strong><small>${sub}</small></span>
+        <span class="tile__plate"><strong title="${esc(u.placa_unidad)}">${esc(u.placa_unidad)}</strong>${cap}</span>
         <span class="tile__meta">${metaLine}${demora}</span>
     </button>`;
 }

@@ -157,7 +157,9 @@ body.live {
 .tile__station { flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 15%, transparent); color: color-mix(in srgb, var(--c) 68%, var(--badge-mix)); font-size: clamp(0.6rem, 1.2vh, 0.76rem); font-weight: 800; line-height: 1.45; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
 .tile__plate { min-width: 0; line-height: 1.12; }
 .tile__plate strong { display: block; font-size: clamp(1.15rem, 2.6vh, 1.8rem); font-weight: 800; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile__plate small { display: block; color: color-mix(in srgb, var(--ink) 82%, var(--ink-soft)); font-weight: 700; font-size: clamp(0.78rem, 1.45vh, 0.94rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Capacidad: dato clave. Chip destacado con ícono, separado de la placa. */
+.tile__cap { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; padding: 3px 10px; border-radius: 9px; background: color-mix(in srgb, var(--ink) 6%, transparent); border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent); color: var(--ink); font-weight: 800; font-size: clamp(0.84rem, 1.65vh, 1.05rem); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; line-height: 1.2; }
+.tile__cap svg { width: 1.05em; height: 1.05em; opacity: 0.6; flex: 0 0 auto; }
 .tile__meta { display: flex; align-items: center; gap: 8px; margin-top: 1px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink-soft); font-size: clamp(0.72rem, 1.4vh, 0.92rem); min-height: 1em; }
 .tile__route { color: var(--ink); font-weight: 600; }
 .tile__demora { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; color: var(--dm); font-weight: 700; }
