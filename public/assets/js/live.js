@@ -35,6 +35,9 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 
 let data = [];            // últimas unidades del API
 let station = '';         // filtro estación (codigo) o ''
+let size = '';            // filtro tamaño (capacidad) o ''
+let tipo = '';            // filtro tipo de equipo o ''
+let filtersFilled = false;
 const cats = new Set();   // categorías seleccionadas: DISPONIBLE, EN_TRANSITO, RESERVADA, DEMORA (multi)
 let prev = new Map();     // unidad_id -> estado (para detectar cambios)
 let lastOk = 0;
@@ -197,8 +200,20 @@ function renderGrid(units) {
 }
 
 // ── Aplicar filtros y pintar ──
+// Rellena los selects de tamaño y tipo con los valores presentes en la flota (una vez).
+function fillFilters() {
+    const opts = (values, current) => '<option value="">' + values.all + '</option>' +
+        values.list.map((v) => `<option value="${esc(v)}"${v === current ? ' selected' : ''}>${esc(v)}</option>`).join('');
+    const uniq = (key) => [...new Set(data.map((u) => u[key]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+    $('live-size').innerHTML = opts({ all: 'Todos los tamaños', list: uniq('capacidad') }, size);
+    $('live-tipo').innerHTML = opts({ all: 'Todos los tipos', list: uniq('tipo_equipo') }, tipo);
+}
+
 function apply() {
-    const scoped = station ? data.filter((u) => u.estacion_codigo === station) : data;
+    const scoped = data.filter((u) =>
+        (!station || u.estacion_codigo === station) &&
+        (!size || u.capacidad === size) &&
+        (!tipo || u.tipo_equipo === tipo));
     renderKpis(scoped);
     renderDonut(scoped);
     renderSummary(scoped);
@@ -210,6 +225,8 @@ function apply() {
 
     const partes = [];
     if (station) partes.push(`Estación ${station}`);
+    if (size) partes.push(size);
+    if (tipo) partes.push(tipo);
     if (cats.size) partes.push([...cats].map((c) => (c === 'DEMORA' ? 'Con demora' : meta(c).label)).join(' + '));
     $('live-filterinfo').textContent = partes.length ? `Filtro: ${partes.join(' · ')}` : '';
 }
@@ -256,6 +273,7 @@ async function load() {
     lastOk = Date.now();
     $('live-status').textContent = 'En línea';
     $('live-status').classList.remove('is-error');
+    if (!filtersFilled) { fillFilters(); filtersFilled = true; }
     apply();
     prev = new Map(data.map((u) => [u.unidad_id, u.estado]));
 }
@@ -269,6 +287,8 @@ function wireEvents() {
         apply();
     });
     $('live-estacion').addEventListener('change', (ev) => { station = ev.target.value; apply(); });
+    $('live-size').addEventListener('change', (ev) => { size = ev.target.value; apply(); });
+    $('live-tipo').addEventListener('change', (ev) => { tipo = ev.target.value; apply(); });
     $('live-grid').addEventListener('click', (ev) => {
         const t = ev.target.closest('[data-id]');
         if (!t) return;

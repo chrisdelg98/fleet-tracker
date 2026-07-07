@@ -28,25 +28,35 @@
             </div>
         </div>
 
-        <div class="live__tools">
-            <label class="live__field">
-                <select id="live-estacion" aria-label="Filtrar por estación">
-                    <option value="">Todas las estaciones</option>
-                    <?php foreach ($estaciones as $es): ?>
-                        <option value="<?= e($es['codigo']) ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <button type="button" class="live__icon-btn" id="live-panel-toggle" aria-label="Mostrar u ocultar la distribución" title="Distribución de la flota" aria-pressed="false"></button>
-            <button type="button" class="live__icon-btn" id="live-theme" aria-label="Cambiar tema" title="Cambiar tema"></button>
-        </div>
-
         <div class="live__clock">
             <strong id="live-time">--:--:--</strong>
             <span id="live-date">—</span>
         </div>
-        <a class="live__exit" href="/" title="Volver al panel" aria-label="Salir del live">✕</a>
+
+        <div class="live__right">
+            <button type="button" class="live__icon-btn" id="live-panel-toggle" aria-label="Mostrar u ocultar la distribución" title="Distribución de la flota" aria-pressed="false"></button>
+            <button type="button" class="live__icon-btn" id="live-theme" aria-label="Cambiar tema" title="Cambiar tema"></button>
+            <a class="live__exit" href="/" title="Volver al panel" aria-label="Salir del live">✕</a>
+        </div>
     </header>
+
+    <div class="live__filters">
+        <span class="live__filters-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg></span>
+        <label class="live__field">
+            <select id="live-estacion" aria-label="Filtrar por estación">
+                <option value="">Todas las estaciones</option>
+                <?php foreach ($estaciones as $es): ?>
+                    <option value="<?= e($es['codigo']) ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="live__field">
+            <select id="live-size" aria-label="Filtrar por tamaño"><option value="">Todos los tamaños</option></select>
+        </label>
+        <label class="live__field">
+            <select id="live-tipo" aria-label="Filtrar por tipo"><option value="">Todos los tipos</option></select>
+        </label>
+    </div>
 
     <section class="live__kpis" id="live-kpis"><!-- KPIs por JS --></section>
 
