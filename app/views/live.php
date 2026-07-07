@@ -59,6 +59,7 @@
                     <span>unidades</span>
                 </div>
             </div>
+            <div class="live__summary" id="live-summary"><!-- resumen por JS --></div>
             <ul class="live__legend" id="live-legend"><!-- leyenda por JS --></ul>
         </aside>
 

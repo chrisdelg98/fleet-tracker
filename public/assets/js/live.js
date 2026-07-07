@@ -122,6 +122,21 @@ function renderDonut(scoped) {
     }).join('');
 }
 
+// ── Resumen agregado (operación vs disponibilidad) ──
+function renderSummary(scoped) {
+    const total = scoped.length || 1;
+    const disp = scoped.filter((u) => u.estado === 'DISPONIBLE').length;
+    const oper = scoped.filter((u) => u.estado === 'EN_TRANSITO' || u.estado === 'RESERVADA').length;
+    const pct = (n) => Math.round((n / total) * 100);
+    const stat = (num, tot, label, color) => `
+        <div class="live__stat" style="--c:${color}">
+            <span class="live__stat-top"><span class="live__stat-num">${num}</span><span class="live__stat-pct">${pct(num)}%</span></span>
+            <span class="live__stat-lbl">${label}</span>
+            <span class="live__stat-bar"><span style="width:${pct(num)}%"></span></span>
+        </div>`;
+    $('live-summary').innerHTML = stat(disp, total, 'Disponibles', '#1eae62') + stat(oper, total, 'En operación', '#2f7ff0');
+}
+
 // ── Rejilla de unidades ──
 function tileHtml(u) {
     const m = meta(u.estado);
@@ -164,6 +179,7 @@ function apply() {
     const scoped = station ? data.filter((u) => u.estacion_codigo === station) : data;
     renderKpis(scoped);
     renderDonut(scoped);
+    renderSummary(scoped);
     const units = cat
         ? scoped.filter((u) => (cat === 'DEMORA' ? u.con_demora : u.estado === cat))
         : scoped;

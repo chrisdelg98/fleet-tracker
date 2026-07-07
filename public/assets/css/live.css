@@ -120,6 +120,16 @@ body.live {
 .live__donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1; }
 .live__donut-center strong { font-size: clamp(1.6rem, 4.4vh, 3rem); font-weight: 800; font-variant-numeric: tabular-nums; }
 .live__donut-center span { color: var(--ink-soft); font-size: clamp(0.7rem, 1.4vh, 0.95rem); text-transform: uppercase; letter-spacing: 0.08em; }
+/* Resumen agregado: operación vs disponibilidad. */
+.live__summary { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1.2vw, 14px); margin-top: clamp(8px, 1.6vh, 16px); }
+.live__stat { padding: clamp(9px, 1.4vh, 14px) clamp(11px, 1.2vw, 15px); border-radius: 14px; background: color-mix(in srgb, var(--c) 8%, var(--panel)); border: 1px solid color-mix(in srgb, var(--c) 22%, transparent); }
+.live__stat-top { display: flex; align-items: baseline; gap: 6px; }
+.live__stat-num { font-size: clamp(1.4rem, 3.2vh, 2.1rem); font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+.live__stat-pct { font-size: clamp(0.72rem, 1.4vh, 0.92rem); font-weight: 700; color: color-mix(in srgb, var(--c) 65%, var(--ink)); }
+.live__stat-lbl { display: block; margin: 4px 0 8px; color: var(--ink-soft); font-size: clamp(0.66rem, 1.3vh, 0.82rem); text-transform: uppercase; letter-spacing: 0.05em; }
+.live__stat-bar { display: block; height: 5px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.live__stat-bar > span { display: block; height: 100%; border-radius: 999px; background: var(--c); transition: width .5s ease; }
+
 .live__legend { list-style: none; flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-evenly; gap: clamp(10px, 2vh, 20px); margin-top: clamp(10px, 2vh, 20px); }
 .live__legend li { display: flex; flex-direction: column; gap: 9px; }
 .leg__top { display: flex; align-items: center; gap: 10px; font-size: clamp(0.85rem, 1.7vh, 1.12rem); }
