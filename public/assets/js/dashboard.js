@@ -16,11 +16,12 @@ const stateSelectToggle = document.getElementById('f-estados-toggle');
 const stateSelectMenu = document.getElementById('f-estados-menu');
 const stateSelectSummary = document.getElementById('f-estados-summary');
 
+// El color del estado lo pinta el punto de .chip::before; la etiqueta va en texto plano.
 const CHIP = {
-    DISPONIBLE: ['chip--disponible', '🟢 Disponible'],
-    RESERVADA: ['chip--reservada', '🟡 Reservada'],
-    EN_TRANSITO: ['chip--transito', '🔵 En tránsito'],
-    TALLER_BLOQUEADA: ['chip--taller', '⚪ Taller/Bloqueada'],
+    DISPONIBLE: ['chip--disponible', 'Disponible'],
+    RESERVADA: ['chip--reservada', 'Reservada'],
+    EN_TRANSITO: ['chip--transito', 'En tránsito'],
+    TALLER_BLOQUEADA: ['chip--taller', 'Taller/Bloqueada'],
 };
 
 let fechaMode = 'hoy';

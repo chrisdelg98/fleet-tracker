@@ -625,22 +625,28 @@ input[type="radio"] {
 .alert--error { background: var(--color-error-bg); color: var(--color-error); }
 .alert--ok { background: var(--color-success-bg); color: var(--estado-disponible); }
 
-/* ── Chips de estado de disponibilidad (globales, se usan desde Fase 2) ── */
+/* ── Estado de disponibilidad (globales, plan §2): el color lo lleva el punto, no un relleno ── */
 .chip {
     display: inline-flex;
     align-items: center;
-    gap: var(--sp-1);
-    padding: var(--sp-1) 10px;
-    border-radius: 999px;
+    gap: 7px;
     font-size: var(--fs-sm);
     font-weight: 600;
-    color: #fff;
+    color: var(--color-ink);
     white-space: nowrap;      /* el estado nunca se parte en dos líneas */
 }
-.chip--disponible { background: var(--estado-disponible); }
-.chip--reservada  { background: var(--estado-reservada); }
-.chip--transito   { background: var(--estado-transito); }
-.chip--taller     { background: var(--estado-taller); }
+.chip::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--estado, var(--color-ink-mute));
+}
+.chip--disponible { --estado: var(--estado-disponible); }
+.chip--reservada  { --estado: var(--estado-reservada); }
+.chip--transito   { --estado: var(--estado-transito); }
+.chip--taller     { --estado: var(--estado-taller); }
 
 .filters-panel {
     display: grid;
@@ -844,7 +850,11 @@ input[type="radio"] {
     background: rgba(255,255,255,0.92);
 }
 .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-sm); }
-.table th, .table td { text-align: left; padding: 14px var(--sp-4); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+/* Fila densa: la altura la marca el contenido, así solo crecen las filas con texto extra. */
+.table th, .table td { text-align: left; padding: 8px var(--sp-4); border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+.table th { padding-block: 7px; }
+.table td small { font-size: var(--fs-xs); line-height: 1.3; }
+.table td small.block { margin-top: 1px; }
 .table th {
     color: var(--color-ink-soft);
     font-weight: 700;
@@ -872,8 +882,8 @@ input[type="radio"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: var(--color-surface);
@@ -1378,13 +1388,13 @@ input[type="radio"] {
     color: var(--color-ink);
 }
 .delay-flag__wrap {
-    margin-top: 6px;
+    margin-top: 3px;
 }
 .delay-flag {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 10px;
+    gap: 6px;
+    padding: 2px 8px;
     border-radius: 999px;
     background: #fff3e6;
     color: #9a4b00;
