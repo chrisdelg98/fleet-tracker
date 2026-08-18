@@ -61,3 +61,27 @@ if (shell) {
         });
     });
 }
+
+// ── Menú de usuario de la topbar (identidad + cerrar sesión) ──
+const userMenu = document.querySelector('[data-usermenu]');
+if (userMenu) {
+    const trigger = userMenu.querySelector('[data-usermenu-trigger]');
+    const panel = userMenu.querySelector('[data-usermenu-panel]');
+
+    const close = () => {
+        userMenu.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        panel.hidden = true;
+    };
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const abrir = panel.hidden;
+        panel.hidden = !abrir;
+        userMenu.classList.toggle('is-open', abrir);
+        trigger.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', (e) => { if (!userMenu.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+}

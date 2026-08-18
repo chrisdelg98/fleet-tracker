@@ -5,16 +5,13 @@
  * @var array $rutas
  * @var string $q
  */
+set_page_meta(
+    'Rutas',
+    'Mantén el catálogo de trayectos con origen, destino y tiempos estimados reutilizables en reservas y programación.',
+    ['accion' => '<button type="button" class="btn btn--primary" data-action="nueva-ruta">＋ Nueva ruta</button>']
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Rutas</h1>
-            <p class="module__subtitle">Mantén el catálogo de trayectos con origen, destino y tiempos estimados reutilizables en reservas y programación.</p>
-        </div>
-        <button type="button" class="btn btn--primary" data-action="nueva-ruta">＋ Nueva ruta</button>
-    </div>
-
     <form class="filters-panel" method="get" action="/rutas" data-filters-panel data-initial-open="false">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">

@@ -1,11 +1,8 @@
-<?php /** Landing de Administración (plan §9.1). Solo Admin Global. */ ?>
+<?php
+/** Landing de Administración (plan §9.1). Solo Admin Global. */
+set_page_meta('Administración', 'Gestiona sedes, usuarios y catálogos operativos desde un solo punto de control.');
+?>
 <section class="module">
-    <div class="module__head admin-head">
-        <div>
-            <h1>Administración</h1>
-            <p class="module__subtitle admin-head__copy">Gestiona sedes, usuarios y catálogos operativos desde un solo punto de control.</p>
-        </div>
-    </div>
     <div class="admin-grid">
         <a class="card admin-card" href="/admin/estaciones">
             <span class="admin-card__kicker">Estructura</span>

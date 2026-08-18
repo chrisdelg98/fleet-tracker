@@ -5,13 +5,16 @@
  * @var array $estaciones
  */
 $zonasAmerica = array_values(array_filter(timezone_identifiers_list(), static fn(string $z): bool => str_starts_with($z, 'America/')));
+set_page_meta(
+    'Estaciones',
+    'Define las sedes operativas, su país y la zona horaria que gobierna las vistas locales.',
+    [
+        'padre' => ['label' => 'Administración', 'href' => '/admin'],
+        'accion' => '<button type="button" class="btn btn--primary" data-action="nueva-estacion">＋ Nueva estación</button>',
+    ]
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div><a href="/admin" class="link">← Administración</a><h1>Estaciones</h1><p class="module__subtitle">Define las sedes operativas, su país y la zona horaria que gobierna las vistas locales.</p></div>
-        <button type="button" class="btn btn--primary" data-action="nueva-estacion">＋ Nueva estación</button>
-    </div>
-
     <div class="card card--table">
         <table class="table">
             <thead><tr><th>Código</th><th>Nombre</th><th>País</th><th>Zona horaria</th><th>Estado</th><th></th></tr></thead>

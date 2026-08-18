@@ -12,16 +12,13 @@ $esAdmin = $usuario['rol'] === Rol::ADMIN_GLOBAL;
 $hoy = new DateTimeImmutable('today');
 $hayFiltros = implode('', $filtros) !== '';
 $estadosLicencia = ['vigente' => 'Vigente', 'por_vencer' => 'Por vencer (≤30 días)', 'vencida' => 'Vencida'];
+set_page_meta(
+    'Pilotos',
+    'Gestiona pilotos, licencias y estación asignada para mantener la operación lista para programar movimientos.',
+    ['accion' => '<button type="button" class="btn btn--primary" data-action="nuevo-piloto">＋ Nuevo piloto</button>']
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Pilotos</h1>
-            <p class="module__subtitle">Gestiona pilotos, licencias y estación asignada para mantener la operación lista para programar movimientos.</p>
-        </div>
-        <button type="button" class="btn btn--primary" data-action="nuevo-piloto">＋ Nuevo piloto</button>
-    </div>
-
     <form class="filters-panel" method="get" action="/pilotos" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">

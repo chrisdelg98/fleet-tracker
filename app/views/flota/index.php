@@ -25,16 +25,13 @@ $claseEstado = [
     EstadoVehiculo::OPERATIVO => 'ok', EstadoVehiculo::EN_MANTENIMIENTO => 'warn',
     EstadoVehiculo::INOPERATIVO => 'warn', EstadoVehiculo::DE_BAJA => 'muted',
 ];
+set_page_meta(
+    'Flota',
+    'Administra unidades, estados operativos, clasificación y asignaciones base de la flota.',
+    ['accion' => '<button type="button" class="btn btn--primary" data-action="nueva-unidad">＋ Nueva unidad</button>']
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Flota</h1>
-            <p class="module__subtitle">Administra unidades, estados operativos, clasificación y asignaciones base de la flota.</p>
-        </div>
-        <button type="button" class="btn btn--primary" data-action="nueva-unidad">＋ Nueva unidad</button>
-    </div>
-
     <?php $hayFiltros = implode('', $filtros) !== ''; ?>
     <form class="filters-panel" method="get" action="/flota" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
         <div class="filters-panel__bar">

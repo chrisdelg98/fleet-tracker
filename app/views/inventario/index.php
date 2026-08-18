@@ -15,16 +15,13 @@ $labelEstado = [
     EstadoVehiculo::INOPERATIVO => 'Inoperativo', EstadoVehiculo::DE_BAJA => 'De baja',
 ];
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
+set_page_meta(
+    'Inventario vehicular',
+    'Visualiza la composición de la flota e inventario por categoría, estado y estación con filtros de solo lectura.',
+    ['accion' => '<a class="btn btn--primary" href="/inventario/export.csv' . ($qs ? '?' . e($qs) : '') . '">⬇ Exportar CSV</a>']
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Inventario vehicular</h1>
-            <p class="module__subtitle">Visualiza la composición de la flota e inventario por categoría, estado y estación con filtros de solo lectura.</p>
-        </div>
-        <a class="btn btn--primary" href="/inventario/export.csv<?= $qs ? '?' . e($qs) : '' ?>">⬇ Exportar CSV</a>
-    </div>
-
     <form class="filters-panel" method="get" action="/inventario" data-filters-panel data-initial-open="false">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">

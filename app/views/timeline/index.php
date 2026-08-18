@@ -15,16 +15,13 @@ $qs = http_build_query(array_filter([
     'desde' => $desde,
     'estacion_id' => $estacionSel,
 ], static fn($v) => $v !== null && $v !== ''));
+set_page_meta(
+    'Timeline de reservas',
+    'Observa por unidad las ventanas ocupadas de reservas y tránsito para anticipar disponibilidad y conflictos.',
+    ['padre' => ['label' => 'Dashboard', 'href' => '/']]
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Timeline de reservas</h1>
-            <p class="module__subtitle">Observa por unidad las ventanas ocupadas de reservas y tránsito para anticipar disponibilidad y conflictos.</p>
-        </div>
-        <a class="btn btn--ghost-dark" href="/">← Dashboard</a>
-    </div>
-
     <form class="filters-panel" method="get" action="/timeline" data-filters-panel data-initial-open="false">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">

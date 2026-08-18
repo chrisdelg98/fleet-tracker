@@ -20,15 +20,9 @@ $util = $reportes['utilizacion'];
 $dias = $reportes['dias_transito'];
 $rutas = $reportes['rutas'];
 $fmtDias = static fn($v) => rtrim(rtrim(number_format((float) $v, 1, '.', ''), '0'), '.');
+set_page_meta('Inteligencia', 'Resume utilización, retornos, tránsito y rutas para apoyar decisiones operativas.');
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Inteligencia</h1>
-            <p class="module__subtitle">Resume utilización, retornos, tránsito y rutas para apoyar decisiones operativas.</p>
-        </div>
-    </div>
-
     <?php if (!empty($flash)): ?>
         <div class="alert <?= ($flash['type'] ?? '') === 'ok' ? 'alert--ok' : 'alert--error' ?>"><?= e($flash['message'] ?? '') ?></div>
     <?php endif; ?>

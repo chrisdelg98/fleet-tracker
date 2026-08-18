@@ -29,6 +29,18 @@ final class Rol
             self::CONSULTA_REGIONAL,
         ];
     }
+
+    /** Etiqueta legible para la interfaz (nunca mostrar la constante cruda al usuario). */
+    public static function label(string $rol): string
+    {
+        return [
+            self::ADMIN_GLOBAL => 'Admin Global',
+            self::ENCARGADO => 'Encargado',
+            self::CONSULTA_BASICO => 'Consulta Básico',
+            self::CONSULTA_INVENTARIO => 'Consulta Inventario',
+            self::CONSULTA_REGIONAL => 'Consulta Regional',
+        ][$rol] ?? $rol;
+    }
 }
 
 /** Región geográfica de un país, ordena el desplegable (plan §5.3). */

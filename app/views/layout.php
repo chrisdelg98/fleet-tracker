@@ -30,6 +30,8 @@
     ];
 
     if ($puedeGestionar) {
+        // Timeline es una vista general (como Dashboard y Live), no un mantenimiento por rol.
+        $enlacePrincipal['/timeline'] = 'Timeline';
         $grupos['Operación']['/flota'] = 'Flota';
         $grupos['Operación']['/pilotos'] = 'Pilotos';
         $grupos['Operación']['/rutas'] = 'Rutas';
@@ -44,29 +46,63 @@
     if ($u['rol'] === Rol::ADMIN_GLOBAL) {
         $grupos['Administración']['/admin'] = 'Administración';
     }
+    $meta = page_meta();
     ?>
     <header class="topbar">
         <div class="topbar__left">
             <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Mostrar u ocultar el menú" title="Menú" aria-controls="app-sidebar" aria-expanded="false">
                 <span class="nav-toggle__bars" aria-hidden="true"></span>
             </button>
-            <div class="topbar__brand">
+            <a class="topbar__brand" href="/" title="Disponibilidad de Flota">
                 <img src="/assets/img/logo-small.png" alt="Disponibilidad de Flota" class="topbar__logo">
-                <div class="topbar__brand-copy">
-                    <strong>Disponibilidad de Flota</strong>
+            </a>
+            <?php if ($meta['titulo'] !== ''): ?>
+                <div class="topbar__page">
+                    <?php if (!empty($meta['padre'])): ?>
+                        <a class="topbar__crumb" href="<?= e($meta['padre']['href']) ?>"><?= e($meta['padre']['label']) ?></a>
+                        <span class="topbar__crumb-sep" aria-hidden="true">›</span>
+                    <?php endif; ?>
+                    <h1 class="topbar__page-title"<?= $meta['descripcion'] !== '' ? ' title="' . e($meta['descripcion']) . '"' : '' ?>><?= e($meta['titulo']) ?></h1>
                 </div>
-            </div>
+            <?php endif; ?>
         </div>
 
         <div class="topbar__nav">
-            <div class="topbar__user-block">
-                <strong class="topbar__user-name"><?= e($u['nombre']) ?></strong>
-                <span class="topbar__user-role">(<?= e($u['rol']) ?>)</span>
+            <?php if ($meta['accion'] !== ''): ?>
+                <div class="topbar__actions"><?= $meta['accion'] ?></div>
+            <?php endif; ?>
+            <?php if ($meta['acciones'] !== ''): ?>
+                <div class="topbar__actions"><?= $meta['acciones'] ?></div>
+            <?php endif; ?>
+
+            <?php
+            // Iniciales del nombre para el avatar (máx. 2 letras).
+            $partes = preg_split('/\s+/', trim($u['nombre'])) ?: [];
+            $iniciales = mb_strtoupper(mb_substr($partes[0] ?? '', 0, 1) . (count($partes) > 1 ? mb_substr(end($partes), 0, 1) : ''));
+            ?>
+            <div class="usermenu" data-usermenu>
+                <button type="button" class="usermenu__trigger" data-usermenu-trigger aria-haspopup="true" aria-expanded="false">
+                    <span class="usermenu__avatar" aria-hidden="true"><?= e($iniciales) ?></span>
+                    <span class="usermenu__name"><?= e($u['nombre']) ?></span>
+                    <svg class="usermenu__chevron" viewBox="0 0 20 20" width="12" height="12" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="usermenu__panel" data-usermenu-panel hidden>
+                    <div class="usermenu__id">
+                        <strong><?= e($u['nombre']) ?></strong>
+                        <span><?= e(Rol::label($u['rol'])) ?></span>
+                        <small><?= e($u['email']) ?></small>
+                    </div>
+                    <form method="post" action="/logout">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="usermenu__item">
+                            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path d="M7.75 2.5a2.75 2.75 0 0 0-2.75 2.75v9.5a2.75 2.75 0 0 0 2.75 2.75h3.5a2.75 2.75 0 0 0 2.75-2.75.75.75 0 0 0-1.5 0c0 .69-.56 1.25-1.25 1.25h-3.5c-.69 0-1.25-.56-1.25-1.25v-9.5c0-.69.56-1.25 1.25-1.25h3.5c.69 0 1.25.56 1.25 1.25a.75.75 0 0 0 1.5 0A2.75 2.75 0 0 0 11.25 2.5h-3.5Zm7.72 5.22a.75.75 0 0 0-1.06 1.06l.47.47H9.5a.75.75 0 0 0 0 1.5h5.38l-.47.47a.75.75 0 1 0 1.06 1.06l1.75-1.75a.75.75 0 0 0 0-1.06l-1.75-1.75Z" fill="currentColor"/>
+                            </svg>
+                            <span>Cerrar sesión</span>
+                        </button>
+                    </form>
+                </div>
             </div>
-            <form method="post" action="/logout" class="topbar__logout">
-                <?= csrf_field() ?>
-                <button type="submit" class="btn btn--topbar">Cerrar sesión</button>
-            </form>
         </div>
     </header>
 
@@ -78,22 +114,15 @@
                         <?php foreach ($enlacePrincipal as $href => $label):
                             $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
                         ?>
-                            <a href="<?= e($href) ?>" class="sidebar__link sidebar__link--primary<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
+                            <a href="<?= e($href) ?>" class="sidebar__link<?= $activo ? ' is-active' : '' ?>"><?= nav_icon($href) ?><span><?= e($label) ?></span></a>
                         <?php endforeach; ?>
                     </div>
 
                     <?php foreach ($grupos as $titulo => $items): ?>
                         <?php if ($items === []): continue; endif; ?>
-                        <?php
-                        // La sección que contiene la ruta activa arranca abierta; las demás, cerradas.
-                        $abierto = false;
-                        foreach (array_keys($items) as $href) {
-                            if ($href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href)) { $abierto = true; break; }
-                        }
-                        $slug = strtolower(str_replace(' ', '-', $titulo));
-                        ?>
-                        <div class="sidebar__group<?= $abierto ? ' is-open' : '' ?>" data-section="<?= e($slug) ?>">
-                            <button type="button" class="sidebar__group-toggle" aria-expanded="<?= $abierto ? 'true' : 'false' ?>">
+                        <?php $slug = strtolower(str_replace(' ', '-', $titulo)); ?>
+                        <div class="sidebar__group is-open" data-section="<?= e($slug) ?>">
+                            <button type="button" class="sidebar__group-toggle" aria-expanded="true">
                                 <span><?= e($titulo) ?></span>
                                 <svg class="sidebar__chevron" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </button>
@@ -102,7 +131,7 @@
                                     <?php foreach ($items as $href => $label):
                                         $activo = $href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href);
                                     ?>
-                                        <a href="<?= e($href) ?>" class="sidebar__link<?= $activo ? ' is-active' : '' ?>"><?= e($label) ?></a>
+                                        <a href="<?= e($href) ?>" class="sidebar__link<?= $activo ? ' is-active' : '' ?>"><?= nav_icon($href) ?><span><?= e($label) ?></span></a>
                                     <?php endforeach; ?>
                                 </div>
                             </div>

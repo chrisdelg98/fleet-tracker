@@ -114,16 +114,13 @@ $timelineHtml = static function (array $eventos) use ($detalleFilas, $detalleHtm
     }
     return $h . '</ol>';
 };
+set_page_meta(
+    'Histórico de actividad',
+    'Consulta la bitácora del sistema por entidad, acción, usuario y fecha con exportación directa a CSV.',
+    ['accion' => '<a class="btn btn--primary" href="/historico/export.csv' . ($qs ? '?' . e($qs) : '') . '">⬇ Exportar CSV</a>']
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div>
-            <h1>Histórico de actividad</h1>
-            <p class="module__subtitle">Consulta la bitácora del sistema por entidad, acción, usuario y fecha con exportación directa a CSV.</p>
-        </div>
-        <a class="btn btn--primary" href="/historico/export.csv<?= $qs ? '?' . e($qs) : '' ?>">⬇ Exportar CSV</a>
-    </div>
-
     <form class="filters-panel" method="get" action="/historico" data-filters-panel data-initial-open="false">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">

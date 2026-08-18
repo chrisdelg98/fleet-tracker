@@ -15,10 +15,13 @@ $fmtCampo = static function (string $tipo, $valor) use ($regionLabels): string {
 };
 $tablas = array_keys($catalogos);
 $catalogoActivo = $tablas[0] ?? null;
+set_page_meta(
+    'Catálogos',
+    'Mantén actualizados los parámetros base del sistema usados por formularios, reglas y validaciones operativas.',
+    ['padre' => ['label' => 'Administración', 'href' => '/admin']]
+);
 ?>
 <section class="module">
-    <div class="module__head"><div><a href="/admin" class="link">← Administración</a><h1>Catálogos</h1><p class="module__subtitle">Mantén actualizados los parámetros base del sistema usados por formularios, reglas y validaciones operativas.</p></div></div>
-
     <?php if ($catalogoActivo !== null): ?>
         <div class="catalogos-grid" role="tablist" aria-label="Catálogos disponibles">
             <?php foreach ($catalogos as $tabla => $cat): ?>

@@ -12,13 +12,16 @@ $labelRol = [
     Rol::CONSULTA_BASICO => 'Consulta Básico', Rol::CONSULTA_INVENTARIO => 'Consulta Inventario',
     Rol::CONSULTA_REGIONAL => 'Consulta Regional',
 ];
+set_page_meta(
+    'Usuarios',
+    'Administra cuentas, roles y alcance por estación para el personal con acceso al sistema.',
+    [
+        'padre' => ['label' => 'Administración', 'href' => '/admin'],
+        'accion' => '<button type="button" class="btn btn--primary" data-action="nuevo-usuario">＋ Nuevo usuario</button>',
+    ]
+);
 ?>
 <section class="module">
-    <div class="module__head">
-        <div><a href="/admin" class="link">← Administración</a><h1>Usuarios</h1><p class="module__subtitle">Administra cuentas, roles y alcance por estación para el personal con acceso al sistema.</p></div>
-        <button type="button" class="btn btn--primary" data-action="nuevo-usuario">＋ Nuevo usuario</button>
-    </div>
-
     <div class="card card--table">
         <table class="table">
             <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estación</th><th>Estado</th><th></th></tr></thead>
