@@ -9,27 +9,98 @@ const selRol = form.elements['rol'];
 const estacionField = document.getElementById('usuario-estacion-field');
 const selEstacion = form.elements['estacion_id'];
 const passReq = document.getElementById('pass-req');
-const passHint = document.getElementById('pass-hint');
+const passNote = document.getElementById('pass-note');
+const estacionReq = document.getElementById('estacion-req');
 
 /** Refresca el combobox buscable de cada select tras poblar/reset el formulario. */
 function syncSelects() {
     form.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
 }
 
-// Poka-yoke: los roles globales/regionales no llevan estación.
+// Poka-yoke: los roles globales/regionales no llevan estación. El campo se limpia y se
+// bloquea en lugar de ocultarse, para que el formulario no cambie de forma al elegir el rol.
 function syncEstacion() {
     const sinEstacion = rolesSinEstacion.includes(selRol.value);
-    estacionField.style.display = sinEstacion ? 'none' : '';
-    selEstacion.required = !sinEstacion;
     if (sinEstacion) selEstacion.value = '';
+    selEstacion.disabled = sinEstacion;
+    selEstacion.required = !sinEstacion;
+    estacionReq.hidden = sinEstacion;
+    estacionField.classList.toggle('is-disabled', sinEstacion);
+    selEstacion.dispatchEvent(new Event('change', { bubbles: true }));
 }
 selRol.addEventListener('change', syncEstacion);
 
 function setPasswordMode(editando) {
     form.elements['password'].required = !editando;
     passReq.hidden = editando;
-    passHint.hidden = !editando;
+    notaPassword(editando ? 'Déjala en blanco para no cambiarla.' : '');
 }
+
+// ── Contraseña: mostrar/ocultar y generador seguro ──
+const passInput = form.elements['password'];
+const passToggle = document.getElementById('pass-toggle');
+const passGenerate = document.getElementById('pass-generate');
+
+// Sin caracteres ambiguos (I l 1 O 0) para poder dictarla o copiarla sin errores.
+const MAYUS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const MINUS = 'abcdefghijkmnopqrstuvwxyz';
+const DIGITOS = '23456789';
+const SIMBOLOS = '!@#$%&*?-_';
+const ALFABETO = MAYUS + MINUS + DIGITOS + SIMBOLOS;
+const LARGO = 12;
+
+/** Índice aleatorio uniforme: descarta el sobrante para no sesgar el módulo. */
+function indiceAleatorio(max) {
+    const limite = Math.floor(0x100000000 / max) * max;
+    const buf = new Uint32Array(1);
+    let n;
+    do { crypto.getRandomValues(buf); n = buf[0]; } while (n >= limite);
+    return n % max;
+}
+
+/** Contraseña con al menos un carácter de cada familia (mayúscula, minúscula, dígito, símbolo). */
+function generarPassword() {
+    const familias = [MAYUS, MINUS, DIGITOS, SIMBOLOS];
+    const chars = familias.map((f) => f[indiceAleatorio(f.length)]);
+    while (chars.length < LARGO) chars.push(ALFABETO[indiceAleatorio(ALFABETO.length)]);
+    // Fisher-Yates, para que las cuatro familias no queden siempre al inicio.
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = indiceAleatorio(i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join('');
+}
+
+function setPassVisible(visible) {
+    passInput.type = visible ? 'text' : 'password';
+    passToggle.classList.toggle('is-on', visible);
+    passToggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    passToggle.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    passToggle.title = visible ? 'Ocultar contraseña' : 'Mostrar contraseña';
+}
+
+function notaPassword(texto) {
+    passNote.textContent = texto;
+}
+
+function limpiarPassword() {
+    setPassVisible(false);
+}
+
+passToggle.addEventListener('click', () => setPassVisible(passInput.type === 'password'));
+
+passGenerate.addEventListener('click', async () => {
+    passInput.value = generarPassword();
+    setPassVisible(true);
+    passInput.focus();
+    passInput.select();
+    let aviso = 'Generada. Cópiala antes de guardar.';
+    try {
+        await navigator.clipboard.writeText(passInput.value);
+        aviso = 'Generada y copiada al portapapeles.';
+    } catch { /* el portapapeles exige origen seguro; el aviso por defecto ya cubre el caso */ }
+    notaPassword(aviso);
+});
 
 document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-action]');
@@ -40,6 +111,7 @@ document.addEventListener('click', async (ev) => {
         form.reset();
         form.elements['id'].value = '';
         setPasswordMode(false);
+        limpiarPassword();
         syncSelects();
         syncEstacion();
         err.hidden = true;
@@ -57,6 +129,7 @@ document.addEventListener('click', async (ev) => {
         form.elements['estacion_id'].value = resp.data.estacion_id ?? '';
         form.elements['id'].value = resp.data.id;
         setPasswordMode(true);
+        limpiarPassword();
         syncSelects();
         syncEstacion();
         err.hidden = true;

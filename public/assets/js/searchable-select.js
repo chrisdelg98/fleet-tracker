@@ -88,9 +88,13 @@ class SearchableSelect {
     syncFromNative() {
         const opt = this.select.selectedOptions[0];
         this.input.value = opt && opt.value !== '' ? opt.textContent.trim() : '';
+        // El <select> nativo manda: si está deshabilitado, la vista también lo está.
+        this.input.disabled = this.select.disabled;
+        if (this.select.disabled) this.close();
     }
 
     open() {
+        if (this.select.disabled) return;
         this.list.hidden = false;
         this.wrap.classList.add('is-open');
         this.list.classList.add('is-open');

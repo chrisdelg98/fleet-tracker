@@ -501,7 +501,8 @@ a { color: inherit; }
 
 /* ── Formularios ── */
 .form { display: grid; gap: var(--sp-4); min-width: 0; }
-.field { display: grid; gap: var(--sp-2); min-width: 0; }
+/* align-content: start evita que un campo con nota reparta el alto y desalinee al vecino. */
+.field { display: grid; align-content: start; gap: var(--sp-2); min-width: 0; }
 .field__label { font-size: var(--fs-sm); font-weight: 600; color: var(--color-ink-soft); }
 .field small,
 .field__hint,
@@ -522,6 +523,59 @@ fieldset.field {
 fieldset.field legend {
     padding: 0 var(--sp-2);
 }
+/* Nota bajo un campo: el hueco existe siempre, así el formulario no se reacomoda
+   cuando aparece o desaparece el texto. */
+.field__note {
+    display: block;
+    min-height: 16px;
+    margin-top: 4px;
+    color: var(--color-ink-soft);
+    font-size: var(--fs-xs);
+    line-height: 1.3;
+}
+
+/* Campo con botones internos (generar / mostrar contraseña). */
+.field__control { position: relative; display: block; }
+.field__control input { padding-right: 72px; }
+.field__btns {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.field__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-ink-mute);
+    cursor: pointer;
+    transition: color var(--transition), background-color var(--transition);
+}
+.field__btn:hover { color: var(--color-ink); background: var(--color-surface-soft); }
+.field__btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.field__btn-icon--hide { display: none; }
+.field__btn.is-on { color: var(--primary); }
+.field__btn.is-on .field__btn-icon--show { display: none; }
+.field__btn.is-on .field__btn-icon--hide { display: inline; }
+
+/* Campo bloqueado por regla de negocio (ej. estación para roles globales). */
+.field.is-disabled .field__label { color: var(--color-ink-mute); }
+.field select:disabled,
+.field input:disabled,
+.ss__input:disabled {
+    background: var(--color-bg-strong);
+    color: var(--color-ink-mute);
+    cursor: not-allowed;
+}
+
 .field input:not([type="checkbox"]):not([type="radio"]),
 .field select,
 .field textarea {
