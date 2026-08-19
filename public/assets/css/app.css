@@ -1452,22 +1452,34 @@ input[type="radio"] {
 /* ── Administración ── */
 .admin-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
 .admin-card {
-    display: grid;
-    gap: var(--sp-3);
-    min-height: 188px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-height: 208px;
     text-decoration: none;
     color: inherit;
-    border-color: rgba(29, 75, 117, 0.10);
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(250,251,252,0.98) 100%),
-        radial-gradient(circle at top right, rgba(247, 108, 0, 0.08), transparent 38%);
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .admin-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 14px 30px rgba(28,39,51,0.10);
-    border-color: rgba(247, 108, 0, 0.22);
+    box-shadow: 0 12px 26px rgba(28,39,51,0.09);
+    border-color: var(--primary-border);
 }
+
+/* Ícono grande: identifica la sección de un vistazo y se invierte al pasar el mouse. */
+.admin-card__icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: var(--sp-2);
+    border-radius: 13px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.admin-card:hover .admin-card__icon { background: var(--primary); color: #fff; }
+
 .admin-card__kicker {
     color: var(--primary);
     font-size: var(--fs-xs);
@@ -1476,20 +1488,19 @@ input[type="radio"] {
     text-transform: uppercase;
 }
 .admin-card h2 { margin: 0; font-size: 1.25rem; color: #173d60; }
-.admin-card p { max-width: 34ch; line-height: 1.6; }
+.admin-card p { max-width: 34ch; line-height: 1.55; }
 .admin-card__cta {
-    align-self: end;
+    margin-top: auto;
+    padding-top: var(--sp-4);
     display: inline-flex;
     align-items: center;
+    gap: 6px;
     color: #173d60;
     font-size: var(--fs-sm);
     font-weight: 700;
 }
-.admin-card__cta::after {
-    content: '->';
-    margin-left: var(--sp-2);
-    color: var(--primary);
-}
+.admin-card__cta svg { color: var(--primary); transition: transform var(--transition); }
+.admin-card:hover .admin-card__cta svg { transform: translateX(3px); }
 .catalogos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
