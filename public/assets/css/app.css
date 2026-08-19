@@ -251,7 +251,9 @@ a { color: inherit; }
     top: calc(100% + 6px);
     right: 0;
     z-index: 120;
-    min-width: 232px;
+    width: max-content;
+    min-width: 216px;
+    max-width: min(280px, calc(100vw - 24px));
     padding: var(--sp-2);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -1808,24 +1810,36 @@ input[type="radio"] {
         grid-template-columns: 1fr;
     }
 
+    /* Una sola fila de identidad: hamburguesa, logo, título y usuario;
+       la acción de la pantalla baja completa a la segunda fila. */
     .topbar {
         height: auto;
-        padding: var(--sp-3) var(--sp-4);
+        padding: var(--sp-2) var(--sp-3);
         flex-wrap: wrap;
-        gap: var(--sp-3);
+        gap: var(--sp-2) var(--sp-3);
     }
 
-    /* En angosto: el título ocupa su fila y los controles envuelven debajo. */
-    .topbar__nav {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        row-gap: var(--sp-2);
+    .topbar__nav { display: contents; }
+
+    .topbar__left {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: var(--sp-2);
     }
 
-    .topbar__left { width: 100%; }
+    .usermenu { order: 2; }
+
+    .topbar__actions {
+        order: 3;
+        flex: 1 1 100%;
+    }
+    .topbar__actions .btn { width: 100%; }
+
+    .topbar__page { padding-left: var(--sp-3); }
     .topbar__page-title { font-size: var(--fs-lg); }
     .usermenu__name { display: none; }
+    .usermenu__trigger { padding: 0; }
 
     .page-shell {
         padding: var(--sp-4);
@@ -1835,14 +1849,28 @@ input[type="radio"] {
         width: 100%;
     }
 
+    /* Móvil: el modal ocupa casi toda la pantalla para que el formulario gane alto. */
     .dialog {
-        width: calc(100vw - 24px);
+        width: calc(100vw - 16px);
         max-width: none;
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+        border-radius: var(--radius-lg);
     }
 
-    .dialog > .form {
+    .dialog > .form,
+    .dialog__panel,
+    .dialog--full .dialog__panel {
+        height: calc(100vh - 16px);
+        height: calc(100dvh - 16px);
+        max-height: none;
         padding: var(--sp-4);
+        gap: var(--sp-4);
     }
+
+    /* La descripción de la cabecera se omite: en pantalla chica manda el formulario. */
+    .dialog__lede { display: none; }
+    .dialog__head { padding-bottom: var(--sp-3); }
 
     .dialog__actions {
         justify-content: stretch;
@@ -1939,5 +1967,12 @@ input[type="radio"] {
     .table .badge,
     .table .retorno,
     .table .delay-flag { font-size: var(--fs-xs); }
-    .table .chip { padding: var(--sp-1) 10px; }
+    .table .chip { padding: 0; }
+}
+
+/* Teléfonos angostos: el título de pantalla manda; la miga se pliega al menú lateral. */
+@media (max-width: 480px) {
+    .topbar__crumb,
+    .topbar__crumb-sep { display: none; }
+    .topbar__page { padding-left: var(--sp-2); }
 }
