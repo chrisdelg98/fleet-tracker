@@ -7,11 +7,6 @@
  * @var array $roles
  * @var array $rolesSinEstacion
  */
-$labelRol = [
-    Rol::ADMIN_GLOBAL => 'Admin Global', Rol::ENCARGADO => 'Encargado',
-    Rol::CONSULTA_BASICO => 'Consulta Básico', Rol::CONSULTA_INVENTARIO => 'Consulta Inventario',
-    Rol::CONSULTA_REGIONAL => 'Consulta Regional',
-];
 set_page_meta(
     'Usuarios',
     'Administra cuentas, roles y alcance por estación para el personal con acceso al sistema.',
@@ -30,7 +25,7 @@ set_page_meta(
                 <tr class="<?= (int) $u['activo'] === 0 ? 'is-inactive' : '' ?>">
                     <td><strong><?= e($u['nombre']) ?></strong></td>
                     <td><?= e($u['email']) ?></td>
-                    <td><?= e($labelRol[$u['rol']] ?? $u['rol']) ?></td>
+                    <td><?= e(Rol::label($u['rol'])) ?></td>
                     <td><?= e($u['estacion_codigo'] ?? '—') ?></td>
                     <td><?= (int) $u['activo'] === 1 ? '<span class="badge badge--ok">Activo</span>' : '<span class="badge badge--muted">Inactivo</span>' ?></td>
                     <td class="row-actions">
@@ -61,7 +56,7 @@ set_page_meta(
                 <input type="email" name="email" maxlength="190" required></label>
             <label class="field"><span class="field__label">Rol *</span>
                 <select name="rol" required>
-                    <?php foreach ($roles as $r): ?><option value="<?= e($r) ?>"><?= e($labelRol[$r] ?? $r) ?></option><?php endforeach; ?>
+                    <?php foreach ($roles as $r): ?><option value="<?= e($r) ?>"><?= e(Rol::label($r)) ?></option><?php endforeach; ?>
                 </select></label>
             <label class="field" id="usuario-estacion-field"><span class="field__label">Estación *</span>
                 <select name="estacion_id">
