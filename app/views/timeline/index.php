@@ -11,6 +11,8 @@
  * @var int|null $estacionSel
  */
 $claseEstado = ['RESERVADO' => 'tl--reservada', 'PROGRAMADO' => 'tl--reservada', 'EN_TRANSITO' => 'tl--transito'];
+$etiquetaEstado = ['RESERVADO' => 'Reservado', 'PROGRAMADO' => 'Programado', 'EN_TRANSITO' => 'En tránsito'];
+$chipEstado = ['RESERVADO' => 'chip--reservada', 'PROGRAMADO' => 'chip--reservada', 'EN_TRANSITO' => 'chip--transito'];
 $qs = http_build_query(array_filter([
     'desde' => $desde,
     'estacion_id' => $estacionSel,
@@ -68,7 +70,16 @@ set_page_meta(
                     <div class="tl__track">
                         <?php for ($i = 1; $i < $diasTotal; $i++): ?><span class="tl__grid" style="left: <?= round($i / $diasTotal * 100, 3) ?>%"></span><?php endfor; ?>
                         <?php foreach ($u['bloques'] as $b): ?>
-                            <span class="tl__bloque <?= e($claseEstado[$b['estado']] ?? '') ?>" style="left: <?= $b['left'] ?>%; width: <?= $b['width'] ?>%" title="<?= e($b['title']) ?>"><?= e($b['label']) ?></span>
+                            <span class="tl__bloque <?= e($claseEstado[$b['estado']] ?? '') ?>" style="left: <?= $b['left'] ?>%; width: <?= $b['width'] ?>%"
+                                  tabindex="0" role="button" title="<?= e($b['title']) ?>"
+                                  data-pop
+                                  data-mov="<?= (int) $b['id'] ?>"
+                                  data-estado="<?= e($etiquetaEstado[$b['estado']] ?? $b['estado']) ?>"
+                                  data-estado-clase="<?= e($chipEstado[$b['estado']] ?? '') ?>"
+                                  data-unidad="<?= e($u['placa_unidad']) ?>"
+                                  data-ruta="<?= e($b['ruta']) ?>"
+                                  data-salida="<?= e($b['salida']) ?>"
+                                  data-fin="<?= e($b['fin']) ?>"><span class="tl__bloque-txt"><?= e($b['label']) ?></span></span>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -79,3 +90,5 @@ set_page_meta(
         <?php endif; ?>
     </div>
 </section>
+
+<script src="/assets/js/timeline.js" type="module"></script>

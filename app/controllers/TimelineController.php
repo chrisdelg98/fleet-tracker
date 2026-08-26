@@ -91,13 +91,20 @@ final class TimelineController
             foreach ($movStmt->fetchAll() as $m) {
                 $s = max($inicio->getTimestamp(), (new DateTimeImmutable($m['fecha_salida'], new DateTimeZone('UTC')))->getTimestamp());
                 $e = min($fin->getTimestamp(), (new DateTimeImmutable($m['fecha_fin_estimada'], new DateTimeZone('UTC')))->getTimestamp());
+                // Ojo: $fin es la ventana del timeline; las fechas locales usan otro nombre.
+                $salidaLocal = format_local($m['fecha_salida'], $u['timezone'], 'd/m/Y H:i');
+                $finLocal = format_local($m['fecha_fin_estimada'], $u['timezone'], 'd/m/Y H:i');
                 $u['bloques'][] = [
+                    'id'     => (int) $m['id'],
                     'left'   => round(($s - $inicio->getTimestamp()) / $totalSeg * 100, 3),
                     'width'  => max(1.5, round(($e - $s) / $totalSeg * 100, 3)),
                     'estado' => $m['estado'],
+                    'ruta'   => ($m['origen'] ?? '?') . ' → ' . ($m['destino'] ?? '?'),
                     'label'  => ($m['origen'] ?? '?') . '→' . ($m['destino'] ?? '?'),
-                    'title'  => "#{$m['id']} {$m['estado']} · " . format_local($m['fecha_salida'], $u['timezone'], 'd M H:i')
-                                . ' → ' . format_local($m['fecha_fin_estimada'], $u['timezone'], 'd M H:i'),
+                    'salida' => $salidaLocal,
+                    'fin'    => $finLocal,
+                    // Respaldo nativo: si el JS no carga, el tooltip del navegador sigue informando.
+                    'title'  => "#{$m['id']} {$m['estado']} · {$salidaLocal} → {$finLocal}",
                 ];
             }
         }

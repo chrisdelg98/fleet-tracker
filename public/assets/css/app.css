@@ -1229,9 +1229,72 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .tl__row { border-top: 1px solid var(--color-border); }
 .tl__track { position: relative; height: 34px; }
 .tl__grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--color-border); }
-.tl__bloque { position: absolute; top: 5px; height: 24px; border-radius: 4px; color: #fff; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; padding: 0 4px; }
+.tl__bloque { position: absolute; top: 5px; height: 24px; min-width: 20px; border-radius: 4px; color: #fff; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; padding: 0 4px; }
+.tl__bloque-txt { overflow: hidden; text-overflow: ellipsis; }
+
+/* Viaje corto: el bloque no da para la etiqueta y queda como marca sólida con un punto.
+   Nada de texto fuera del bloque: dos viajes seguidos el mismo día lo solaparían.
+   El detalle lo da el popover. */
+.tl__bloque--mini { padding: 0; }
+.tl__bloque--mini .tl__bloque-txt { display: none; }
+.tl__bloque--mini::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+}
 .tl--reservada { background: var(--estado-reservada); }
 .tl--transito { background: var(--estado-transito); }
+.tl__bloque { cursor: pointer; transition: box-shadow var(--transition), filter var(--transition); }
+.tl__bloque:hover,
+.tl__bloque:focus-visible { outline: none; filter: brightness(1.06); box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px currentColor; }
+
+/* ── Popover (bloques del timeline): reemplaza al tooltip nativo ── */
+.popover {
+    position: absolute;
+    z-index: 210;
+    min-width: 224px;
+    max-width: min(320px, calc(100vw - 24px));
+    padding: var(--sp-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    font-size: var(--fs-sm);
+    pointer-events: none;              /* al asomarse no debe robar el ratón */
+}
+.popover.is-pinned { pointer-events: auto; border-color: var(--primary-border); }
+
+.popover__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding-bottom: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--color-border);
+}
+.popover__id { color: var(--color-ink-mute); font-size: var(--fs-xs); font-weight: 700; }
+.popover__close {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-ink-mute);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+.popover__close:hover { background: var(--color-surface-soft); color: var(--color-ink); }
+
+.popover__body { display: grid; gap: 4px; margin: 0; }
+.popover__row { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: var(--sp-2); align-items: baseline; }
+.popover__row dt { color: var(--color-ink-soft); font-size: var(--fs-xs); }
+.popover__row dd { margin: 0; font-weight: 600; }
 
 /* ── Histórico ── */
 .pager { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: var(--sp-4); }
