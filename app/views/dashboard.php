@@ -70,6 +70,7 @@ set_page_meta(
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="DISPONIBLE"><span class="estado-chip__dot estado-chip__dot--disponible"></span><span>Disponible</span></label>
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="RESERVADA"><span class="estado-chip__dot estado-chip__dot--reservada"></span><span>Reservada</span></label>
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_TRANSITO"><span class="estado-chip__dot estado-chip__dot--transito"></span><span>En tránsito</span></label>
+                        <label class="estado-chip"><input type="checkbox" class="f-estado" value="TALLER_BLOQUEADA"><span class="estado-chip__dot estado-chip__dot--taller"></span><span>Taller/Bloqueada</span></label>
                     </div>
                 </div>
             </div>
@@ -176,6 +177,31 @@ set_page_meta(
 </dialog>
 
 <!-- Diálogo de motivo (cancelar / bloquear) -->
+<dialog id="dlg-reprogramar" class="dialog">
+    <form method="dialog" class="form" id="form-reprogramar" novalidate>
+        <div class="dialog__head">
+            <h2>Cambiar fecha de fin</h2>
+            <p class="dialog__lede">Ajusta el fin estimado cuando el viaje se alarga por acuerdo con el cliente. Queda registrado en bitácora con su motivo.</p>
+        </div>
+        <input type="hidden" name="id" value="">
+        <div class="dialog__body">
+            <div class="grid-2">
+                <label class="field"><span class="field__label">Fin estimado actual</span>
+                    <input type="datetime-local" id="reprogramar-actual" disabled></label>
+                <label class="field"><span class="field__label">Nuevo fin estimado *</span>
+                    <input type="datetime-local" name="fecha_fin_estimada" required></label>
+            </div>
+            <label class="field"><span class="field__label">Motivo del cambio *</span>
+                <textarea name="motivo" rows="3" required placeholder="Ej.: el cliente pidió dos días más de descarga"></textarea></label>
+        </div>
+        <p class="form__error" id="form-reprogramar-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar cambio</button>
+        </div>
+    </form>
+</dialog>
+
 <dialog id="dlg-motivo" class="dialog">
     <form method="dialog" class="form" id="form-motivo" novalidate>
         <div class="dialog__head">
@@ -207,16 +233,23 @@ set_page_meta(
         </div>
         <input type="hidden" name="id" value="">
         <div class="dialog__body">
-        <p class="muted">Se creará un movimiento de regreso sobre la misma unidad (destino → origen).</p>
+        <p class="muted">Se creará un movimiento de regreso sobre la misma unidad, saliendo desde donde está el equipo.</p>
         <div class="grid-2">
-            <label class="field"><span class="field__label">País que lo toma</span>
-                <?= render_paises_select('pais_solicita_retorno_id', null, false, 'País destino de la ida') ?></label>
-            <label class="field"><span class="field__label">Reservado para</span>
-                <input type="text" name="reservado_para" maxlength="150"></label>
-            <label class="field"><span class="field__label">Salida del regreso *</span>
+            <label class="field"><span class="field__label">Destino del retorno *</span>
+                <?= render_paises_select('pais_destino_id', null, false, 'País de origen de la ida') ?></label>
+            <label class="field"><span class="field__label">Ciudad destino</span>
+                <input type="text" name="ruta_custom_destino" maxlength="150"></label>
+            <label class="field"><span class="field__label">Salida del retorno *</span>
                 <input type="datetime-local" name="fecha_salida" required></label>
             <label class="field"><span class="field__label">Se libera *</span>
                 <input type="datetime-local" name="fecha_fin_estimada" required></label>
+            <label class="field"><span class="field__label">Quién lo toma</span>
+                <input type="text" name="reservado_para" maxlength="150" placeholder="Estación o cliente externo"></label>
+            <label class="field"><span class="field__label">País que solicita el retorno
+                    <button type="button" class="infotip" aria-label="Qué significa el país que solicita el retorno"
+                            data-infotip="País desde donde piden aprovechar el viaje de vuelta, en lugar de que el equipo regrese vacío. Normalmente es el país donde quedó la unidad, que avisa a la estación dueña para que se lo asigne. Déjalo vacío si quien lo pide es un cliente externo.">i</button>
+                </span>
+                <?= render_paises_select('pais_solicita_retorno_id', null, false, 'Opcional') ?></label>
         </div>
         </div>
         <p class="form__error" id="form-retorno-error" hidden></p>

@@ -30,15 +30,26 @@ final class UnidadModel
      *  filtros opcionales (categoría, tipo de equipo, estado, clasificación, búsqueda de placa). */
     public function listar(?int $estacionId = null, array $filtros = [], bool $soloActivas = true): array
     {
+        // El override abierto (bloqueo manual o taller) se trae aquí para que la gestión de
+        // flota vea por qué una unidad está fuera de operación, no solo el tablero.
         $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.requiere_furgon,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
-                       cap.nombre AS capacidad, p.nombre AS piloto_asignado
+                       cap.nombre AS capacidad, p.nombre AS piloto_asignado,
+                       o.tipo AS override_tipo, o.motivo AS override_motivo,
+                       EXISTS (SELECT 1 FROM overrides_unidad ob
+                                WHERE ob.unidad_id = u.id AND ob.cerrado = 0
+                                  AND ob.origen = \'MANUAL\') AS tiene_bloqueo_manual
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   JOIN estaciones e ON e.id = u.estacion_id
                   LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
                   LEFT JOIN capacidades cap ON cap.id = u.capacidad_id
                   LEFT JOIN pilotos p ON p.id = u.piloto_asignado_id
+                  LEFT JOIN overrides_unidad o ON o.id = (
+                        SELECT o2.id FROM overrides_unidad o2
+                         WHERE o2.unidad_id = u.id AND o2.cerrado = 0
+                         ORDER BY o2.desde DESC
+                         LIMIT 1)
                  WHERE 1 = 1';
         $params = [];
         if ($soloActivas) {

@@ -35,8 +35,13 @@ final class DisponibilidadService
                     ap.nombre AS piloto_asignado,
                     m.id AS mov_id, m.estado AS mov_estado, m.fecha_salida, m.fecha_fin_estimada,
                     m.retorno_disponible, m.pais_solicita_retorno_id, m.reservado_para, m.pais_origen_id,
+                    m.pais_destino_id AS mov_pais_destino_id,
                     mo.codigo_iso AS mov_origen, md.codigo_iso AS mov_destino,
                     mr.codigo_iso AS retorno_iso, mp.nombre AS mov_piloto,
+                    m.movimiento_regreso_id,
+                    rgo.codigo_iso AS regreso_origen, rgd.codigo_iso AS regreso_destino,
+                    rg.reservado_para AS regreso_para,
+                    rg.fecha_salida AS regreso_salida, rg.fecha_fin_estimada AS regreso_fin,
                     o.id AS override_id, o.tipo AS override_tipo, o.motivo AS override_motivo
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
@@ -54,6 +59,9 @@ final class DisponibilidadService
                   LEFT JOIN paises mo ON mo.id = m.pais_origen_id
                   LEFT JOIN paises md ON md.id = m.pais_destino_id
                   LEFT JOIN paises mr ON mr.id = m.pais_solicita_retorno_id
+                  LEFT JOIN movimientos rg ON rg.id = m.movimiento_regreso_id
+                  LEFT JOIN paises rgo ON rgo.id = rg.pais_origen_id
+                  LEFT JOIN paises rgd ON rgd.id = rg.pais_destino_id
                   LEFT JOIN overrides_unidad o ON o.id = (
                         SELECT o2.id FROM overrides_unidad o2
                          WHERE o2.unidad_id = u.id AND o2.cerrado = 0
@@ -96,7 +104,10 @@ final class DisponibilidadService
         foreach ($rows as $r) {
             $estado = $this->estadoDe($r);
 
-            if ($ocultarFueraOperacion && $estado === EstadoDisponibilidad::TALLER_BLOQUEADA) {
+            // El tablero oculta lo que está fuera de operación, salvo que se pida ver
+            // justamente ese estado (única forma de llegar a una unidad para desbloquearla).
+            $pidenBloqueadas = in_array(EstadoDisponibilidad::TALLER_BLOQUEADA, $estadosFiltro, true);
+            if ($ocultarFueraOperacion && !$pidenBloqueadas && $estado === EstadoDisponibilidad::TALLER_BLOQUEADA) {
                 continue;
             }
 
@@ -136,11 +147,18 @@ final class DisponibilidadService
                     'estado'                  => $r['mov_estado'],
                     'origen'                  => $r['mov_origen'],
                     'destino'                 => $r['mov_destino'],
+                    'pais_origen_id'          => (int) $r['pais_origen_id'],
+                    'pais_destino_id'         => (int) $r['mov_pais_destino_id'],
                     'fecha_salida'            => $r['fecha_salida'],
                     'fecha_fin_estimada'      => $r['fecha_fin_estimada'],
                     'retorno_disponible'      => (int) $r['retorno_disponible'] === 1,
                     'retorno_iso'             => $r['retorno_iso'],
                     'pais_solicita_retorno_id' => $r['pais_solicita_retorno_id'] !== null ? (int) $r['pais_solicita_retorno_id'] : null,
+                    'regreso_id'              => $r['movimiento_regreso_id'] !== null ? (int) $r['movimiento_regreso_id'] : null,
+                    'regreso_ruta'            => $r['regreso_origen'] ? $r['regreso_origen'] . ' → ' . $r['regreso_destino'] : null,
+                    'regreso_para'            => $r['regreso_para'],
+                    'regreso_salida'          => $r['regreso_salida'],
+                    'regreso_fin'             => $r['regreso_fin'],
                     'reservado_para'          => $r['reservado_para'],
                 ] : null,
                 'override'        => $r['override_id'] ? [

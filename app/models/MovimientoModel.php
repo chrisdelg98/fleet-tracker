@@ -109,10 +109,21 @@ final class MovimientoModel
     }
 
     /** Marca en el movimiento de ida qué país apartó su retorno (plan §6, regla 8). */
-    public function marcarRetornoTomado(int $idIda, int $paisSolicitaId): void
+    /** Marca la ida como retorno tomado y la enlaza con el movimiento de regreso creado. */
+    public function marcarRetornoTomado(int $idIda, ?int $paisSolicitaId, int $idRegreso): void
     {
-        $this->pdo->prepare('UPDATE movimientos SET pais_solicita_retorno_id = :p WHERE id = :id')
-            ->execute([':p' => $paisSolicitaId, ':id' => $idIda]);
+        $this->pdo->prepare(
+            'UPDATE movimientos
+                SET pais_solicita_retorno_id = :p, movimiento_regreso_id = :regreso
+              WHERE id = :id'
+        )->execute([':p' => $paisSolicitaId, ':regreso' => $idRegreso, ':id' => $idIda]);
+    }
+
+    /** Reprograma solo el fin estimado (prórroga en ruta); el resto del plan no se toca. */
+    public function actualizarFinEstimado(int $id, string $finUtc): void
+    {
+        $this->pdo->prepare('UPDATE movimientos SET fecha_fin_estimada = :fin WHERE id = :id')
+            ->execute([':fin' => $finUtc, ':id' => $id]);
     }
 
     /** Historial de movimientos de una unidad, con nombres resueltos. */

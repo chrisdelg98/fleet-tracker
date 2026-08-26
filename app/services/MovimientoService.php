@@ -213,6 +213,50 @@ final class MovimientoService
     }
 
     /**
+     * Prórroga en ruta: el cliente pide más días y el fin estimado se corre. No cambia el
+     * estado ni el resto del plan, exige motivo y queda en bitácora con el antes/después.
+     * Sin esto la unidad aparecería "con demora" por una extensión pactada (plan §2).
+     */
+    public function reprogramarFin(int $id, array $input, array $user): void
+    {
+        $mov = $this->cargarActivo($id, $user);
+        if (!in_array($mov['estado'], [EstadoMovimiento::PROGRAMADO, EstadoMovimiento::EN_TRANSITO], true)) {
+            json_error('Solo se reprograma un movimiento programado o en tránsito.', 409);
+        }
+
+        $motivo = trim((string) ($input['motivo'] ?? ''));
+        if ($motivo === '') {
+            json_unprocessable(['motivo' => 'El motivo del cambio de fecha es obligatorio.']);
+        }
+
+        $tz = $this->estacionTz($this->unidadEstacion((int) $mov['unidad_id']));
+        $finUtc = $this->aUtc($input['fecha_fin_estimada'] ?? null, $tz, 'fecha_fin_estimada');
+        if ($finUtc <= $mov['fecha_salida']) {
+            json_unprocessable(['fecha_fin_estimada' => 'El fin estimado debe ser posterior a la salida.']);
+        }
+        if ($finUtc === $mov['fecha_fin_estimada']) {
+            json_unprocessable(['fecha_fin_estimada' => 'La nueva fecha es igual a la actual.']);
+        }
+
+        tx($this->pdo, function () use ($id, $mov, $finUtc, $motivo, $tz, $user): void {
+            // Alargar el viaje puede pisar la siguiente reserva de la unidad o del piloto.
+            $this->assertSinTraslape((int) $mov['unidad_id'], $mov['fecha_salida'], $finUtc, $id, $tz);
+            $this->assertPilotoSinTraslape(
+                $mov['piloto_id'] !== null ? (int) $mov['piloto_id'] : null,
+                $mov['fecha_salida'],
+                $finUtc,
+                $id,
+                $tz
+            );
+            $this->movimientos->actualizarFinEstimado($id, $finUtc);
+            registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::EDITAR, [
+                'antes'   => ['fecha_fin_estimada' => $mov['fecha_fin_estimada']],
+                'despues' => ['fecha_fin_estimada' => $finUtc, 'motivo' => $motivo],
+            ]);
+        });
+    }
+
+    /**
      * Aparta el retorno de un movimiento de ida (plan §6, regla 8): registra el país que lo
      * toma en la ida y crea un NUEVO movimiento de regreso (destino → origen) sobre la misma
      * unidad, sujeto a la validación de no-traslape. Todo en una transacción.
@@ -226,27 +270,36 @@ final class MovimientoService
         if ((int) $ida['retorno_disponible'] !== 1) {
             json_unprocessable(['retorno' => 'Este movimiento no ofrece retorno disponible.']);
         }
-        if ($ida['pais_solicita_retorno_id'] !== null) {
-            json_error('El retorno ya fue apartado por otra estación.', 409);
+        if ($ida['movimiento_regreso_id'] !== null) {
+            json_error('El retorno ya fue apartado.', 409);
         }
 
         $unidad = $this->unidades->find((int) $ida['unidad_id']);
         $this->assertPuedeEscribir($user, (int) $unidad['estacion_id']);
         $tz = $this->estacionTz((int) $unidad['estacion_id']);
 
-        // Quién apartó el retorno: por defecto, el país destino de la ida (donde está el equipo).
-        $paisSolicita = !empty($input['pais_solicita_retorno_id'])
-            ? (int) $input['pais_solicita_retorno_id']
-            : (int) $ida['pais_destino_id'];
-        if (!in_array($paisSolicita, paises_ids_validos(), true)) {
+        // Quién lo aprovecha es opcional: el retorno puede tomarlo un cliente externo, que no
+        // corresponde a ningún país del catálogo. Su nombre va en "reservado_para".
+        $paisSolicita = !empty($input['pais_solicita_retorno_id']) ? (int) $input['pais_solicita_retorno_id'] : null;
+        if ($paisSolicita !== null && !in_array($paisSolicita, paises_ids_validos(), true)) {
             json_unprocessable(['pais_solicita_retorno_id' => 'País solicitante inválido.']);
+        }
+
+        // El regreso no siempre vuelve al origen: desde GT pueden mandarlo a HN. Por eso el
+        // destino es elegible y solo se propone el origen de la ida como valor por defecto.
+        $destinoRegreso = !empty($input['pais_destino_id'])
+            ? (int) $input['pais_destino_id']
+            : (int) $ida['pais_origen_id'];
+        if (!in_array($destinoRegreso, paises_ids_validos(), true)) {
+            json_unprocessable(['pais_destino_id' => 'País de destino inválido.']);
         }
 
         $plan = $this->validarPlan([
             'fecha_salida'       => $input['fecha_salida'] ?? null,
             'fecha_fin_estimada' => $input['fecha_fin_estimada'] ?? null,
-            'pais_origen_id'     => (int) $ida['pais_destino_id'], // el equipo regresa desde el destino
-            'pais_destino_id'    => (int) $ida['pais_origen_id'],  // hacia el origen
+            'pais_origen_id'     => (int) $ida['pais_destino_id'], // el equipo regresa desde donde está
+            'pais_destino_id'    => $destinoRegreso,
+            'ruta_custom_destino' => $input['ruta_custom_destino'] ?? null,
             'referencia_cw'      => $input['referencia_cw'] ?? null,
             'reservado_para'     => $input['reservado_para'] ?? null,
             'notas'              => $input['notas'] ?? ("Retorno del movimiento #{$idIda}"),
@@ -261,7 +314,7 @@ final class MovimientoService
         return tx($this->pdo, function () use ($regreso, $idIda, $paisSolicita, $user, $tz): int {
             $this->assertSinTraslape((int) $regreso['unidad_id'], $regreso['fecha_salida'], $regreso['fecha_fin_estimada'], null, $tz);
             $idRegreso = $this->movimientos->crear($regreso, $user['id']);
-            $this->movimientos->marcarRetornoTomado($idIda, $paisSolicita);
+            $this->movimientos->marcarRetornoTomado($idIda, $paisSolicita, $idRegreso);
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $idIda, AccionBitacora::EDITAR, [
                 'despues' => ['pais_solicita_retorno_id' => $paisSolicita, 'movimiento_regreso' => $idRegreso],
             ]);

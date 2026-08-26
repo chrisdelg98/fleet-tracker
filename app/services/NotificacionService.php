@@ -166,7 +166,7 @@ final class NotificacionService
               WHERE m.id = :id
                 AND m.tipo_ruta = :tipo
                 AND m.retorno_disponible = 1
-                AND m.pais_solicita_retorno_id IS NULL
+                AND m.movimiento_regreso_id IS NULL
               LIMIT 1'
         );
         $stmt->execute([':id' => $movimientoId, ':tipo' => TipoRuta::INTERNACIONAL]);

@@ -1,5 +1,6 @@
 /** Módulo Pilotos (plan §7.3). CRUD contra /api/pilotos; recarga tras cada escritura. */
 import { api, showError } from './api.js';
+import { confirmar } from './confirm.js';
 
 const dlg = document.getElementById('dlg-piloto');
 const form = document.getElementById('form-piloto');
@@ -38,7 +39,13 @@ document.addEventListener('click', async (ev) => {
     }
 
     if (btn.dataset.action === 'eliminar-piloto') {
-        if (!confirm(`¿Eliminar al piloto ${btn.dataset.nombre}? Queda inactivo (soft-delete).`)) return;
+        const ok = await confirmar({
+            titulo: 'Eliminar piloto',
+            mensaje: `${btn.dataset.nombre} quedará inactivo. No se borra: conserva su historial.`,
+            aceptar: 'Eliminar',
+            peligro: true,
+        });
+        if (!ok) return;
         const resp = await api('DELETE', `/api/pilotos/${id}`);
         if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo eliminar.');
     }

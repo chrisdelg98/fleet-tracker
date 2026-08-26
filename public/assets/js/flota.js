@@ -3,6 +3,7 @@
  * consumiendo /api/unidades. Tras cada escritura recarga la tabla server-rendered.
  */
 import { api, showError } from './api.js';
+import { confirmar } from './confirm.js';
 
 const dlgUnidad = document.getElementById('dlg-unidad');
 const dlgEstado = document.getElementById('dlg-estado');
@@ -61,6 +62,18 @@ document.addEventListener('click', async (ev) => {
         dlgUnidad.showModal();
     }
 
+    if (action === 'desbloquear') {
+        const ok = await confirmar({
+            titulo: 'Desbloquear unidad',
+            mensaje: `${btn.dataset.placa} volverá a aparecer como disponible en el tablero.`,
+            aceptar: 'Desbloquear',
+        });
+        if (!ok) return;
+        const resp = await api('POST', `/api/unidades/${id}/desbloquear`, {});
+        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo desbloquear.');
+        return;
+    }
+
     if (action === 'editar') {
         const resp = await api('GET', `/api/unidades/${id}`);
         if (!resp.ok) { alert(resp.message || 'No se pudo cargar la unidad.'); return; }
@@ -82,7 +95,13 @@ document.addEventListener('click', async (ev) => {
     }
 
     if (action === 'eliminar') {
-        if (!confirm(`¿Eliminar la unidad ${btn.dataset.placa}? Queda inactiva (soft-delete).`)) return;
+        const ok = await confirmar({
+            titulo: 'Eliminar unidad',
+            mensaje: `${btn.dataset.placa} quedará inactiva. No se borra: conserva su historial.`,
+            aceptar: 'Eliminar',
+            peligro: true,
+        });
+        if (!ok) return;
         const resp = await api('DELETE', `/api/unidades/${id}`);
         if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo eliminar.');
     }

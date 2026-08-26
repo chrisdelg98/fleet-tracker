@@ -31,6 +31,7 @@ const STATE_LABELS = {
     DISPONIBLE: 'Disponible',
     RESERVADA: 'Reservada',
     EN_TRANSITO: 'En tránsito',
+    TALLER_BLOQUEADA: 'Taller/Bloqueada',
 };
 
 // ── Filtros → query ──
@@ -104,8 +105,11 @@ async function load() {
     render(resp.data.unidades, resp.data);
 }
 
+let ultimasUnidades = [];
+
 function render(unidades, meta) {
     window.closeRowMenus?.();
+    ultimasUnidades = unidades;
     countEl.textContent = `${unidades.length} unidad${unidades.length === 1 ? '' : 'es'}`;
     rangoEl.textContent = `${fmtDia(meta.desde)} → ${fmtDia(meta.hasta)}`;
     const demoraCount = unidades.filter((u) => u.con_demora).length;
@@ -128,9 +132,23 @@ function rowHtml(u) {
     const libera = m ? fmtLibera(m.fecha_fin_estimada, u.timezone) : '—';
     let retorno = '—';
     if (m && m.retorno_disponible) {
-        retorno = m.pais_solicita_retorno_id
-            ? `<span class="retorno retorno--tomado">↩ ${esc(m.retorno_iso || '')} tomado</span>`
-            : `<span class="retorno">↩ Retorno disponible</span>`;
+        if (m.regreso_id) {
+            // El detalle (a dónde va y quién lo pidió) se consulta en el popover del badge,
+            // para no cargar la celda: en la tabla basta con saber que ya está tomado.
+            const datos = [
+                ['Movimiento', `#${m.regreso_id}`],
+                ['Ruta', m.regreso_ruta || '—'],
+                ['Salida', fmtFecha(m.regreso_salida, u.timezone)],
+                ['Fin estimado', fmtFecha(m.regreso_fin, u.timezone)],
+                ['Solicita', m.regreso_para || m.retorno_iso || 'Sin registrar'],
+            ];
+            retorno = `<button type="button" class="retorno retorno--tomado"
+                data-infotip-titulo="Retorno tomado"
+                data-infotip-datos="${esc(JSON.stringify(datos))}"
+                aria-label="Ver detalle del retorno">↩ Retorno tomado</button>`;
+        } else {
+            retorno = `<span class="retorno">↩ Retorno disponible</span>`;
+        }
     }
     return `<tr>
         <td><strong>${esc(u.placa_unidad)}</strong>${u.placa_furgon ? `<small class="muted block">${esc(u.placa_furgon)}</small>` : ''}</td>
@@ -160,13 +178,13 @@ function accionesHtml(u) {
         acc.push(item('confirmar', 'Confirmar'));
         cancelar = item('cancelar', 'Cancelar', true);
     } else if (m && m.estado === 'PROGRAMADO') {
-        acc.push(item('salida', 'Marcar salida'));
+        acc.push(item('salida', 'Marcar salida'), item('reprogramar', 'Cambiar fecha de fin'));
         cancelar = item('cancelar', 'Cancelar', true);
     } else if (m && m.estado === 'EN_TRANSITO') {
-        acc.push(item('llegada', 'Marcar llegada'));
+        acc.push(item('llegada', 'Marcar llegada'), item('reprogramar', 'Cambiar fecha de fin'));
         cancelar = item('cancelar', 'Cancelar', true);
     }
-    if (m && m.retorno_disponible && !m.pais_solicita_retorno_id) {
+    if (m && m.retorno_disponible && !m.regreso_id) {
         acc.push(item('apartar-retorno', 'Apartar retorno'));
     }
     if (cancelar) acc.push(cancelar);
@@ -186,7 +204,14 @@ if (cfg.puedeReservar) {
         if (mov === 'reservar') return abrirReserva(unidad);
         if (mov === 'bloquear') return abrirMotivo('bloquear', unidad);
         if (mov === 'cancelar') return abrirMotivo('cancelar', id);
-        if (mov === 'apartar-retorno') return abrirRetorno(id);
+        if (mov === 'reprogramar') {
+            const u = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
+            return abrirReprogramar(id, u?.movimiento, u?.timezone);
+        }
+        if (mov === 'apartar-retorno') {
+            const u = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
+            return abrirRetorno(id, u?.movimiento, u?.timezone);
+        }
         if (mov === 'desbloquear') return postAccion(`/api/unidades/${unidad}/desbloquear`);
         if (mov === 'confirmar') return postAccion(`/api/movimientos/${id}/confirmar`);
         if (mov === 'llegada') return postAccion(`/api/movimientos/${id}/llegada`);
@@ -337,15 +362,53 @@ if (formMotivo) {
     });
 }
 
+// ── Cambiar fecha de fin (prórroga en ruta) ──
+const dlgReprogramar = document.getElementById('dlg-reprogramar');
+const formReprogramar = document.getElementById('form-reprogramar');
+const errReprogramar = document.getElementById('form-reprogramar-error');
+
+function abrirReprogramar(id, mov, tz) {
+    if (!formReprogramar || !mov) return;
+    formReprogramar.reset();
+    formReprogramar.elements['id'].value = id;
+    const actual = paraInput(mov.fecha_fin_estimada, tz);
+    document.getElementById('reprogramar-actual').value = actual;
+    formReprogramar.elements['fecha_fin_estimada'].value = actual;
+    errReprogramar.hidden = true;
+    dlgReprogramar.showModal();
+}
+
+if (formReprogramar) {
+    formReprogramar.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = formReprogramar.elements['id'].value;
+        const r = await api('POST', `/api/movimientos/${id}/reprogramar-fin`, {
+            fecha_fin_estimada: formReprogramar.elements['fecha_fin_estimada'].value,
+            motivo: formReprogramar.elements['motivo'].value,
+        });
+        if (r.ok) { dlgReprogramar.close(); load(); } else showError(errReprogramar, r);
+    });
+}
+
 // ── Apartar retorno ──
 const dlgRetorno = document.getElementById('dlg-retorno');
 const formRetorno = document.getElementById('form-retorno');
 const errRetorno = document.getElementById('form-retorno-error');
 
-function abrirRetorno(id) {
+/**
+ * Propone los países según la ida: el retorno lo pide el país donde quedó la unidad (destino
+ * de la ida) y, salvo que sigan a un tercer país, el equipo vuelve al origen. Ambos editables.
+ */
+function abrirRetorno(id, mov, tz) {
     if (!formRetorno) return;
     formRetorno.reset();
     formRetorno.elements['id'].value = id;
+    if (mov) {
+        formRetorno.elements['pais_solicita_retorno_id'].value = mov.pais_destino_id ?? '';
+        formRetorno.elements['pais_destino_id'].value = mov.pais_origen_id ?? '';
+        // El equipo no se libera hasta que termina la ida: esa es la salida más temprana.
+        formRetorno.elements['fecha_salida'].value = paraInput(mov.fecha_fin_estimada, tz);
+    }
     formRetorno.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     errRetorno.hidden = true;
     dlgRetorno.showModal();
@@ -409,6 +472,27 @@ load();
 function dayKey(date, tz) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }
+/** UTC → "27/08/2026 14:00" en la zona de la estación, para detalles y popovers. */
+function fmtFecha(utc, tz) {
+    if (!utc) return '—';
+    const d = new Date(utc.replace(' ', 'T') + 'Z');
+    return new Intl.DateTimeFormat('es-ES', {
+        timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(d).replace(',', '');
+}
+
+/** UTC → "YYYY-MM-DDTHH:mm" en la zona de la estación (formato que pide datetime-local). */
+function paraInput(utc, tz) {
+    if (!utc) return '';
+    const d = new Date(utc.replace(' ', 'T') + 'Z');
+    // 'sv-SE' rinde "YYYY-MM-DD HH:mm", que es el formato del input salvo la T.
+    return new Intl.DateTimeFormat('sv-SE', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(d).replace(' ', 'T');
+}
+
 function fmtLibera(utc, tz) {
     if (!utc) return '—';
     const d = new Date(utc.replace(' ', 'T') + 'Z');

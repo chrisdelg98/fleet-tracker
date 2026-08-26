@@ -296,7 +296,7 @@ final class InteligenciaService
             'SELECT m.id, u.placa_unidad, e.codigo AS estacion_codigo,
                     po.codigo_iso AS origen_iso, pd.codigo_iso AS destino_iso,
                     CASE
-                        WHEN m.retorno_disponible = 1 AND m.pais_solicita_retorno_id IS NOT NULL THEN "APROVECHADO"
+                        WHEN m.retorno_disponible = 1 AND m.movimiento_regreso_id IS NOT NULL THEN "APROVECHADO"
                         WHEN m.retorno_disponible = 1 THEN "VACIO"
                         ELSE "SIN_RETORNO"
                     END AS clasificacion

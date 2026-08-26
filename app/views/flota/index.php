@@ -119,6 +119,11 @@ set_page_meta(
                             <?php else: ?>
                                 <span class="badge badge--muted">Solo inventario</span>
                             <?php endif; ?>
+                            <?php if (!empty($u['override_tipo'])): ?>
+                                <small class="muted block" title="<?= e($u['override_motivo'] ?? '') ?>">
+                                    <span class="badge badge--warn"><?= $u['override_tipo'] === 'BLOQUEADA' ? 'Bloqueada' : 'En taller' ?></span>
+                                </small>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <span class="badge badge--<?= e($claseEstado[$u['estado_vehiculo']] ?? 'muted') ?>">
@@ -133,6 +138,11 @@ set_page_meta(
                             <?= row_menu([
                                 ['label' => 'Editar', 'attrs' => ['data-action' => 'editar', 'data-id' => (int) $u['id']]],
                                 ['label' => 'Cambiar estado', 'attrs' => ['data-action' => 'estado', 'data-id' => (int) $u['id'], 'data-estado' => $u['estado_vehiculo']]],
+                                // Solo el bloqueo manual se levanta desde aquí; el de taller se cierra
+                                // devolviendo la unidad a Operativo en "Cambiar estado".
+                                !empty($u['tiene_bloqueo_manual'])
+                                    ? ['label' => 'Desbloquear', 'attrs' => ['data-action' => 'desbloquear', 'data-id' => (int) $u['id'], 'data-placa' => $u['placa_unidad']]]
+                                    : null,
                                 ['label' => 'Eliminar', 'danger' => true, 'attrs' => ['data-action' => 'eliminar', 'data-id' => (int) $u['id'], 'data-placa' => $u['placa_unidad']]],
                             ]) ?>
                         </td>

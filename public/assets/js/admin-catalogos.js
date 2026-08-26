@@ -1,6 +1,7 @@
 /** Administración › Catálogos. Formulario dirigido por la spec de cada tabla. */
 import { api, showError } from './api.js';
 import { enhanceSelects } from './searchable-select.js';
+import { confirmar } from './confirm.js';
 
 const specs = JSON.parse(document.getElementById('catalogos-spec').textContent);
 const data = JSON.parse(document.getElementById('catalogos-data').textContent);
@@ -97,7 +98,14 @@ document.addEventListener('click', async (ev) => {
     if (btn.dataset.action === 'activo-catalogo') {
         const activo = Number(btn.dataset.activo || '1') === 1;
         const siguiente = !activo;
-        if (!confirm(siguiente ? '¿Activar este registro del catálogo?' : '¿Desactivar este registro del catálogo?')) return;
+        const ok = await confirmar({
+            titulo: siguiente ? 'Activar registro' : 'Desactivar registro',
+            mensaje: siguiente
+                ? 'Volverá a estar disponible en los formularios.'
+                : 'Dejará de ofrecerse en los formularios; los datos que ya lo usan no cambian.',
+            aceptar: siguiente ? 'Activar' : 'Desactivar',
+        });
+        if (!ok) return;
         const resp = await api('POST', `/api/catalogos/${tabla}/${id}/activo`, { activo: siguiente });
         if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo actualizar.');
     }

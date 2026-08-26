@@ -1,5 +1,6 @@
 /** Módulo Rutas (plan §7.4). CRUD contra /api/rutas; recarga tras cada escritura. */
 import { api, showError } from './api.js';
+import { confirmar } from './confirm.js';
 
 const dlg = document.getElementById('dlg-ruta');
 const form = document.getElementById('form-ruta');
@@ -38,7 +39,13 @@ document.addEventListener('click', async (ev) => {
     }
 
     if (btn.dataset.action === 'eliminar-ruta') {
-        if (!confirm(`¿Eliminar la ruta ${btn.dataset.nombre}?`)) return;
+        const ok = await confirmar({
+            titulo: 'Eliminar ruta',
+            mensaje: `Se eliminará "${btn.dataset.nombre}" del catálogo de rutas.`,
+            aceptar: 'Eliminar',
+            peligro: true,
+        });
+        if (!ok) return;
         const resp = await api('DELETE', `/api/rutas/${id}`);
         if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo eliminar.');
     }

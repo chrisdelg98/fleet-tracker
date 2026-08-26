@@ -59,6 +59,14 @@ final class MovimientoController
         json_ok(null, 'Movimiento confirmado (PROGRAMADO).');
     }
 
+    /** POST /api/movimientos/{id}/reprogramar-fin — prórroga en ruta, con motivo. */
+    public function apiReprogramarFin(array $p): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $this->service->reprogramarFin((int) $p['id'], request_body(), $user);
+        json_ok(null, 'Fecha de fin actualizada.');
+    }
+
     public function apiSalida(array $p): void
     {
         $user = require_role_api(self::ESCRITURA);

@@ -1206,6 +1206,18 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     z-index: 2;
     background: linear-gradient(180deg, rgba(255,255,255,0.76) 0%, rgba(250,251,252,0.98) 32%);
 }
+/* Confirmación en modal (confirm.js): pequeña, centrada y con la acción a la derecha. */
+.dialog--confirm { width: min(430px, calc(100vw - 32px)); }
+.confirm { display: grid; gap: var(--sp-4); padding: var(--sp-5); }
+.confirm__texto { display: grid; gap: var(--sp-2); }
+.confirm__titulo { margin: 0; font-size: var(--fs-xl); }
+.confirm__msg { color: var(--color-ink-soft); line-height: 1.55; }
+.confirm .dialog__actions { margin: 0; padding-top: var(--sp-2); border-top: none; background: none; position: static; }
+
+/* Acción destructiva: mismo peso que la primaria, pero en rojo. */
+.btn--peligro { background: var(--color-error); color: #fff; }
+.btn--peligro:hover { background: #b8271d; }
+
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
 .field--check { justify-content: start; align-content: start; }
 .check { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: normal; min-height: var(--control-h); }
@@ -1275,9 +1287,9 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .tl__bloque:hover,
 .tl__bloque:focus-visible { outline: none; filter: brightness(1.06); box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px currentColor; }
 
-/* ── Popover (bloques del timeline): reemplaza al tooltip nativo ── */
+/* ── Popover flotante (timeline e infotip de formularios) ── */
 .popover {
-    position: absolute;
+    position: fixed;
     z-index: 210;
     min-width: 224px;
     max-width: min(320px, calc(100vw - 24px));
@@ -1337,6 +1349,31 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     border-top: 1px dashed var(--color-border);
 }
 .popover__mov .popover__head { border-bottom: none; padding-bottom: 0; margin-bottom: var(--sp-1); }
+.popover__texto { margin: 0; color: var(--color-ink-soft); line-height: 1.5; }
+
+/* Botón "i" de ayuda contextual dentro de una etiqueta de campo. */
+.infotip {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 5px;
+    vertical-align: -2px;
+    padding: 0;
+    border: 1px solid var(--color-ink-mute);
+    border-radius: 50%;
+    background: none;
+    color: var(--color-ink-mute);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: help;
+    transition: color var(--transition), border-color var(--transition), background-color var(--transition);
+}
+.infotip:hover,
+.infotip:focus-visible { outline: none; color: #fff; background: var(--primary); border-color: var(--primary); }
+
 .popover__body { display: grid; gap: 4px; margin: 0; }
 .popover__row { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: var(--sp-2); align-items: baseline; }
 .popover__row dt { color: var(--color-ink-soft); font-size: var(--fs-xs); }
@@ -1627,6 +1664,8 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .retorno { display: inline-block; padding: 2px var(--sp-2); border-radius: var(--radius); background: #e3f0fb; color: var(--estado-transito); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .retorno--tomado { background: #eef1f4; color: var(--color-ink-soft); text-decoration: line-through; }
+/* El badge tomado abre su detalle: se comporta como botón sin parecer otro elemento. */
+button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
 .grid-2__full { grid-column: 1 / -1; }
 
 /* ── Desplegable buscable (searchable-select.js) ── */
