@@ -41,7 +41,8 @@ final class MovimientoController
     public function apiConflictos(): void
     {
         require_role_api(self::ESCRITURA);
-        json_ok(['conflictos' => $this->service->conflictosPropuestos($_GET)]);
+        // Devuelve {unidad: [...], piloto: [...]}: el formulario avisa de ambos traslapes.
+        json_ok($this->service->conflictosPropuestos($_GET));
     }
 
     public function apiUpdate(array $p): void

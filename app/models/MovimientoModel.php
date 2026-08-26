@@ -33,15 +33,30 @@ final class MovimientoModel
      */
     public function conflictos(int $unidadId, string $salidaUtc, string $finUtc, ?int $exceptId = null): array
     {
+        return $this->conflictosPor('m.unidad_id', $unidadId, $salidaUtc, $finUtc, $exceptId);
+    }
+
+    /**
+     * Igual que conflictos(), pero por piloto: un piloto tampoco puede ir en dos movimientos
+     * a la vez, y el de la reserva puede no ser el asignado a la unidad.
+     */
+    public function conflictosPiloto(int $pilotoId, string $salidaUtc, string $finUtc, ?int $exceptId = null): array
+    {
+        return $this->conflictosPor('m.piloto_id', $pilotoId, $salidaUtc, $finUtc, $exceptId);
+    }
+
+    /** $columna es un literal del propio código (nunca entrada del usuario); el resto va ligado. */
+    private function conflictosPor(string $columna, int $valor, string $salidaUtc, string $finUtc, ?int $exceptId): array
+    {
         $sql = 'SELECT m.*, po.codigo_iso AS origen, pd.codigo_iso AS destino
                   FROM movimientos m
                   LEFT JOIN paises po ON po.id = m.pais_origen_id
                   LEFT JOIN paises pd ON pd.id = m.pais_destino_id
-                 WHERE m.unidad_id = :unidad
+                 WHERE ' . $columna . ' = :valor
                    AND m.estado IN (\'RESERVADO\', \'PROGRAMADO\', \'EN_TRANSITO\')
                    AND m.fecha_salida < :fin
                    AND m.fecha_fin_estimada > :salida';
-        $params = [':unidad' => $unidadId, ':fin' => $finUtc, ':salida' => $salidaUtc];
+        $params = [':valor' => $valor, ':fin' => $finUtc, ':salida' => $salidaUtc];
         if ($exceptId !== null) {
             $sql .= ' AND m.id <> :except';
             $params[':except'] = $exceptId;

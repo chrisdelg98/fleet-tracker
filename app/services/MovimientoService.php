@@ -41,6 +41,7 @@ final class MovimientoService
 
         $id = tx($this->pdo, function () use ($data, $user, $tz): int {
             $this->assertSinTraslape((int) $data['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
+            $this->assertPilotoSinTraslape($data['piloto_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
             $id = $this->movimientos->crear($data, $user['id']);
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CREAR, ['despues' => $data]);
             return $id;
@@ -53,41 +54,56 @@ final class MovimientoService
     }
 
     /**
-     * Traslapes de un rango propuesto para una unidad — solo lectura, para el aviso en vivo
-     * del formulario. No lanza si faltan/están mal los datos: devuelve [] (sin aviso).
+     * Traslapes de un rango propuesto, para el aviso en vivo del formulario: los de la unidad
+     * y, si se eligió piloto, los suyos. Solo lectura; si faltan o están mal los datos devuelve
+     * listas vacías (sin aviso) en lugar de lanzar.
      *
-     * @return array<int, array{id:int, estado:string, desde:string, hasta:string}>
+     * @return array{unidad: array<int, array<string, mixed>>, piloto: array<int, array<string, mixed>>}
      */
     public function conflictosPropuestos(array $q): array
     {
+        $vacio = ['unidad' => [], 'piloto' => []];
         $unidadId = (int) ($q['unidad_id'] ?? 0);
         $salida = trim((string) ($q['fecha_salida'] ?? ''));
         $fin = trim((string) ($q['fecha_fin_estimada'] ?? ''));
         if ($unidadId <= 0 || $salida === '' || $fin === '') {
-            return [];
+            return $vacio;
         }
         $unidad = $this->unidades->find($unidadId);
         if ($unidad === null) {
-            return [];
+            return $vacio;
         }
         $tz = $this->estacionTz((int) $unidad['estacion_id']);
         try {
             $salidaUtc = local_to_utc($salida, $tz)->format('Y-m-d H:i:s');
             $finUtc = local_to_utc($fin, $tz)->format('Y-m-d H:i:s');
         } catch (Exception $e) {
-            return [];
+            return $vacio;
         }
         if ($finUtc <= $salidaUtc) {
-            return [];
+            return $vacio;
         }
         $exceptId = isset($q['except_id']) && $q['except_id'] !== '' ? (int) $q['except_id'] : null;
 
-        return array_map(static fn(array $c): array => [
+        $formatear = static fn(array $c): array => [
             'id'     => (int) $c['id'],
             'estado' => (string) $c['estado'],
             'desde'  => format_local($c['fecha_salida'], $tz, 'd M H:i'),
             'hasta'  => format_local($c['fecha_fin_estimada'], $tz, 'd M H:i'),
-        ], $this->movimientos->conflictos($unidadId, $salidaUtc, $finUtc, $exceptId));
+        ];
+
+        $pilotoId = (int) ($q['piloto_id'] ?? 0);
+        $piloto = $pilotoId > 0 ? $this->pilotos->find($pilotoId) : null;
+
+        return [
+            'unidad' => array_map($formatear, $this->movimientos->conflictos($unidadId, $salidaUtc, $finUtc, $exceptId)),
+            'piloto' => $piloto === null
+                ? []
+                : array_map(
+                    static fn(array $c): array => $formatear($c) + ['piloto' => (string) $piloto['nombre']],
+                    $this->movimientos->conflictosPiloto($pilotoId, $salidaUtc, $finUtc, $exceptId)
+                ),
+        ];
     }
 
     /** Edita el plan (ruta/fechas/flags) de un movimiento aún activo; re-valida no-traslape. */
@@ -104,6 +120,13 @@ final class MovimientoService
 
         tx($this->pdo, function () use ($id, $mov, $data, $tz, $user): void {
             $this->assertSinTraslape((int) $mov['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], $id, $tz);
+            $this->assertPilotoSinTraslape(
+                $data['piloto_id'] !== null ? (int) $data['piloto_id'] : null,
+                $data['fecha_salida'],
+                $data['fecha_fin_estimada'],
+                $id,
+                $tz
+            );
             $this->movimientos->actualizarPlan($id, $data);
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::EDITAR, [
                 'antes'   => $this->snapshot($mov),
@@ -140,7 +163,11 @@ final class MovimientoService
             json_unprocessable(['piloto_id' => 'El piloto no es válido para esta unidad.']);
         }
 
-        tx($this->pdo, function () use ($id, $mov, $pilotoId, $user): void {
+        $tz = $this->estacionTz($estacion);
+
+        tx($this->pdo, function () use ($id, $mov, $pilotoId, $user, $tz): void {
+            // Al marcar salida se puede asignar un piloto distinto: vuelve a validarse aquí.
+            $this->assertPilotoSinTraslape((int) $pilotoId, $mov['fecha_salida'], $mov['fecha_fin_estimada'], $id, $tz);
             $this->movimientos->cambiarEstado($id, EstadoMovimiento::EN_TRANSITO, ['piloto_id' => (int) $pilotoId]);
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CAMBIO_ESTADO, [
                 'antes'   => ['estado' => $mov['estado']],
@@ -360,6 +387,31 @@ final class MovimientoService
             "La unidad ya tiene un movimiento {$c['estado']} del {$desde} al {$hasta} (mov. #{$c['id']}).",
             409,
             "Traslape con el movimiento #{$c['id']}."
+        );
+    }
+
+    /**
+     * Corta con 409 si el piloto ya va en otro movimiento activo en ese rango. El piloto es
+     * opcional en un movimiento: si no hay, no hay nada que validar.
+     */
+    private function assertPilotoSinTraslape(?int $pilotoId, string $salidaUtc, string $finUtc, ?int $exceptId, string $tz): void
+    {
+        if ($pilotoId === null) {
+            return;
+        }
+        $conflictos = $this->movimientos->conflictosPiloto($pilotoId, $salidaUtc, $finUtc, $exceptId);
+        if ($conflictos === []) {
+            return;
+        }
+        $c = $conflictos[0];
+        $piloto = $this->pilotos->find($pilotoId);
+        $nombre = $piloto['nombre'] ?? 'El piloto';
+        $desde = format_local($c['fecha_salida'], $tz, 'd M H:i');
+        $hasta = format_local($c['fecha_fin_estimada'], $tz, 'd M H:i');
+        json_error(
+            "{$nombre} ya va en un movimiento {$c['estado']} del {$desde} al {$hasta} (mov. #{$c['id']}).",
+            409,
+            "Traslape de piloto con el movimiento #{$c['id']}."
         );
     }
 
