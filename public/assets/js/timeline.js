@@ -46,15 +46,24 @@ if (tl) {
         actual = blk;
     }
 
-    /** Sobre el bloque si hay sitio; si no, debajo. Siempre dentro del ancho de la ventana. */
+    /**
+     * Sobre el bloque si hay sitio; si no, debajo. El límite de arriba no es la ventana sino
+     * el borde inferior de la topbar (es sticky): sin eso el popover se metía debajo de ella.
+     */
     function colocar(blk) {
         const r = blk.getBoundingClientRect();
         const p = pop.getBoundingClientRect();
         const margen = 8;
-        const arriba = r.top - p.height - margen > 0;
-        const top = arriba ? r.top - p.height - margen : r.bottom + margen;
+        const techo = (document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0) + margen;
+        const piso = window.innerHeight - margen;
+
+        let top = r.top - p.height - margen >= techo ? r.top - p.height - margen : r.bottom + margen;
+        // Nunca por encima de la topbar ni por debajo del borde inferior de la ventana.
+        top = Math.min(Math.max(top, techo), Math.max(techo, piso - p.height));
+
         let left = r.left + r.width / 2 - p.width / 2;
         left = Math.max(margen, Math.min(left, window.innerWidth - p.width - margen));
+
         pop.style.top = `${top + window.scrollY}px`;
         pop.style.left = `${left + window.scrollX}px`;
     }
@@ -160,8 +169,20 @@ if (tl) {
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
 
-    // El timeline se desplaza en horizontal: el popover sigue a su bloque.
-    const reposicionar = () => { if (actual) colocar(actual); };
+    /** ¿El bloque sigue a la vista, entre la topbar y el borde inferior? */
+    function aLaVista(blk) {
+        const r = blk.getBoundingClientRect();
+        const techo = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
+        return r.bottom > techo && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+    }
+
+    // El timeline se desplaza en horizontal y la página en vertical: el popover sigue a su
+    // bloque, y si el bloque se va de la pantalla el popover se cierra en vez de quedar suelto.
+    const reposicionar = () => {
+        if (!actual) return;
+        if (!aLaVista(actual)) { cerrar(); return; }
+        colocar(actual);
+    };
     window.addEventListener('resize', reposicionar);
     document.addEventListener('scroll', reposicionar, true);
 }
