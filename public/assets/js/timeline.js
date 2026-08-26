@@ -16,20 +16,30 @@ if (tl) {
     const fila = (etiqueta, valor) => `<div class="popover__row"><dt>${etiqueta}</dt><dd>${escapar(valor)}</dd></div>`;
     const escapar = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+    /** Ficha de un movimiento dentro del popover. */
+    function ficha(d, conUnidad) {
+        return `
+            <div class="popover__mov">
+                <div class="popover__head">
+                    <span class="chip ${escapar(d.estadoClase)}">${escapar(d.estado)}</span>
+                    <span class="popover__id">#${escapar(d.mov)}</span>
+                </div>
+                <dl class="popover__body">
+                    ${conUnidad ? fila('Unidad', d.unidad) : ''}
+                    ${fila('Ruta', d.ruta)}
+                    ${fila('Salida', d.salida)}
+                    ${fila('Fin estimado', d.fin)}
+                </dl>
+            </div>`;
+    }
+
     function pintar(blk, fijo) {
-        const d = blk.dataset;
-        pop.innerHTML = `
-            <div class="popover__head">
-                <span class="chip ${escapar(d.estadoClase)}">${escapar(d.estado)}</span>
-                <span class="popover__id">#${escapar(d.mov)}</span>
-                ${fijo ? '<button type="button" class="popover__close" aria-label="Cerrar">&times;</button>' : ''}
-            </div>
-            <dl class="popover__body">
-                ${fila('Unidad', d.unidad)}
-                ${fila('Ruta', d.ruta)}
-                ${fila('Salida', d.salida)}
-                ${fila('Fin estimado', d.fin)}
-            </dl>`;
+        const grupo = blk.grupo || [blk];
+        const cierre = fijo ? '<button type="button" class="popover__close" aria-label="Cerrar">&times;</button>' : '';
+        pop.innerHTML = cierre + (grupo.length > 1
+            ? `<div class="popover__title">${grupo.length} movimientos · ${escapar(blk.dataset.unidad)}</div>`
+              + grupo.map((b) => ficha(b.dataset, false)).join('')
+            : ficha(blk.dataset, true));
         pop.classList.toggle('is-pinned', fijo);
         pop.hidden = false;
         colocar(blk);
@@ -62,13 +72,50 @@ if (tl) {
      * porque el ancho depende del ancho del track, no del movimiento.
      */
     const ANCHO_MINIMO = 46;
-    function marcarMinis() {
-        tl.querySelectorAll('[data-pop]').forEach((blk) => {
-            blk.classList.toggle('tl__bloque--mini', blk.offsetWidth < ANCHO_MINIMO);
+    const DIAS = tl.querySelectorAll('.tl__dia').length || 1;
+    function ajustarBloques() {
+        tl.querySelectorAll('.tl__row').forEach((fila) => {
+            const bloques = [...fila.querySelectorAll('[data-pop]')];
+            bloques.forEach((b) => {
+                b.hidden = false;
+                b.grupo = null;
+                b.classList.toggle('tl__bloque--mini', b.offsetWidth < ANCHO_MINIMO);
+            });
+
+            // Dos viajes cortos seguidos ocupan casi el mismo píxel: se muestran como un solo
+            // marcador con el número de movimientos, y el popover los lista todos.
+            let base = null;
+            bloques.forEach((b) => {
+                if (base && b.getBoundingClientRect().left < base.getBoundingClientRect().right + 2) {
+                    base.grupo.push(b);
+                    b.hidden = true;
+                    return;
+                }
+                base = b;
+                base.grupo = [b];
+            });
+
+            const track = fila.querySelector('.tl__track');
+            const anchoDia = track ? track.offsetWidth / DIAS : 0;
+
+            bloques.filter((b) => !b.hidden).forEach((b) => {
+                const n = b.grupo.length;
+                b.classList.toggle('tl__bloque--grupo', n > 1);
+                b.dataset.count = n > 1 ? String(n) : '';
+                b.setAttribute('aria-label', n > 1 ? `${n} movimientos` : `Movimiento ${b.dataset.mov}`);
+
+                // El ancho mínimo del marcador puede empujarlo al día siguiente y hacer creer
+                // que el viaje cruza la medianoche: se recuesta para no salir de su día.
+                b.style.transform = '';
+                if (!b.classList.contains('tl__bloque--mini') || !anchoDia) return;
+                const finDia = (Math.floor(b.offsetLeft / anchoDia) + 1) * anchoDia;
+                const exceso = (b.offsetLeft + b.offsetWidth) - finDia;
+                if (exceso > 0) b.style.transform = `translateX(${-Math.ceil(exceso)}px)`;
+            });
         });
     }
-    marcarMinis();
-    window.addEventListener('resize', marcarMinis);
+    ajustarBloques();
+    window.addEventListener('resize', () => { cerrar(); ajustarBloques(); });
 
     // El tooltip nativo estorbaría encima del popover: se guarda y se quita.
     tl.querySelectorAll('[data-pop][title]').forEach((blk) => {

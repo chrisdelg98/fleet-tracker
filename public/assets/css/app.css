@@ -1221,8 +1221,19 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 /* ── Timeline / Gantt ── */
 .tl { min-width: 720px; }
 .tl__head, .tl__row { display: grid; grid-template-columns: 120px 1fr; align-items: stretch; }
-.tl__unidad { padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); font-weight: 600; display: flex; align-items: center; border-right: 1px solid var(--color-border); }
-.tl__corner { color: var(--color-ink-soft); }
+.tl__unidad {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--color-surface);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--color-border);
+}
+.tl__corner { z-index: 3; color: var(--color-ink-soft); }
 .tl__dias { display: grid; grid-template-columns: repeat(var(--tl-dias), 1fr); }
 .tl__dia { text-align: center; padding: var(--sp-1) 0; border-left: 1px solid var(--color-border); font-size: 0.7rem; line-height: 1.1; }
 .tl__dia small { display: block; color: var(--color-ink-soft); text-transform: uppercase; }
@@ -1235,7 +1246,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 /* Viaje corto: el bloque no da para la etiqueta y queda como marca sólida con un punto.
    Nada de texto fuera del bloque: dos viajes seguidos el mismo día lo solaparían.
    El detalle lo da el popover. */
-.tl__bloque--mini { padding: 0; }
+.tl__bloque--mini { padding: 0; box-shadow: 0 0 0 1.5px var(--color-surface); }
 .tl__bloque--mini .tl__bloque-txt { display: none; }
 .tl__bloque--mini::before {
     content: "";
@@ -1243,6 +1254,20 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     height: 6px;
     border-radius: 50%;
     background: #fff;
+}
+
+/* Varios movimientos en el mismo punto: el marcador lleva cuántos son. */
+.tl__bloque--grupo { min-width: 24px; }
+.tl__bloque--grupo::before {
+    content: attr(data-count);
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
 }
 .tl--reservada { background: var(--estado-reservada); }
 .tl--transito { background: var(--estado-transito); }
@@ -1265,6 +1290,8 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     pointer-events: none;              /* al asomarse no debe robar el ratón */
 }
 .popover.is-pinned { pointer-events: auto; border-color: var(--primary-border); }
+.popover.is-pinned .popover__title,
+.popover.is-pinned > .popover__mov:first-of-type .popover__head { padding-right: 24px; }
 
 .popover__head {
     display: flex;
@@ -1276,7 +1303,9 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .popover__id { color: var(--color-ink-mute); font-size: var(--fs-xs); font-weight: 700; }
 .popover__close {
-    margin-left: auto;
+    position: absolute;
+    top: 6px;
+    right: 6px;
     width: 22px;
     height: 22px;
     display: grid;
@@ -1291,6 +1320,21 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .popover__close:hover { background: var(--color-surface-soft); color: var(--color-ink); }
 
+.popover__title {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding-bottom: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--color-border);
+    font-weight: 700;
+}
+.popover__mov + .popover__mov {
+    padding-top: var(--sp-2);
+    margin-top: var(--sp-2);
+    border-top: 1px dashed var(--color-border);
+}
+.popover__mov .popover__head { border-bottom: none; padding-bottom: 0; margin-bottom: var(--sp-1); }
 .popover__body { display: grid; gap: 4px; margin: 0; }
 .popover__row { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: var(--sp-2); align-items: baseline; }
 .popover__row dt { color: var(--color-ink-soft); font-size: var(--fs-xs); }
@@ -1809,6 +1853,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 /* ── Timeline / Histórico ── */
 .timeline-card__wrap {
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     padding-bottom: var(--sp-2);
 }
 .timeline-card {
@@ -2053,6 +2098,14 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     .filters-grid--dashboard {
         grid-template-columns: 1fr;
     }
+
+    /* Timeline en móvil: columna de unidad estrecha, pero días anchos para que se lean
+       (se desplaza en horizontal; apretarlos solo los volvía ilegibles). */
+    .tl { min-width: 760px; }
+    .tl__head, .tl__row { grid-template-columns: 78px 1fr; }
+    .tl__unidad { padding: var(--sp-2); font-size: var(--fs-xs); }
+    .tl__dia { font-size: 0.66rem; }
+    .timeline-card { padding: var(--sp-3); }
 
     .dashboard__status { width: 100%; }
     .dashboard__date { flex: 1 1 auto; }
