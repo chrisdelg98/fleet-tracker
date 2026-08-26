@@ -230,12 +230,36 @@ async function checkConflicto() {
 }
 const scheduleConflicto = () => { clearTimeout(conflictoTimer); conflictoTimer = setTimeout(checkConflicto, 350); };
 
+/**
+ * El piloto asignado a la unidad entra como valor por defecto del movimiento; sigue siendo
+ * editable porque el piloto que sale puede no ser el asignado (plan §5.4: son campos distintos).
+ */
+function aplicarPilotoAsignado() {
+    const selPiloto = formReserva.elements['piloto_id'];
+    if (!selPiloto) return;
+    const asignado = formReserva.elements['unidad_id'].selectedOptions[0]?.dataset.piloto || '';
+    // Si el asignado no está entre las opciones (otra estación, inactivo) se deja en blanco.
+    const disponible = asignado !== '' && asignado !== '0' && [...selPiloto.options].some((o) => o.value === asignado);
+    selPiloto.value = disponible ? asignado : '';
+    // El combobox refleja el <select> nativo solo cuando este avisa del cambio.
+    selPiloto.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/** Advertencia sutil: el piloto elegido tiene la licencia vencida (no bloquea el guardado). */
+function syncAvisoLicencia() {
+    const aviso = document.getElementById('piloto-warn');
+    if (!aviso) return;
+    const opt = formReserva.elements['piloto_id']?.selectedOptions[0];
+    aviso.hidden = opt?.dataset.licenciaVencida !== '1';
+}
+
 function abrirReserva(unidadId) {
     if (!formReserva) return;
     formReserva.reset();
     if (unidadId) formReserva.elements['unidad_id'].value = unidadId;
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
+    aplicarPilotoAsignado();
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
     dlgReserva.showModal();
@@ -248,6 +272,8 @@ function toggleRutaCustom() {
 
 if (formReserva) {
     formReserva.elements['ruta_id'].addEventListener('change', toggleRutaCustom);
+    formReserva.elements['unidad_id'].addEventListener('change', aplicarPilotoAsignado);
+    formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
 
     ['unidad_id', 'fecha_salida', 'fecha_fin_estimada'].forEach((name) => {

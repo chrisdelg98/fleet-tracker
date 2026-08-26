@@ -118,7 +118,7 @@ set_page_meta(
                 <select name="unidad_id" required>
                     <option value="">Selecciona…</option>
                     <?php foreach ($reservables as $u): ?>
-                        <option value="<?= (int) $u['id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['estacion_codigo']) ?></option>
+                        <option value="<?= (int) $u['id'] ?>" data-piloto="<?= (int) ($u['piloto_asignado_id'] ?? 0) ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['estacion_codigo']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Tipo</span>
@@ -145,17 +145,25 @@ set_page_meta(
                 <input type="datetime-local" name="fecha_salida" required></label>
             <label class="field"><span class="field__label">Se libera (fin estimado) *</span>
                 <input type="datetime-local" name="fecha_fin_estimada" required></label>
-            <label class="field"><span class="field__label">Piloto</span>
+            <label class="field"><span class="field__label">Piloto <span class="field__warn" id="piloto-warn" hidden>Licencia vencida</span></span>
                 <select name="piloto_id">
                     <option value="">—</option>
-                    <?php foreach ($pilotos as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e($p['nombre']) ?></option><?php endforeach; ?>
+                    <?php
+                    // La licencia vencida no bloquea (el movimiento puede ser de otro piloto),
+                    // pero la marca viaja en la opción para advertirlo al seleccionarla.
+                    $hoyLic = new DateTimeImmutable('today');
+                    foreach ($pilotos as $p):
+                        $vencida = !empty($p['licencia_vence']) && new DateTimeImmutable($p['licencia_vence']) < $hoyLic;
+                    ?>
+                        <option value="<?= (int) $p['id'] ?>"<?= $vencida ? ' data-licencia-vencida="1"' : '' ?>><?= e($p['nombre']) ?></option>
+                    <?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Referencia CW</span>
                 <input type="text" name="referencia_cw" maxlength="120"></label>
             <label class="field"><span class="field__label">Reservado para</span>
                 <input type="text" name="reservado_para" maxlength="150" placeholder="Estación / cliente"></label>
             <label class="field field--check"><span class="field__label">Retorno</span>
-                <label class="check"><input type="checkbox" name="retorno_disponible" value="1"> Retorno disponible</label></label>
+                <label class="check check--box"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label></label>
         </div>
         </div>
         <p class="form__warn" id="reserva-conflicto" hidden></p>

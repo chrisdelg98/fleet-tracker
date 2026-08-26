@@ -166,7 +166,7 @@ set_page_meta(
                     <?php endforeach; ?>
                 </select></label>
             <label class="field field--check"><span class="field__label">Disponibilidad</span>
-                <label class="check"><input type="checkbox" name="en_disponibilidad" value="1"> Participa en el dashboard (flota operativa)</label></label>
+                <label class="check check--box"><input type="checkbox" name="en_disponibilidad" value="1"><span>Participa en el dashboard (flota operativa)</span></label></label>
             <label class="field"><span class="field__label">Marca</span>
                 <input type="text" name="marca" maxlength="80"></label>
             <label class="field"><span class="field__label">Modelo</span>
