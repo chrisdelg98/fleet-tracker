@@ -34,10 +34,15 @@ set_page_meta(
                         <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
                     </button>
                 </div>
-                <label class="field field--date field--date-compact">
-                    <span class="field__label">Fecha específica</span>
-                    <input type="date" id="f-fecha" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica">
-                </label>
+                <div class="dashboard__status">
+                    <strong id="dash-count">—</strong>
+                    <span id="dash-rango" class="muted"></span>
+                    <span id="dash-demora" class="dashboard__delay" hidden><span class="dashboard__delay-icon" aria-hidden="true">!</span><span id="dash-demora-text">0 con demora</span></span>
+                    <input type="date" id="f-fecha" class="dashboard__date" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica" title="Fecha específica">
+                    <button type="button" class="iconbtn" data-action="refrescar" title="Actualizar" aria-label="Actualizar">
+                        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10 3.5a6.5 6.5 0 0 1 5.7 3.4V4.8a.85.85 0 1 1 1.7 0v4a.85.85 0 0 1-.85.85h-4a.85.85 0 0 1 0-1.7h2.2A4.8 4.8 0 1 0 14.8 12a.85.85 0 0 1 1.55.7A6.5 6.5 0 1 1 10 3.5Z" fill="currentColor"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
         <div class="filters-panel__more" id="dashboard-filters-more" data-filters-more hidden>
@@ -81,15 +86,6 @@ set_page_meta(
                 <?= render_paises_select('retorno_hacia_sel', null, false, 'Cualquiera') ?></label>
         </div>
         </div>
-    </div>
-
-    <div class="dashboard__status card">
-        <div class="dashboard__status-main">
-            <strong id="dash-count">—</strong>
-            <span id="dash-rango" class="muted"></span>
-            <span id="dash-demora" class="dashboard__delay" hidden><span class="dashboard__delay-icon" aria-hidden="true">!</span><span id="dash-demora-text">0 con demora</span></span>
-        </div>
-        <button type="button" class="link" data-action="refrescar">Actualizar</button>
     </div>
 
     <div class="card card--table dashboard__results-card">

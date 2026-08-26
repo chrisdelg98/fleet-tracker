@@ -66,6 +66,8 @@
 }
 
 * { box-sizing: border-box; }
+/* El atributo hidden gana a cualquier display de clase: si el JS lo oculta, se oculta. */
+[hidden] { display: none !important; }
 
 html, body {
     margin: 0;
@@ -1228,16 +1230,8 @@ input[type="radio"] {
 
 /* ── Dashboard ── */
 .dashboard__filters-card {
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(251,252,253,0.98) 100%),
-        radial-gradient(circle at top right, rgba(247, 108, 0, 0.08), transparent 30%);
-}
-.filtros__top {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: var(--sp-4);
-    flex-wrap: wrap;
+    background: var(--color-surface);
+    padding: var(--sp-3) var(--sp-4);
 }
 .filtros { margin-bottom: 0; display: grid; gap: var(--sp-4); }
 .filtros__fechas { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
@@ -1322,9 +1316,6 @@ input[type="radio"] {
 .field--delay-filter {
     min-width: 0;
 }
-.field--date-compact {
-    width: 220px;
-}
 .field--date input[type="date"] {
     min-width: 0;
     padding-right: 42px;
@@ -1367,26 +1358,48 @@ input[type="radio"] {
 .estado-chip__dot--reservada { background: var(--estado-reservada); }
 .estado-chip__dot--transito { background: var(--estado-transito); }
 .estado-chip__dot--taller { background: var(--estado-taller); }
+/* Botón de solo ícono, reutilizable en barras compactas. */
+.iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-ink-soft);
+    cursor: pointer;
+    transition: color var(--transition), background-color var(--transition), border-color var(--transition);
+}
+.iconbtn:hover { color: var(--primary); border-color: var(--primary-border); background: var(--primary-soft); }
+.iconbtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .chipbtn { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--color-border); background: #fff; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-sm); }
 .chipbtn.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+/* Resumen del resultado, dentro de la misma barra de filtros (un solo bloque). */
 .dashboard__status {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-4);
-    margin-bottom: var(--sp-4);
-    padding-top: var(--sp-4);
-    padding-bottom: var(--sp-4);
-}
-.dashboard__status-main {
-    display: flex;
-    align-items: baseline;
     gap: var(--sp-3);
     flex-wrap: wrap;
+    min-width: 0;
 }
-.dashboard__status-main strong {
-    font-size: var(--fs-lg);
+.dashboard__status strong { font-size: var(--fs-lg); white-space: nowrap; }
+.dashboard__status .muted { font-size: var(--fs-sm); white-space: nowrap; }
+.dashboard__date {
+    width: auto;
+    min-height: 34px;
+    padding: 0 var(--sp-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font: inherit;
+    font-size: var(--fs-sm);
 }
+.dashboard__date:hover { border-color: var(--color-ink-mute); }
+.dashboard__date:focus-visible { outline: none; border-color: var(--primary-border); box-shadow: var(--focus-ring); }
 .dashboard__meta { display: flex; gap: var(--sp-3); align-items: center; margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
 .dashboard__table td { vertical-align: middle; }
 /* La placa de la unidad (1ª columna) siempre en una sola línea. */
@@ -1395,8 +1408,8 @@ input[type="radio"] {
 .dashboard__delay {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    gap: 6px;
+    padding: 3px 10px;
     border-radius: 999px;
     background: #fff3e6;
     color: #9a4b00;
@@ -1845,11 +1858,6 @@ input[type="radio"] {
 }
 
 @media (max-width: 1040px) {
-    .dashboard__status {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
     .filters-grid--dashboard {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1935,23 +1943,12 @@ input[type="radio"] {
         width: 100%;
     }
 
-    .dashboard__status-main {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: var(--sp-1);
-    }
-
-    .filtros__top {
-        align-items: stretch;
-    }
-
-    .field--date-compact {
-        width: 100%;
-    }
-
     .filters-grid--dashboard {
         grid-template-columns: 1fr;
     }
+
+    .dashboard__status { width: 100%; }
+    .dashboard__date { flex: 1 1 auto; }
 
     .filtros__estados {
         flex-wrap: wrap;
