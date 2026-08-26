@@ -17,6 +17,7 @@
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/img/logo-small.png">
     <link rel="stylesheet" href="/assets/css/live.css">
+    <link rel="stylesheet" href="/assets/css/palette.css">
 </head>
 <body class="live">
     <header class="live__top">
@@ -92,6 +93,15 @@
         </div>
     </dialog>
 
+    <?php
+    // La búsqueda por "." también aquí: mismos accesos, mismos permisos que en la app.
+    $accesosPaleta = array_map(
+        static fn(array $a): array => $a + ['icono' => nav_icon($a['href'])],
+        accesos_usuario($user)
+    );
+    ?>
+    <script type="application/json" id="app-accesos"><?= json_encode($accesosPaleta, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
     <script src="/assets/js/live.js" type="module"></script>
+    <script src="/assets/js/palette.js" type="module"></script>
 </body>
 </html>

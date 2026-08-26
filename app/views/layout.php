@@ -17,36 +17,21 @@
     <link rel="icon" type="image/png" href="/assets/img/logo-small.png">
     <link rel="apple-touch-icon" href="/assets/img/logo-small.png">
     <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/palette.css">
 </head>
 <body class="<?= is_logged_in() ? 'app-shell' : 'auth-page' ?>">
 <?php if (is_logged_in()): $u = current_user(); $ruta = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH); ?>
     <?php
-    $puedeGestionar = in_array($u['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true);
-    $enlacePrincipal = ['/' => 'Dashboard', '/live' => 'Live'];
-    $grupos = [
-        'Operación' => [],
-        'Consulta' => [],
-        'Administración' => [],
-    ];
-
-    if ($puedeGestionar) {
-        // Timeline es una vista general (como Dashboard y Live), no un mantenimiento por rol.
-        $enlacePrincipal['/timeline'] = 'Timeline';
-        $grupos['Operación']['/flota'] = 'Flota';
-        $grupos['Operación']['/pilotos'] = 'Pilotos';
-        $grupos['Operación']['/rutas'] = 'Rutas';
-    }
-    if ($u['rol'] !== Rol::CONSULTA_BASICO) {
-        $grupos['Consulta']['/inventario'] = 'Inventario';
-        $grupos['Consulta']['/inteligencia'] = 'Inteligencia';
-    }
-    if (in_array($u['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true)) {
-        $grupos['Consulta']['/historico'] = 'Histórico';
-    }
-    if ($u['rol'] === Rol::ADMIN_GLOBAL) {
-        $grupos['Administración']['/admin'] = 'Administración';
-    }
+    // Los accesos y sus permisos viven en menu_usuario() (app/helpers/navegacion.php).
+    $menu = menu_usuario($u);
+    $enlacePrincipal = $menu['principal'];
+    $grupos = $menu['grupos'];
     $meta = page_meta();
+    // Accesos permitidos para la paleta de búsqueda (tecla "."); el ícono va renderizado.
+    $accesosPaleta = array_map(
+        static fn(array $a): array => $a + ['icono' => nav_icon($a['href'])],
+        accesos_usuario($u)
+    );
     ?>
     <header class="topbar">
         <div class="topbar__left">
@@ -153,10 +138,12 @@
         </main>
     </div>
     <div class="nav-backdrop" id="nav-backdrop"></div>
+    <script type="application/json" id="app-accesos"><?= json_encode($accesosPaleta, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
 <?php else: ?>
     <?= $content ?>
 <?php endif; ?>
     <script src="/assets/js/nav.js" type="module"></script>
+    <script src="/assets/js/palette.js" type="module"></script>
     <script src="/assets/js/filter-panel.js" type="module"></script>
     <script src="/assets/js/searchable-select.js" type="module"></script>
     <script src="/assets/js/rowmenu.js" type="module"></script>
