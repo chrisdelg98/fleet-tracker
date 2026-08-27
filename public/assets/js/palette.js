@@ -99,6 +99,11 @@ if (datos) {
         if (e.key === 'Enter') { e.preventDefault(); ir(); }
     });
 
+    // En móvil no hay tecla ".": el botón de la topbar es la vía de entrada.
+    document.querySelectorAll('[data-palette-open]').forEach((btn) => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); abrir(); });
+    });
+
     input.addEventListener('input', () => pintar(input.value));
     lista.addEventListener('click', (e) => {
         const li = e.target.closest('.palette__item');

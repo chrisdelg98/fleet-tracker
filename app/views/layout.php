@@ -60,6 +60,12 @@
                 <div class="topbar__actions"><?= $meta['acciones'] ?></div>
             <?php endif; ?>
 
+            <button type="button" class="topbar__buscar" data-palette-open
+                    aria-label="Buscar sección" title="Buscar sección (tecla .)">
+                <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true" focusable="false"><path d="M8.75 3a5.75 5.75 0 0 1 4.55 9.27l3.72 3.72a.9.9 0 1 1-1.28 1.28l-3.72-3.72A5.75 5.75 0 1 1 8.75 3Zm0 1.8a3.95 3.95 0 1 0 0 7.9 3.95 3.95 0 0 0 0-7.9Z" fill="currentColor"/></svg>
+                <kbd class="topbar__buscar-tecla" aria-hidden="true">.</kbd>
+            </button>
+
             <?php
             // Iniciales del nombre para el avatar (máx. 2 letras).
             $partes = preg_split('/\s+/', trim($u['nombre'])) ?: [];
@@ -130,6 +136,31 @@
                 </nav>
             </div>
         </aside>
+        <script>
+            /* Inline y a propósito: corre durante el parseo, antes del primer pintado, así el
+               menú aparece ya en su estado final. Con los módulos diferidos de nav.js el
+               acordeón se abría y se cerraba a la vista en cada recarga. */
+            (function () {
+                var shell = document.querySelector('.app-shell');
+                if (!shell) return;
+                try {
+                    if (localStorage.getItem('navCollapsed') === '1') shell.classList.add('is-collapsed');
+                    /* En móvil el menú se abre por encima del contenido y se usa de un vistazo:
+                       ahí las secciones siempre van desplegadas, sin recordar cierres previos. */
+                    if (window.matchMedia('(min-width: 761px)').matches) {
+                        var guardado = JSON.parse(localStorage.getItem('navSections') || '{}');
+                        shell.querySelectorAll('.sidebar__group').forEach(function (g) {
+                            var k = g.dataset.section;
+                            if (k && k in guardado) {
+                                g.classList.toggle('is-open', guardado[k]);
+                                var t = g.querySelector('.sidebar__group-toggle');
+                                if (t) t.setAttribute('aria-expanded', guardado[k] ? 'true' : 'false');
+                            }
+                        });
+                    }
+                } catch (e) { /* sin localStorage: el menú se queda como lo pintó el servidor */ }
+            })();
+        </script>
 
         <main class="page-shell">
             <div class="page-shell__inner">

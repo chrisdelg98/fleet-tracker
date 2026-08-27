@@ -199,6 +199,33 @@ a { color: inherit; }
     border-color: rgba(255,255,255,0.45);
 }
 
+/* Entrada visible a la paleta: en móvil no hay tecla "." y no todos usan atajos. */
+.topbar__buscar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color var(--transition), border-color var(--transition);
+}
+.topbar__buscar:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.4); }
+.topbar__buscar:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.topbar__buscar-tecla {
+    padding: 0 5px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.10);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+}
+
 /* ── Menú de usuario: identidad + cerrar sesión fuera de la fila de acciones ── */
 .usermenu { position: relative; }
 
@@ -2094,6 +2121,8 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .topbar__page { padding-left: var(--sp-3); }
     .topbar__page-title { font-size: var(--fs-lg); }
     .usermenu__name { display: none; }
+    /* Un solo punto de entrada a la navegación en el teléfono: la hamburguesa. */
+    .topbar__buscar { display: none; }
     .usermenu__trigger { padding: 0; }
 
     .page-shell {
