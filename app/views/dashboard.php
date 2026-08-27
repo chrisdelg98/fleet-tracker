@@ -7,6 +7,7 @@
  * @var array $usuario
  * @var bool $puedeReservar
  * @var array $estaciones
+ * @var array $categorias
  * @var array $tiposEquipo
  * @var array $reservables
  * @var array $rutas
@@ -51,6 +52,11 @@ set_page_meta(
                 <select id="f-estacion">
                     <option value="">Todas</option>
                     <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                </select></label>
+            <label class="field"><span class="field__label">Categoría</span>
+                <select id="f-categoria">
+                    <option value="">Todas</option>
+                    <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e($c['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Tipo de equipo</span>
                 <select id="f-tipo">

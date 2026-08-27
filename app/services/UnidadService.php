@@ -178,11 +178,23 @@ final class UnidadService
 
         $estado = $v->value('estado_vehiculo') ?: EstadoVehiculo::OPERATIVO;
 
+        // Año: opcional, pero si viene tiene que ser creíble (no hay flota de 1890 ni de 2199).
+        $anio = null;
+        $anioRaw = trim((string) ($input['anio'] ?? ''));
+        if ($anioRaw !== '') {
+            $limite = (int) date('Y') + 1;
+            if (!ctype_digit($anioRaw) || (int) $anioRaw < 1950 || (int) $anioRaw > $limite) {
+                json_unprocessable(['anio' => "El año debe estar entre 1950 y {$limite}."]);
+            }
+            $anio = (int) $anioRaw;
+        }
+
         return [
             'placa_unidad'          => $placa,
             'placa_furgon'          => $this->nullable($v->value('placa_furgon')),
             'marca'                 => $this->nullable($v->value('marca')),
             'modelo'                => $this->nullable($v->value('modelo')),
+            'anio'                  => $anio,
             'categoria_vehiculo_id' => (int) $v->value('categoria_vehiculo_id'),
             'en_disponibilidad'     => $enDisponibilidad,
             'capacidad_id'          => $capacidadId,
@@ -211,7 +223,7 @@ final class UnidadService
     private function snapshot(array $row): array
     {
         return array_intersect_key($row, array_flip([
-            'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'categoria_vehiculo_id',
+            'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
             'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id', 'piloto_asignado_id',
         ]));
     }

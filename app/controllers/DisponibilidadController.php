@@ -35,6 +35,7 @@ final class DisponibilidadController
             'usuario'     => $user,
             'puedeReservar' => in_array($user['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true),
             'estaciones'  => $this->catalogos->activos('estaciones', 'codigo'),
+            'categorias'  => $this->catalogos->activos('categorias_vehiculo', 'orden'),
             'tiposEquipo' => $this->catalogos->activos('tipos_equipo', 'orden'),
             'reservables' => $reservables,
             'rutas'       => $this->rutas->listar(),
@@ -97,6 +98,7 @@ final class DisponibilidadController
         }
         return [
             'estacion_id'    => $q['estacion_id'] ?? null,
+            'categoria_id'   => $q['categoria_id'] ?? null,
             'tipo_equipo_id' => $q['tipo_equipo_id'] ?? null,
             'placa'          => $q['placa'] ?? null,
             'estados'        => $estados,

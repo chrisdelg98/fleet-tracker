@@ -10,7 +10,7 @@ final class UnidadModel
 {
     /** Columnas escribibles desde el formulario de alta/edición. */
     private const CAMPOS = [
-        'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'categoria_vehiculo_id',
+        'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
         'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id',
         'piloto_asignado_id', 'estado_vehiculo', 'estado_notas',
     ];

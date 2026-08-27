@@ -47,12 +47,12 @@ foreach ($paises as [$iso, $nombre, $region, $orden]) {
 
 // ── Categorías de vehículo (por nombre) ──
 $nC = 0;
-foreach ($categorias as [$nombre, $esFlota, $requiereFurgon, $orden]) {
+foreach ($categorias as [$nombre, $esFlota, $requiereFurgon, $esMotriz, $orden]) {
     $nC += $insertIfMissing(
         $pdo,
         'SELECT 1 FROM categorias_vehiculo WHERE nombre = ?', [$nombre],
-        'INSERT INTO categorias_vehiculo (nombre, es_flota_operativa, requiere_furgon, orden) VALUES (?, ?, ?, ?)',
-        [$nombre, $esFlota, $requiereFurgon, $orden]
+        'INSERT INTO categorias_vehiculo (nombre, es_flota_operativa, requiere_furgon, es_motriz, orden) VALUES (?, ?, ?, ?, ?)',
+        [$nombre, $esFlota, $requiereFurgon, $esMotriz, $orden]
     );
 }
 

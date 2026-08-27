@@ -111,7 +111,8 @@ set_page_meta(
                             <?php if (!empty($u['placa_furgon'])): ?><small class="muted"><?= e($u['placa_furgon']) ?></small><?php endif; ?>
                         </td>
                         <td><?= e($u['categoria']) ?></td>
-                        <td><?= e($u['tipo_equipo'] ?? '—') ?><?php if (!empty($u['capacidad'])): ?> · <?= e($u['capacidad']) ?><?php endif; ?></td>
+                        <td><?= e($u['tipo_equipo'] ?? '—') ?><?php if (!empty($u['capacidad'])): ?> · <?= e($u['capacidad']) ?><?php endif; ?>
+                            <?php if (!empty($u['anio'])): ?><small class="muted block"><?= (int) $u['anio'] ?></small><?php endif; ?></td>
                         <td><?= e($u['estacion_codigo']) ?></td>
                         <td>
                             <?php if ((int) $u['en_disponibilidad'] === 1): ?>
@@ -181,6 +182,8 @@ set_page_meta(
                 <input type="text" name="marca" maxlength="80"></label>
             <label class="field"><span class="field__label">Modelo</span>
                 <input type="text" name="modelo" maxlength="80"></label>
+            <label class="field"><span class="field__label">Año</span>
+                <input type="number" name="anio" min="1950" max="<?= (int) date('Y') + 1 ?>" step="1" placeholder="<?= (int) date('Y') ?>"></label>
             <label class="field"><span class="field__label">Tipo de equipo</span>
                 <select name="tipo_equipo_id">
                     <option value="">—</option>

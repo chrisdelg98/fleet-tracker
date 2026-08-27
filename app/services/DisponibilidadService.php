@@ -24,7 +24,7 @@ final class DisponibilidadService
     /**
     * @param string $desdeUtc 'Y-m-d H:i:s'
     * @param string $hastaUtc 'Y-m-d H:i:s'
-    * @param array  $filtros  estacion_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?, ocultar_fuera_operacion?, solo_demora?
+    * @param array  $filtros  estacion_id?, categoria_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?, ocultar_fuera_operacion?, solo_demora?
      */
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
@@ -77,6 +77,10 @@ final class DisponibilidadService
         if (!empty($filtros['estacion_id'])) {
             $sql .= ' AND u.estacion_id = :estacion';
             $params[':estacion'] = (int) $filtros['estacion_id'];
+        }
+        if (!empty($filtros['categoria_id'])) {
+            $sql .= ' AND u.categoria_vehiculo_id = :categoria';
+            $params[':categoria'] = (int) $filtros['categoria_id'];
         }
         if (!empty($filtros['tipo_equipo_id'])) {
             $sql .= ' AND u.tipo_equipo_id = :tipo';

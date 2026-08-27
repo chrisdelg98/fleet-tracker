@@ -51,6 +51,8 @@ function buildQuery() {
     }
     const est = document.getElementById('f-estacion').value;
     if (est) p.set('estacion_id', est);
+    const categoria = document.getElementById('f-categoria').value;
+    if (categoria) p.set('categoria_id', categoria);
     const tipo = document.getElementById('f-tipo').value;
     if (tipo) p.set('tipo_equipo_id', tipo);
     const placa = document.getElementById('f-placa').value.trim();
@@ -441,7 +443,7 @@ document.getElementById('f-fecha').addEventListener('change', () => {
     fechaMode = 'fecha';
     load();
 });
-['f-estacion', 'f-tipo', 'f-retorno', 'f-demora'].forEach((id) => document.getElementById(id).addEventListener('change', load));
+['f-estacion', 'f-categoria', 'f-tipo', 'f-retorno', 'f-demora'].forEach((id) => document.getElementById(id).addEventListener('change', load));
 document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change', () => {
     syncStateSummary();
     load();
