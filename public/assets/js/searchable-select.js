@@ -36,7 +36,7 @@ class SearchableSelect {
         this.input.type = 'text';
         this.input.className = 'ss__input';
         this.input.autocomplete = 'off';
-        this.input.placeholder = 'Buscar…';
+        this.input.placeholder = select.dataset.placeholder || 'Buscar…';
         if (select.required) this.input.setAttribute('aria-required', 'true');
 
         this.list = document.createElement('ul');

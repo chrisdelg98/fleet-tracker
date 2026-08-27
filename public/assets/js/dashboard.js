@@ -105,6 +105,7 @@ function closeStateMenu() {
 }
 
 async function load() {
+    pintarChips();
     const resp = await api('GET', `/api/disponibilidad?${buildQuery()}`);
     if (!resp.ok) { body.innerHTML = `<tr><td colspan="${colspan}" class="muted">No se pudo cargar.</td></tr>`; return; }
     render(resp.data.unidades, resp.data);
@@ -116,10 +117,13 @@ function render(unidades, meta) {
     window.closeRowMenus?.();
     ultimasUnidades = unidades;
     countEl.textContent = `${unidades.length} unidad${unidades.length === 1 ? '' : 'es'}`;
-    rangoEl.textContent = `${fmtDia(meta.desde)} → ${fmtDia(meta.hasta)}`;
+    // El rango solo aporta cuando abarca varios días: con "Hoy" repite lo que ya dice el chip.
+    const desde = fmtDia(meta.desde);
+    const hasta = fmtDia(meta.hasta);
+    rangoEl.textContent = desde === hasta ? '' : `${desde} → ${hasta}`;
     const demoraCount = unidades.filter((u) => u.con_demora).length;
     demoraWrapEl.hidden = demoraCount === 0;
-    demoraTextEl.textContent = `${demoraCount} ${demoraCount === 1 ? 'unidad con demora' : 'unidades con demora'}`;
+    demoraTextEl.textContent = `${demoraCount} ${demoraCount === 1 ? 'demora' : 'demoras'}`;
     if (!unidades.length) {
         body.innerHTML = `<tr><td colspan="${colspan}" class="muted" style="text-align:center">Sin unidades para estos filtros.</td></tr>`;
         return;
@@ -411,6 +415,68 @@ if (formMotivo) {
         if (r.ok) { dlgMotivo.close(); load(); } else showError(errMotivo, r);
     });
 }
+
+// ── Filtros aplicados ──
+// Con parte de los filtros escondidos tras "Más filtros", lo aplicado tiene que verse
+// siempre: si no, el tablero muestra una flota parcial y nadie recuerda por qué.
+const chipsEl = document.getElementById('dash-chips');
+
+function filtrosActivos() {
+    const activos = [];
+    const texto = (sel) => sel.options[sel.selectedIndex]?.textContent.trim();
+
+    const est = document.getElementById('f-estacion');
+    if (est.value) activos.push({ etiqueta: texto(est), limpiar: () => { est.value = ''; } });
+
+    const estados = [...document.querySelectorAll('.f-estado:checked')];
+    estados.forEach((c) => activos.push({
+        etiqueta: STATE_LABELS[c.value] || c.value,
+        limpiar: () => { c.checked = false; syncStateSummary(); },
+    }));
+
+    const placa = document.getElementById('f-placa');
+    if (placa.value.trim()) activos.push({ etiqueta: `Placa: ${placa.value.trim()}`, limpiar: () => { placa.value = ''; } });
+
+    const cat = document.getElementById('f-categoria');
+    if (cat.value) activos.push({ etiqueta: texto(cat), limpiar: () => { cat.value = ''; } });
+
+    const tipo = document.getElementById('f-tipo');
+    if (tipo.value) activos.push({ etiqueta: texto(tipo), limpiar: () => { tipo.value = ''; } });
+
+    const ret = document.getElementById('f-retorno');
+    if (ret.value) activos.push({ etiqueta: `Retorno: ${texto(ret)}`, limpiar: () => { ret.value = ''; } });
+
+    const desde = document.querySelector('[name="retorno_desde_sel"]');
+    if (desde?.value) activos.push({ etiqueta: `Retorno desde ${texto(desde)}`, limpiar: () => { desde.value = ''; } });
+
+    const demora = document.getElementById('f-demora');
+    if (demora.checked) activos.push({ etiqueta: 'Solo con demora', limpiar: () => { demora.checked = false; } });
+
+    return activos;
+}
+
+let activosActuales = [];
+
+function pintarChips() {
+    activosActuales = filtrosActivos();
+    chipsEl.hidden = activosActuales.length === 0;
+    chipsEl.innerHTML = activosActuales.map((f, i) => `
+        <button type="button" class="filtro-chip" data-quitar="${i}">
+            ${esc(f.etiqueta)}<span aria-hidden="true">×</span>
+        </button>`).join('')
+        + (activosActuales.length > 1 ? '<button type="button" class="link" data-limpiar-todo>Limpiar todo</button>' : '');
+}
+
+chipsEl.addEventListener('click', (ev) => {
+    const quitar = ev.target.closest('[data-quitar]');
+    const todo = ev.target.closest('[data-limpiar-todo]');
+    if (!quitar && !todo) return;
+    (todo ? activosActuales : [activosActuales[Number(quitar.dataset.quitar)]]).forEach((f) => f?.limpiar());
+    // Los combobox buscables reflejan el <select>, así que hay que avisarles del cambio.
+    document.querySelectorAll('#f-estacion, #f-categoria, #f-tipo, #f-retorno, [name="retorno_desde_sel"]')
+        .forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
+    load();
+});
 
 // ── Panel de la unidad ──
 // El menú "⋮" obliga a saber qué se quiere antes de ver en qué estado está la unidad, y no

@@ -45,26 +45,18 @@ set_page_meta(
                     </button>
                 </div>
             </div>
+            <div class="filtros-activos" id="dash-chips" hidden></div>
         </div>
         <div class="filters-panel__more" id="dashboard-filters-more" data-filters-more hidden>
         <div class="filters-grid filters-grid--dashboard">
-            <label class="field"><span class="field__label">Estación</span>
-                <select id="f-estacion">
-                    <option value="">Todas</option>
-                    <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
-                </select></label>
-            <label class="field"><span class="field__label">Categoría</span>
-                <select id="f-categoria">
-                    <option value="">Todas</option>
-                    <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e($c['nombre']) ?></option><?php endforeach; ?>
-                </select></label>
-            <label class="field"><span class="field__label">Tipo de equipo</span>
-                <select id="f-tipo">
+            <label class="field"><span class="field__label">Retorno desde</span>
+                <?= render_paises_select('retorno_desde_sel', null, false, 'Cualquier país') ?></label>
+            <label class="field"><span class="field__label">Retorno disponible</span>
+                <select id="f-retorno" data-no-search>
                     <option value="">Todos</option>
-                    <?php foreach ($tiposEquipo as $t): ?><option value="<?= (int) $t['id'] ?>"><?= e($t['nombre']) ?></option><?php endforeach; ?>
+                    <option value="1">Sí</option>
+                    <option value="0">No</option>
                 </select></label>
-            <label class="field"><span class="field__label">Placa</span>
-                <input type="search" id="f-placa" placeholder="Buscar placa…" data-no-search></label>
             <div class="field field--state-filter">
                 <span class="field__label">Estado</span>
                 <div class="state-select" id="f-estados-wrap">
@@ -81,17 +73,26 @@ set_page_meta(
                     </div>
                 </div>
             </div>
-            <label class="field"><span class="field__label">Retorno disponible</span>
-                <select id="f-retorno" data-no-search>
+            <label class="field"><span class="field__label">Estación</span>
+                <select id="f-estacion">
+                    <option value="">Todas</option>
+                    <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                </select></label>
+            <label class="field"><span class="field__label">Placa</span>
+                <input type="search" id="f-placa" placeholder="Buscar placa…" data-no-search></label>
+            <label class="field"><span class="field__label">Categoría</span>
+                <select id="f-categoria">
+                    <option value="">Todas</option>
+                    <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e($c['nombre']) ?></option><?php endforeach; ?>
+                </select></label>
+            <label class="field"><span class="field__label">Tipo de equipo</span>
+                <select id="f-tipo">
                     <option value="">Todos</option>
-                    <option value="1">Sí</option>
-                    <option value="0">No</option>
+                    <?php foreach ($tiposEquipo as $t): ?><option value="<?= (int) $t['id'] ?>"><?= e($t['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
             <label class="field field--delay-filter"><span class="field__label">Demora</span>
                 <label class="delay-toggle"><input type="checkbox" id="f-demora" value="1"><span>Solo con demora</span></label>
             </label>
-            <label class="field"><span class="field__label">Retorno desde</span>
-                <?= render_paises_select('retorno_desde_sel', null, false, 'Cualquiera') ?></label>
         </div>
         </div>
     </div>
