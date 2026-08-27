@@ -772,6 +772,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .chip--reservada  { --estado: var(--estado-reservada); }
 .chip--transito   { --estado: var(--estado-transito); }
 .chip--taller     { --estado: var(--estado-taller); }
+.chip--cliente    { --estado: #8a5cd1; }   /* con el cliente: ocupado, pero no viajando */
 
 .filters-panel {
     display: grid;
@@ -1573,6 +1574,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .estado-chip__dot--reservada { background: var(--estado-reservada); }
 .estado-chip__dot--transito { background: var(--estado-transito); }
 .estado-chip__dot--taller { background: var(--estado-taller); }
+.estado-chip__dot--cliente { background: #8a5cd1; }
 /* Botón de solo ícono, reutilizable en barras compactas. */
 .iconbtn {
     display: inline-flex;

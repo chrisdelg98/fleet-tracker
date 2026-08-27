@@ -34,7 +34,7 @@ final class DisponibilidadService
                     te.nombre AS tipo_equipo, cap.nombre AS capacidad,
                     cat.nombre AS categoria, cat.es_motriz,
                     ap.nombre AS piloto_asignado,
-                    m.id AS mov_id, m.estado AS mov_estado, m.fecha_salida, m.fecha_fin_estimada,
+                    m.id AS mov_id, m.unidad_id AS mov_unidad_id, m.estado AS mov_estado, m.fecha_salida, m.fecha_fin_estimada,
                     m.retorno_disponible, m.pais_solicita_retorno_id, m.reservado_para, m.pais_origen_id,
                     m.pais_destino_id AS mov_pais_destino_id,
                     mo.codigo_iso AS mov_origen, md.codigo_iso AS mov_destino,
@@ -166,6 +166,7 @@ final class DisponibilidadService
                 'piloto'          => $r['mov_piloto'] ?? $r['piloto_asignado'],
                 'movimiento'      => $r['mov_id'] ? [
                     'id'                      => (int) $r['mov_id'],
+                    'unidad_id'               => (int) $r['mov_unidad_id'],
                     'estado'                  => $r['mov_estado'],
                     'origen'                  => $r['mov_origen'],
                     'destino'                 => $r['mov_destino'],
@@ -214,6 +215,10 @@ final class DisponibilidadService
     private function conElCliente(array $r): bool
     {
         if ($r['mov_id'] === null) {
+            return false;
+        }
+        // El motriz nunca se queda: es justamente el que regresa a base.
+        if ((int) $r['es_motriz'] === 1) {
             return false;
         }
         if ((int) ($r['queda_con_cliente'] ?? 0) === 1) {

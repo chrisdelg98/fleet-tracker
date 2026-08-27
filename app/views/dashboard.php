@@ -76,6 +76,7 @@ set_page_meta(
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="DISPONIBLE"><span class="estado-chip__dot estado-chip__dot--disponible"></span><span>Disponible</span></label>
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="RESERVADA"><span class="estado-chip__dot estado-chip__dot--reservada"></span><span>Reservada</span></label>
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_TRANSITO"><span class="estado-chip__dot estado-chip__dot--transito"></span><span>En tránsito</span></label>
+                        <label class="estado-chip"><input type="checkbox" class="f-estado" value="EN_CLIENTE"><span class="estado-chip__dot estado-chip__dot--cliente"></span><span>Con cliente</span></label>
                         <label class="estado-chip"><input type="checkbox" class="f-estado" value="TALLER_BLOQUEADA"><span class="estado-chip__dot estado-chip__dot--taller"></span><span>Taller/Bloqueada</span></label>
                     </div>
                 </div>
@@ -165,6 +166,23 @@ set_page_meta(
                         <option value="<?= (int) $p['id'] ?>"<?= $vencida ? ' data-licencia-vencida="1"' : '' ?>><?= e($p['nombre']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
+            <label class="field"><span class="field__label">Cabezal que la mueve</span>
+                <select name="apoyo_motriz_id" data-apoyo="motriz">
+                    <option value="">— Ninguno / del cliente —</option>
+                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
+                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
+                    <?php endforeach; ?>
+                </select></label>
+            <label class="field"><span class="field__label">Chasis o equipo adicional</span>
+                <select name="apoyo_arrastre_id" data-apoyo="arrastre">
+                    <option value="">— Ninguno —</option>
+                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
+                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
+                    <?php endforeach; ?>
+                </select></label>
+            <label class="field grid-2__full">
+                <label class="check check--box"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente (no regresa hasta el fin de la reserva)</span></label>
+            </label>
             <label class="field"><span class="field__label">Referencia CW</span>
                 <input type="text" name="referencia_cw" maxlength="120"></label>
             <label class="field"><span class="field__label">Reservado para</span>

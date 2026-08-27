@@ -32,7 +32,7 @@ final class UnidadModel
     {
         // El override abierto (bloqueo manual o taller) se trae aquí para que la gestión de
         // flota vea por qué una unidad está fuera de operación, no solo el tablero.
-        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.requiere_furgon,
+        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.requiere_furgon, c.es_motriz,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
                        cap.nombre AS capacidad, p.nombre AS piloto_asignado,
                        o.tipo AS override_tipo, o.motivo AS override_motivo,

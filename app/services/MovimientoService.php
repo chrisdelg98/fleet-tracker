@@ -434,6 +434,7 @@ final class MovimientoService
             'fecha_fin_estimada'  => $finUtc,
             'referencia_cw'       => $this->nullable($v->value('referencia_cw')),
             'retorno_disponible'  => array_key_exists('retorno_disponible', $input) ? (int) (bool) $input['retorno_disponible'] : 0,
+            'queda_con_cliente'   => array_key_exists('queda_con_cliente', $input) ? (int) (bool) $input['queda_con_cliente'] : 0,
             'reservado_para'      => $this->nullable($v->value('reservado_para')),
             'notas'               => $this->nullable($v->value('notas')),
         ];

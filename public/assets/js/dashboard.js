@@ -4,6 +4,7 @@
  * cada 60s. Las horas se muestran en la timezone de cada estación (Intl), la BD está en UTC.
  */
 import { api, showError } from './api.js';
+import { confirmar } from './confirm.js';
 
 const cfg = JSON.parse(document.getElementById('dash-config').textContent);
 const body = document.getElementById('dash-body');
@@ -21,6 +22,7 @@ const CHIP = {
     DISPONIBLE: ['chip--disponible', 'Disponible'],
     RESERVADA: ['chip--reservada', 'Reservada'],
     EN_TRANSITO: ['chip--transito', 'En tránsito'],
+    EN_CLIENTE: ['chip--cliente', 'Con cliente'],
     TALLER_BLOQUEADA: ['chip--taller', 'Taller/Bloqueada'],
 };
 
@@ -31,6 +33,7 @@ const STATE_LABELS = {
     DISPONIBLE: 'Disponible',
     RESERVADA: 'Reservada',
     EN_TRANSITO: 'En tránsito',
+    EN_CLIENTE: 'Con cliente',
     TALLER_BLOQUEADA: 'Taller/Bloqueada',
 };
 
@@ -128,8 +131,11 @@ function rowHtml(u) {
     const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
     const m = u.movimiento;
     const demora = u.con_demora ? '<span class="delay-flag"><span class="delay-flag__icon" aria-hidden="true">!</span><span>Con demora</span></span>' : '';
+    const juntos = (m?.acompanantes || []).length
+        ? `<small class="muted block">Va con ${esc(m.acompanantes.join(', '))} · Mov #${esc(m.id)}</small>`
+        : '';
     const actividad = m
-        ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} <small class="muted">· sale ${fmtLibera(m.fecha_salida, u.timezone)}</small>`
+        ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} <small class="muted">· sale ${fmtLibera(m.fecha_salida, u.timezone)}</small>${juntos}`
         : (u.override ? `<span class="muted">${esc(u.override.motivo || u.override.tipo)}</span>` : '—');
     const libera = m ? fmtLibera(m.fecha_fin_estimada, u.timezone) : '—';
     let retorno = '—';
@@ -186,6 +192,9 @@ function accionesHtml(u) {
         acc.push(item('llegada', 'Marcar llegada'), item('reprogramar', 'Cambiar fecha de fin'));
         cancelar = item('cancelar', 'Cancelar', true);
     }
+    if (m && (m.acompanantes || []).length && m.unidad_id !== u.unidad_id) {
+        acc.push(item('liberar', 'Liberar de este viaje'));
+    }
     if (m && m.retorno_disponible && !m.regreso_id) {
         acc.push(item('apartar-retorno', 'Apartar retorno'));
     }
@@ -206,6 +215,15 @@ if (cfg.puedeReservar) {
         if (mov === 'reservar') return abrirReserva(unidad);
         if (mov === 'bloquear') return abrirMotivo('bloquear', unidad);
         if (mov === 'cancelar') return abrirMotivo('cancelar', id);
+        if (mov === 'liberar') {
+            const ok = await confirmar({
+                titulo: 'Liberar del viaje',
+                mensaje: 'Este activo queda disponible; el movimiento sigue abierto con el resto.',
+                aceptar: 'Liberar',
+            });
+            if (!ok) return;
+            return postAccion(`/api/movimientos/${id}/liberar/${unidad}`);
+        }
         if (mov === 'reprogramar') {
             const u = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
             return abrirReprogramar(id, u?.movimiento, u?.timezone);
