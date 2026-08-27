@@ -175,6 +175,7 @@
 <?php endif; ?>
     <script src="/assets/js/nav.js" type="module"></script>
     <script src="/assets/js/palette.js" type="module"></script>
+    <script src="/assets/js/atajos.js" type="module"></script>
     <script src="/assets/js/filter-panel.js" type="module"></script>
     <script src="/assets/js/searchable-select.js" type="module"></script>
     <script src="/assets/js/rowmenu.js" type="module"></script>

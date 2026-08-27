@@ -532,7 +532,7 @@ a { color: inherit; }
 .form { display: grid; gap: var(--sp-4); min-width: 0; }
 /* align-content: start evita que un campo con nota reparta el alto y desalinee al vecino. */
 .field { display: grid; align-content: start; gap: var(--sp-2); min-width: 0; }
-.field__label { font-size: var(--fs-sm); font-weight: 600; color: var(--color-ink-soft); }
+.field__label { font-size: var(--fs-sm); font-weight: 600; color: var(--color-ink-soft); letter-spacing: .01em; }
 /* Advertencia inline en la etiqueta: avisa sin robar una línea al formulario. */
 .field__warn {
     margin-left: 6px;
@@ -1215,13 +1215,17 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     overflow: hidden;
     overscroll-behavior: contain;
 }
-.dialog h2 { margin: 0; font-size: var(--fs-xl); }
+.dialog h2 { margin: 0; font-size: var(--fs-xl); letter-spacing: -0.01em; }
+.dialog--ancho > .form { padding: var(--sp-6) var(--sp-8) var(--sp-5); gap: var(--sp-5); }
+.dialog--ancho .dialog__actions { padding-top: var(--sp-4); }
+.dialog--ancho .dialog__actions .btn { min-width: 150px; }
 .dialog__head {
     display: grid;
-    gap: var(--sp-2);
+    gap: 6px;
     padding-bottom: var(--sp-4);
     border-bottom: 1px solid var(--color-border);
 }
+.dialog--ancho .dialog__head h2 { font-size: 24px; }
 .dialog__lede {
     color: var(--color-ink-soft);
     font-size: var(--fs-sm);
@@ -1230,6 +1234,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .dialog__body {
     display: grid;
     gap: var(--sp-4);
+    align-content: start;
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -1318,6 +1323,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 
 /* Confirmación en modal (confirm.js): pequeña, centrada y con la acción a la derecha. */
 .dialog--confirm { width: min(430px, calc(100vw - 32px)); }
+.dialog--ancho { width: min(1120px, calc(100vw - 40px)); max-width: none; }
 .confirm { display: grid; gap: var(--sp-4); padding: var(--sp-5); }
 .confirm__texto { display: grid; gap: var(--sp-2); }
 .confirm__titulo { margin: 0; font-size: var(--fs-xl); }
@@ -1327,6 +1333,11 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 /* Acción destructiva: mismo peso que la primaria, pero en rojo. */
 .btn--peligro { background: var(--color-error); color: #fff; }
 .btn--peligro:hover { background: #b8271d; }
+
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-4); }
+.grid-4__2 { grid-column: span 2; }
+.grid-4__3 { grid-column: span 3; }
+.grid-4__full { grid-column: 1 / -1; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
 .field--check { justify-content: start; align-content: start; }
@@ -1818,6 +1829,9 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 }
 .ss__opt { padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); cursor: pointer; font-size: var(--fs-sm); }
 .ss__opt:hover { background: var(--color-primary); color: #fff; }
+/* Opción marcada con el teclado: se lee igual que el hover, sin necesitar el ratón. */
+.ss__opt.is-active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.ss__opt.is-active:hover { background: var(--color-primary); color: #fff; }
 .ss__group { padding: var(--sp-2) var(--sp-3) var(--sp-1); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-ink-soft); }
 .ss__empty { padding: var(--sp-2) var(--sp-3); color: var(--color-ink-soft); font-size: var(--fs-sm); }
 
@@ -2166,15 +2180,24 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    /* Cuatro columnas no caben: se baja a dos y los tramos ocupan la fila completa. */
+    .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-4__2,
+    .grid-4__3 { grid-column: 1 / -1; }
+
     .field--state-filter {
         grid-column: 1 / -1;
     }
 }
 
 @media (max-width: 760px) {
-    .grid-2 {
+    .grid-2,
+    .grid-4 {
         grid-template-columns: 1fr;
     }
+    .grid-4__2,
+    .grid-4__3,
+    .grid-4__full { grid-column: auto; }
 
     /* Una sola fila de identidad: hamburguesa, logo, título y usuario;
        la acción de la pantalla baja completa a la segunda fila. */

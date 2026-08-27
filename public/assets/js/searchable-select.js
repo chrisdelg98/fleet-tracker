@@ -7,6 +7,9 @@
  */
 
 /** Realza todos los <select> dentro de `root` (omite los ya realzados y los data-no-search). */
+/** Solo un desplegable abierto a la vez: al abrir uno se cierra el anterior. */
+let abierto = null;
+
 export function enhanceSelects(root = document) {
     root.querySelectorAll('select:not([data-no-search])').forEach((sel) => {
         if (!sel.dataset.ssEnhanced) {
@@ -19,6 +22,7 @@ class SearchableSelect {
     constructor(select) {
         this.select = select;
         select.dataset.ssEnhanced = '1';
+        this.activo = null;
         this.boundReposition = () => this.positionList();
         this.portalRoot = select.closest('dialog') || document.body;
 
@@ -45,10 +49,10 @@ class SearchableSelect {
         this.buildOptions();
         this.syncFromNative();
 
-        this.input.addEventListener('focus', () => this.open());
-        // Reabrir con clic aunque el input ya tenga el foco (tras elegir una opción no se
-        // dispara 'focus' de nuevo, por eso antes no reabría sin salir y volver a entrar).
+        // Abrir con el foco dejaba una cascada de listas abiertas al recorrer el formulario
+        // con Tab. Ahora abre el clic, la escritura o la flecha abajo; el foco solo enfoca.
         this.input.addEventListener('click', () => this.open());
+        this.input.addEventListener('blur', () => this.close());
         this.input.addEventListener('input', () => { this.open(); this.filter(this.input.value); });
         this.input.addEventListener('keydown', (e) => this.onKey(e));
         document.addEventListener('click', (e) => {
@@ -95,6 +99,10 @@ class SearchableSelect {
 
     open() {
         if (this.select.disabled) return;
+        if (abierto && abierto !== this) abierto.close();
+        abierto = this;
+        const elegida = this.items.find((li) => li.dataset.value === this.select.value);
+        this.marcar(elegida ?? null);
         this.list.hidden = false;
         this.wrap.classList.add('is-open');
         this.list.classList.add('is-open');
@@ -111,6 +119,7 @@ class SearchableSelect {
         window.removeEventListener('resize', this.boundReposition);
         document.removeEventListener('scroll', this.boundReposition, true);
         this.syncFromNative(); // descarta texto tecleado sin elegir
+        if (abierto === this) abierto = null;
     }
 
     positionList() {
@@ -151,6 +160,7 @@ class SearchableSelect {
         } else if (empty) {
             empty.hidden = true;
         }
+        this.marcar(this.visibles()[0] ?? null);
     }
 
     choose(value, text) {
@@ -160,11 +170,43 @@ class SearchableSelect {
         this.select.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+    /** Opciones visibles tras el filtro: son las que recorren las flechas. */
+    visibles() {
+        return this.items.filter((li) => !li.hidden);
+    }
+
+    /** Marca una opción como activa y la deja a la vista dentro de la lista. */
+    marcar(li) {
+        this.items.forEach((x) => x.classList.remove('is-active'));
+        this.activo = li ?? null;
+        if (!li) return;
+        li.classList.add('is-active');
+        li.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** Mueve la marca respetando los extremos (no da la vuelta: desorienta al teclear). */
+    mover(paso) {
+        const lista = this.visibles();
+        if (lista.length === 0) return;
+        const actual = lista.indexOf(this.activo);
+        const siguiente = actual === -1
+            ? (paso > 0 ? 0 : lista.length - 1)
+            : Math.min(Math.max(actual + paso, 0), lista.length - 1);
+        this.marcar(lista[siguiente]);
+    }
+
     onKey(e) {
         if (e.key === 'Escape') { this.close(); return; }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (this.list.hidden) { this.open(); return; }
+            this.mover(e.key === 'ArrowDown' ? 1 : -1);
+            return;
+        }
         if (e.key === 'Enter') {
-            const first = this.items.find((li) => !li.hidden);
-            if (first) { e.preventDefault(); this.choose(first.dataset.value, first.textContent); }
+            // Sin marca explícita, Enter toma la primera coincidencia: escribir y entrar.
+            const elegida = this.activo && !this.activo.hidden ? this.activo : this.visibles()[0];
+            if (elegida) { e.preventDefault(); this.choose(elegida.dataset.value, elegida.textContent); }
         }
     }
 }

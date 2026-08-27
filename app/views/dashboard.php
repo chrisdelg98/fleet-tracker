@@ -114,14 +114,16 @@ set_page_meta(
 
 <?php if ($puedeReservar): ?>
 <!-- Diálogo de reserva/movimiento -->
-<dialog id="dlg-reserva" class="dialog">
+<dialog id="dlg-reserva" class="dialog dialog--ancho">
     <form method="dialog" class="form" id="form-reserva" novalidate>
         <div class="dialog__head">
             <h2 id="dlg-reserva-title">Nueva reserva</h2>
             <p class="dialog__lede">Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.</p>
         </div>
         <div class="dialog__body">
-        <div class="grid-2">
+        <!-- Cuatro columnas y sin secciones: el formulario se lee de un barrido y ninguna
+             fila queda a medias (los tramos completan lo que sobra). -->
+        <div class="grid-4">
             <label class="field"><span class="field__label">Unidad *</span>
                 <select name="unidad_id" required>
                     <option value="">Selecciona…</option>
@@ -134,25 +136,21 @@ set_page_meta(
                     <option value="RESERVADO">Reserva (apartado)</option>
                     <option value="PROGRAMADO">Programado (confirmado)</option>
                 </select></label>
-            <label class="field grid-2__full"><span class="field__label">Ruta del catálogo</span>
-                <select name="ruta_id">
-                    <option value="">— Ruta personalizada —</option>
-                    <?php foreach ($rutas as $r): ?>
-                        <option value="<?= (int) $r['id'] ?>" data-origen="<?= (int) $r['pais_origen_id'] ?>" data-destino="<?= (int) $r['pais_destino_id'] ?>" data-horas="<?= e((string) ($r['horas_transito_estimadas'] ?? '')) ?>"><?= e($r['nombre']) ?></option>
+            <label class="field"><span class="field__label">Cabezal</span>
+                <select name="apoyo_motriz_id" data-apoyo="motriz">
+                    <option value="">— Ninguno / del cliente —</option>
+                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
+                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
-            <label class="field ruta-custom"><span class="field__label">País de origen *</span>
-                <?= render_paises_select('pais_origen_id', null, false) ?></label>
-            <label class="field ruta-custom"><span class="field__label">País de destino *</span>
-                <?= render_paises_select('pais_destino_id', null, false) ?></label>
-            <label class="field ruta-custom"><span class="field__label">Ciudad origen</span>
-                <input type="text" name="ruta_custom_origen" maxlength="150"></label>
-            <label class="field ruta-custom"><span class="field__label">Ciudad destino</span>
-                <input type="text" name="ruta_custom_destino" maxlength="150"></label>
-            <label class="field"><span class="field__label">Salida *</span>
-                <input type="datetime-local" name="fecha_salida" required></label>
-            <label class="field"><span class="field__label">Se libera (fin estimado) *</span>
-                <input type="datetime-local" name="fecha_fin_estimada" required></label>
+            <label class="field"><span class="field__label">Chasis o equipo</span>
+                <select name="apoyo_arrastre_id" data-apoyo="arrastre">
+                    <option value="">— Ninguno —</option>
+                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
+                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
+                    <?php endforeach; ?>
+                </select></label>
+
             <label class="field"><span class="field__label">Piloto <span class="field__warn" id="piloto-warn" hidden>Licencia vencida</span></span>
                 <select name="piloto_id">
                     <option value="">—</option>
@@ -166,29 +164,34 @@ set_page_meta(
                         <option value="<?= (int) $p['id'] ?>"<?= $vencida ? ' data-licencia-vencida="1"' : '' ?>><?= e($p['nombre']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
-            <label class="field"><span class="field__label">Cabezal que la mueve</span>
-                <select name="apoyo_motriz_id" data-apoyo="motriz">
-                    <option value="">— Ninguno / del cliente —</option>
-                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
-                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
+            <label class="field grid-4__3"><span class="field__label">Ruta del catálogo</span>
+                <select name="ruta_id">
+                    <option value="">— Ruta personalizada —</option>
+                    <?php foreach ($rutas as $r): ?>
+                        <option value="<?= (int) $r['id'] ?>" data-origen="<?= (int) $r['pais_origen_id'] ?>" data-destino="<?= (int) $r['pais_destino_id'] ?>" data-horas="<?= e((string) ($r['horas_transito_estimadas'] ?? '')) ?>"><?= e($r['nombre']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
-            <label class="field"><span class="field__label">Chasis o equipo adicional</span>
-                <select name="apoyo_arrastre_id" data-apoyo="arrastre">
-                    <option value="">— Ninguno —</option>
-                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
-                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
-                    <?php endforeach; ?>
-                </select></label>
-            <label class="field grid-2__full">
-                <label class="check check--box"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente (no regresa hasta el fin de la reserva)</span></label>
-            </label>
-            <label class="field"><span class="field__label">Referencia CW</span>
-                <input type="text" name="referencia_cw" maxlength="120"></label>
+
+            <label class="field ruta-custom"><span class="field__label">País de origen *</span>
+                <?= render_paises_select('pais_origen_id', null, false) ?></label>
+            <label class="field ruta-custom"><span class="field__label">Ciudad origen</span>
+                <input type="text" name="ruta_custom_origen" maxlength="150"></label>
+            <label class="field ruta-custom"><span class="field__label">País de destino *</span>
+                <?= render_paises_select('pais_destino_id', null, false) ?></label>
+            <label class="field ruta-custom"><span class="field__label">Ciudad destino</span>
+                <input type="text" name="ruta_custom_destino" maxlength="150"></label>
+
+            <label class="field"><span class="field__label">Salida *</span>
+                <input type="datetime-local" name="fecha_salida" required></label>
+            <label class="field"><span class="field__label">Se libera *</span>
+                <input type="datetime-local" name="fecha_fin_estimada" required></label>
             <label class="field"><span class="field__label">Reservado para</span>
                 <input type="text" name="reservado_para" maxlength="150" placeholder="Estación / cliente"></label>
-            <label class="field field--check"><span class="field__label">Retorno</span>
-                <label class="check check--box"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label></label>
+            <label class="field"><span class="field__label">Referencia CW</span>
+                <input type="text" name="referencia_cw" maxlength="120"></label>
+
+            <label class="check check--box grid-4__2"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label>
+            <label class="check check--box grid-4__2"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente</span></label>
         </div>
         </div>
         <p class="form__warn" id="reserva-conflicto" hidden></p>
