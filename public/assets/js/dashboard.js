@@ -66,8 +66,8 @@ function buildQuery() {
     if (retorno === '1') p.set('solo_retorno', '1');
     if (retorno === '0') p.set('sin_retorno', '1');
     if (document.getElementById('f-demora').checked) p.set('solo_demora', '1');
-    const rh = document.querySelector('[name="retorno_hacia_sel"]');
-    if (rh && rh.value) p.set('retorno_hacia', rh.value);
+    const rd = document.querySelector('[name="retorno_desde_sel"]');
+    if (rd && rd.value) p.set('retorno_desde', rd.value);
     return p;
 }
 
@@ -544,8 +544,8 @@ document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change
     syncStateSummary();
     load();
 }));
-const rhSel = document.querySelector('[name="retorno_hacia_sel"]');
-if (rhSel) rhSel.addEventListener('change', load);
+const rdSel = document.querySelector('[name="retorno_desde_sel"]');
+if (rdSel) rdSel.addEventListener('change', load);
 let placaTimer;
 document.getElementById('f-placa').addEventListener('input', () => { clearTimeout(placaTimer); placaTimer = setTimeout(load, 300); });
 document.querySelector('[data-action="refrescar"]').addEventListener('click', load);

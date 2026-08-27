@@ -90,8 +90,8 @@ set_page_meta(
             <label class="field field--delay-filter"><span class="field__label">Demora</span>
                 <label class="delay-toggle"><input type="checkbox" id="f-demora" value="1"><span>Solo con demora</span></label>
             </label>
-            <label class="field"><span class="field__label">Retorno hacia</span>
-                <?= render_paises_select('retorno_hacia_sel', null, false, 'Cualquiera') ?></label>
+            <label class="field"><span class="field__label">Retorno desde</span>
+                <?= render_paises_select('retorno_desde_sel', null, false, 'Cualquiera') ?></label>
         </div>
         </div>
     </div>

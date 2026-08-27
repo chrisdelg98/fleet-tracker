@@ -24,7 +24,7 @@ final class DisponibilidadService
     /**
     * @param string $desdeUtc 'Y-m-d H:i:s'
     * @param string $hastaUtc 'Y-m-d H:i:s'
-    * @param array  $filtros  estacion_id?, categoria_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_hacia?, ocultar_fuera_operacion?, solo_demora?
+    * @param array  $filtros  estacion_id?, categoria_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_desde?, ocultar_fuera_operacion?, solo_demora?
      */
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
@@ -115,7 +115,9 @@ final class DisponibilidadService
         $estadosFiltro = $filtros['estados'] ?? [];
         $soloRetorno   = !empty($filtros['solo_retorno']);
         $sinRetorno    = !empty($filtros['sin_retorno']);
-        $retornoHacia  = !empty($filtros['retorno_hacia']) ? (int) $filtros['retorno_hacia'] : null;
+        // "Desde" = donde quedará el equipo, que es el destino de la ida. El destino del
+        // retorno no se sabe hasta que alguien lo aparta (puede ir a un tercer país).
+        $retornoDesde  = !empty($filtros['retorno_desde']) ? (int) $filtros['retorno_desde'] : null;
         $ocultarFueraOperacion = !empty($filtros['ocultar_fuera_operacion']);
         $soloDemora = !empty($filtros['solo_demora']);
         $ahoraUtc = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
@@ -147,7 +149,7 @@ final class DisponibilidadService
             if ($soloDemora && !$conDemora) {
                 continue;
             }
-            if ($retornoHacia !== null && (!$tieneRetorno || (int) $r['pais_origen_id'] !== $retornoHacia)) {
+            if ($retornoDesde !== null && (!$tieneRetorno || (int) $r['mov_pais_destino_id'] !== $retornoDesde)) {
                 continue;
             }
 

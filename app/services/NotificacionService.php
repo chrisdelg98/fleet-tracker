@@ -60,7 +60,7 @@ final class NotificacionService
             }
 
             $fecha = substr((string) $mov['fecha_fin_estimada'], 0, 10);
-            $link = rtrim($this->appUrl, '/') . '/?solo_retorno=1&retorno_hacia=' . (int) $mov['pais_origen_id'] . '&fecha=' . rawurlencode($fecha);
+            $link = rtrim($this->appUrl, '/') . '/?solo_retorno=1&retorno_desde=' . (int) $mov['pais_destino_id'] . '&fecha=' . rawurlencode($fecha);
             $subject = 'Retorno disponible hacia ' . $mov['pais_origen_nombre'] . ' · ' . $mov['placa_unidad'];
             $html = $this->emailTemplate(
                 'Retorno disponible',
@@ -98,7 +98,7 @@ final class NotificacionService
             return;
         }
 
-        $link = rtrim($this->appUrl, '/') . '/?solo_retorno=1&retorno_hacia=' . (int) $suscripcion['pais_id'] . '&fecha=' . rawurlencode((new DateTimeImmutable('now'))->format('Y-m-d'));
+        $link = rtrim($this->appUrl, '/') . '/?solo_retorno=1&retorno_desde=' . (int) $suscripcion['pais_id'] . '&fecha=' . rawurlencode((new DateTimeImmutable('now'))->format('Y-m-d'));
         $subject = '[Prueba] Retorno disponible hacia ' . ($suscripcion['pais_nombre'] ?? 'el país');
         $html = $this->emailTemplate(
             'Prueba de retorno disponible',
