@@ -1234,6 +1234,56 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     z-index: 2;
     background: linear-gradient(180deg, rgba(255,255,255,0.76) 0%, rgba(250,251,252,0.98) 32%);
 }
+/* ── Panel de unidad: estado, compañeros de viaje y acciones, abierto desde la fila ── */
+.dialog--panel { width: min(520px, calc(100vw - 32px)); }
+.panel { position: relative; padding: var(--sp-5); display: grid; gap: var(--sp-4); }
+.panel__cerrar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-ink-mute);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.panel__cerrar:hover { background: var(--color-surface-soft); color: var(--color-ink); }
+
+.panel__id { display: grid; gap: 2px; padding-right: var(--sp-6); }
+.panel__placa { margin: 0; font-size: var(--fs-xl); }
+.panel__meta { color: var(--color-ink-soft); font-size: var(--fs-sm); }
+.panel__estado { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+
+.panel__bloque { display: grid; gap: var(--sp-2); }
+.panel__titulo {
+    color: var(--color-ink-soft);
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.panel__junto {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-soft);
+    font-size: var(--fs-sm);
+}
+.panel__junto strong { font-weight: 700; }
+.panel__junto .btn { margin-left: auto; }
+
+.panel__acciones { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.panel__acciones .btn { flex: 1 1 auto; min-width: 150px; }
+
 /* Confirmación en modal (confirm.js): pequeña, centrada y con la acción a la derecha. */
 .dialog--confirm { width: min(430px, calc(100vw - 32px)); }
 .confirm { display: grid; gap: var(--sp-4); padding: var(--sp-5); }

@@ -201,6 +201,14 @@ set_page_meta(
 </dialog>
 
 <!-- Diálogo de motivo (cancelar / bloquear) -->
+<!-- Panel de la unidad: estado, compañeros de viaje y acciones posibles, en un clic. -->
+<dialog id="dlg-unidad" class="dialog dialog--panel">
+    <div class="panel" id="panel-unidad">
+        <button type="button" class="panel__cerrar" data-close aria-label="Cerrar">&times;</button>
+        <div id="panel-unidad-cuerpo"></div>
+    </div>
+</dialog>
+
 <dialog id="dlg-reprogramar" class="dialog">
     <form method="dialog" class="form" id="form-reprogramar" novalidate>
         <div class="dialog__head">

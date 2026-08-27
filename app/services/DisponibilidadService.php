@@ -52,7 +52,7 @@ final class DisponibilidadService
                        FROM movimiento_unidades mu
                        JOIN unidades u2 ON u2.id = mu.unidad_id
                       WHERE mu.movimiento_id = m.id AND mu.liberado_en IS NULL AND mu.unidad_id <> u.id) AS acompanantes_apoyo,
-                    (SELECT up.placa_unidad FROM unidades up WHERE up.id = m.unidad_id AND m.unidad_id <> u.id) AS acompanante_principal,
+                    (SELECT CONCAT(up.id, \':\', up.placa_unidad) FROM unidades up WHERE up.id = m.unidad_id AND m.unidad_id <> u.id) AS acompanante_principal,
                     o.id AS override_id, o.tipo AS override_tipo, o.motivo AS override_motivo
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
@@ -184,10 +184,7 @@ final class DisponibilidadService
                     'regreso_fin'             => $r['regreso_fin'],
                     'reservado_para'          => $r['reservado_para'],
                     'queda_con_cliente'       => (int) ($r['queda_con_cliente'] ?? 0) === 1,
-                    'acompanantes'            => array_values(array_filter(array_merge(
-                        $r['acompanante_principal'] !== null ? [$r['acompanante_principal']] : [],
-                        $r['acompanantes_apoyo'] !== null ? explode(', ', $r['acompanantes_apoyo']) : []
-                    ))),
+                    'acompanantes'            => $this->acompanantes($r),
                 ] : null,
                 'override'        => $r['override_id'] ? [
                     'tipo'   => $r['override_tipo'],
@@ -208,6 +205,28 @@ final class DisponibilidadService
             return $la <=> $lb;
         });
 
+        return $out;
+    }
+
+    /**
+     * Compañeros de viaje de esta unidad, ya separados en id y placa. `apoyo` distingue a los
+     * que se pueden liberar (el protagonista del movimiento no se libera: se cancela).
+     *
+     * @return array<int, array{id:int, placa:string, apoyo:bool}>
+     */
+    private function acompanantes(array $r): array
+    {
+        $out = [];
+        $parse = static function (?string $crudo, bool $apoyo) use (&$out): void {
+            foreach (array_filter(explode(', ', (string) $crudo)) as $item) {
+                [$id, $placa] = array_pad(explode(':', $item, 2), 2, '');
+                if ($placa !== '') {
+                    $out[] = ['id' => (int) $id, 'placa' => $placa, 'apoyo' => $apoyo];
+                }
+            }
+        };
+        $parse($r['acompanante_principal'], false);
+        $parse($r['acompanantes_apoyo'], true);
         return $out;
     }
 

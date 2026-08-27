@@ -211,6 +211,8 @@ if (cfg.puedeReservar) {
     document.addEventListener('click', async (ev) => {
         const b = ev.target.closest('[data-mov]');
         if (!b) return;
+        // El panel y el menú comparten estos botones: al disparar una acción, el panel cierra.
+        if (dlgUnidad?.open) dlgUnidad.close();
         const { mov, id, unidad } = b.dataset;
         if (mov === 'reservar') return abrirReserva(unidad);
         if (mov === 'bloquear') return abrirMotivo('bloquear', unidad);
@@ -381,6 +383,74 @@ if (formMotivo) {
         if (r.ok) { dlgMotivo.close(); load(); } else showError(errMotivo, r);
     });
 }
+
+// ── Panel de la unidad ──
+// El menú "⋮" obliga a saber qué se quiere antes de ver en qué estado está la unidad, y no
+// tiene sitio para los compañeros de viaje. El panel muestra estado y acciones juntos.
+const dlgUnidad = document.getElementById('dlg-unidad');
+const cuerpoUnidad = document.getElementById('panel-unidad-cuerpo');
+
+/** Acciones posibles según el estado, con verbo claro. Reusa los mismos data-mov del menú. */
+function accionesPanel(u) {
+    const m = u.movimiento;
+    const btn = (accion, txt, clase = 'btn--ghost-dark') =>
+        `<button type="button" class="btn ${clase}" data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${txt}</button>`;
+    const acc = [];
+
+    if (u.estado === 'DISPONIBLE') {
+        acc.push(btn('reservar', 'Reservar', 'btn--primary'), btn('bloquear', 'Bloquear'));
+    } else if (u.override && u.override.tipo === 'BLOQUEADA') {
+        acc.push(btn('desbloquear', 'Desbloquear', 'btn--primary'));
+    } else if (m && m.estado === 'RESERVADO') {
+        acc.push(btn('confirmar', 'Confirmar', 'btn--primary'));
+    } else if (m && m.estado === 'PROGRAMADO') {
+        acc.push(btn('salida', 'Marcar salida', 'btn--primary'), btn('reprogramar', 'Cambiar fecha de fin'));
+    } else if (m && m.estado === 'EN_TRANSITO') {
+        acc.push(btn('llegada', 'Marcar llegada', 'btn--primary'), btn('reprogramar', 'Cambiar fecha de fin'));
+    }
+    if (m && m.retorno_disponible && !m.regreso_id) acc.push(btn('apartar-retorno', 'Apartar retorno'));
+    if (m && m.estado !== 'EN_TRANSITO') acc.push(btn('cancelar', 'Cancelar movimiento', 'btn--peligro'));
+    return acc;
+}
+
+function abrirPanelUnidad(u) {
+    const m = u.movimiento;
+    const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
+
+    const contexto = m
+        ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} · Mov #${esc(m.id)} · se libera ${fmtLibera(m.fecha_fin_estimada, u.timezone)}`
+        : (u.override ? esc(u.override.motivo || u.override.tipo) : 'Sin movimiento activo');
+
+    // Solo los activos de apoyo se liberan; el protagonista se cancela, no se suelta.
+    const juntos = (m?.acompanantes || []).map((c) => `
+        <div class="panel__junto">
+            <strong>${esc(c.placa)}</strong>
+            ${c.apoyo ? `<button type="button" class="btn btn--ghost-dark btn--sm" data-mov="liberar" data-unidad="${c.id}" data-id="${m.id}">Liberar</button>` : '<span class="muted">unidad reservada</span>'}
+        </div>`).join('');
+
+    const acciones = accionesPanel(u);
+    cuerpoUnidad.innerHTML = `
+        <div class="panel__id">
+            <h2 class="panel__placa">${esc(u.placa_unidad)}</h2>
+            <span class="panel__meta">${esc(u.categoria || '')} · ${esc(u.estacion_codigo)}${u.piloto ? ' · ' + esc(u.piloto) : ''}</span>
+        </div>
+        <div class="panel__estado">
+            <span class="chip ${cls}">${label}</span>
+            <span class="muted">${contexto}</span>
+        </div>
+        ${juntos ? `<div class="panel__bloque"><span class="panel__titulo">Va con</span>${juntos}</div>` : ''}
+        ${acciones.length ? `<div class="panel__bloque"><span class="panel__titulo">Acciones</span><div class="panel__acciones">${acciones.join('')}</div></div>` : ''}`;
+    dlgUnidad.showModal();
+}
+
+// Un clic en la fila abre el panel; los controles propios de la fila siguen mandando.
+body.addEventListener('click', (ev) => {
+    if (ev.target.closest('button, a, .rowmenu')) return;
+    const fila = ev.target.closest('tr');
+    const placa = fila?.querySelector('strong')?.textContent;
+    const u = ultimasUnidades.find((x) => x.placa_unidad === placa);
+    if (u) abrirPanelUnidad(u);
+});
 
 // ── Cambiar fecha de fin (prórroga en ruta) ──
 const dlgReprogramar = document.getElementById('dlg-reprogramar');
