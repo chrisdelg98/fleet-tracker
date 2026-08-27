@@ -393,23 +393,23 @@ const cuerpoUnidad = document.getElementById('panel-unidad-cuerpo');
 /** Acciones posibles según el estado, con verbo claro. Reusa los mismos data-mov del menú. */
 function accionesPanel(u) {
     const m = u.movimiento;
-    const btn = (accion, txt, clase = 'btn--ghost-dark') =>
-        `<button type="button" class="btn ${clase}" data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${txt}</button>`;
+    const btn = (accion, txt, tono = '') =>
+        `<button type="button" class="btn btn--linea ${tono}" data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${txt}</button>`;
     const acc = [];
 
     if (u.estado === 'DISPONIBLE') {
-        acc.push(btn('reservar', 'Reservar', 'btn--primary'), btn('bloquear', 'Bloquear'));
+        acc.push(btn('reservar', 'Reservar', 'btn--linea-principal'), btn('bloquear', 'Bloquear'));
     } else if (u.override && u.override.tipo === 'BLOQUEADA') {
-        acc.push(btn('desbloquear', 'Desbloquear', 'btn--primary'));
+        acc.push(btn('desbloquear', 'Desbloquear', 'btn--linea-principal'));
     } else if (m && m.estado === 'RESERVADO') {
-        acc.push(btn('confirmar', 'Confirmar', 'btn--primary'));
+        acc.push(btn('confirmar', 'Confirmar', 'btn--linea-principal'));
     } else if (m && m.estado === 'PROGRAMADO') {
-        acc.push(btn('salida', 'Marcar salida', 'btn--primary'), btn('reprogramar', 'Cambiar fecha de fin'));
+        acc.push(btn('salida', 'Marcar salida', 'btn--linea-principal'), btn('reprogramar', 'Cambiar fecha de fin'));
     } else if (m && m.estado === 'EN_TRANSITO') {
-        acc.push(btn('llegada', 'Marcar llegada', 'btn--primary'), btn('reprogramar', 'Cambiar fecha de fin'));
+        acc.push(btn('llegada', 'Marcar llegada', 'btn--linea-principal'), btn('reprogramar', 'Cambiar fecha de fin'));
     }
     if (m && m.retorno_disponible && !m.regreso_id) acc.push(btn('apartar-retorno', 'Apartar retorno'));
-    if (m && m.estado !== 'EN_TRANSITO') acc.push(btn('cancelar', 'Cancelar movimiento', 'btn--peligro'));
+    if (m && m.estado !== 'EN_TRANSITO') acc.push(btn('cancelar', 'Cancelar movimiento', 'btn--linea-peligro'));
     return acc;
 }
 
@@ -417,30 +417,38 @@ function abrirPanelUnidad(u) {
     const m = u.movimiento;
     const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
 
-    const contexto = m
-        ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} · Mov #${esc(m.id)} · se libera ${fmtLibera(m.fecha_fin_estimada, u.timezone)}`
-        : (u.override ? esc(u.override.motivo || u.override.tipo) : 'Sin movimiento activo');
+    const fila = (k, v) => (v ? `<div class="panel__dato"><dt>${k}</dt><dd>${v}</dd></div>` : '');
+    const datos = [
+        fila('Estado', `<span class="chip ${cls}">${label}</span>`),
+        m ? fila('Movimiento', `#${esc(m.id)} · ${esc(m.origen || '?')} → ${esc(m.destino || '?')}`) : '',
+        m ? fila('Se libera', fmtLibera(m.fecha_fin_estimada, u.timezone)) : '',
+        m && m.reservado_para ? fila('Reservado para', esc(m.reservado_para)) : '',
+        !m && u.override ? fila('Motivo', esc(u.override.motivo || u.override.tipo)) : '',
+        fila('Piloto', u.piloto ? esc(u.piloto) : '<span class="muted">sin asignar</span>'),
+    ].join('');
 
     // Solo los activos de apoyo se liberan; el protagonista se cancela, no se suelta.
     const juntos = (m?.acompanantes || []).map((c) => `
         <div class="panel__junto">
             <strong>${esc(c.placa)}</strong>
-            ${c.apoyo ? `<button type="button" class="btn btn--ghost-dark btn--sm" data-mov="liberar" data-unidad="${c.id}" data-id="${m.id}">Liberar</button>` : '<span class="muted">unidad reservada</span>'}
+            ${c.apoyo
+                ? `<button type="button" class="btn btn--linea btn--sm" data-mov="liberar" data-unidad="${c.id}" data-id="${m.id}">Liberar</button>`
+                : '<span class="muted">unidad reservada</span>'}
         </div>`).join('');
 
     const acciones = accionesPanel(u);
     cuerpoUnidad.innerHTML = `
         <div class="panel__id">
             <h2 class="panel__placa">${esc(u.placa_unidad)}</h2>
-            <span class="panel__meta">${esc(u.categoria || '')} · ${esc(u.estacion_codigo)}${u.piloto ? ' · ' + esc(u.piloto) : ''}</span>
+            <span class="panel__meta">${esc(u.categoria || '')} · ${esc(u.estacion_codigo)}</span>
         </div>
-        <div class="panel__estado">
-            <span class="chip ${cls}">${label}</span>
-            <span class="muted">${contexto}</span>
-        </div>
+        <dl class="panel__datos">${datos}</dl>
         ${juntos ? `<div class="panel__bloque"><span class="panel__titulo">Va con</span>${juntos}</div>` : ''}
         ${acciones.length ? `<div class="panel__bloque"><span class="panel__titulo">Acciones</span><div class="panel__acciones">${acciones.join('')}</div></div>` : ''}`;
     dlgUnidad.showModal();
+    // El foco entra en la acción principal, no en el botón de cerrar: abrir y pulsar Enter
+    // resuelve el caso frecuente (confirmar, marcar salida, marcar llegada).
+    cuerpoUnidad.querySelector('.panel__acciones .btn')?.focus();
 }
 
 // Un clic en la fila abre el panel; los controles propios de la fila siguen mandando.
