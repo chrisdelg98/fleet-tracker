@@ -323,9 +323,31 @@ function abrirReserva(unidadId) {
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     aplicarPilotoAsignado();
+    tipoTocadoManual = false;
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
     dlgReserva.showModal();
+}
+
+/**
+ * Una salida para hoy no se "aparta": se programa. El tipo se propone según la fecha para
+ * ahorrar el paso de confirmar después, pero deja de proponerse en cuanto el usuario elige
+ * a mano — el valor por defecto no debe pelear con una decisión explícita.
+ */
+let tipoTocadoManual = false;
+
+function sugerirTipo() {
+    if (!formReserva || tipoTocadoManual) return;
+    const salida = formReserva.elements['fecha_salida'].value;
+    if (!salida) return;
+    const hoy = new Date();
+    const mismaFecha = salida.slice(0, 10) === [
+        hoy.getFullYear(),
+        String(hoy.getMonth() + 1).padStart(2, '0'),
+        String(hoy.getDate()).padStart(2, '0'),
+    ].join('-');
+    formReserva.elements['estado'].value = mismaFecha ? 'PROGRAMADO' : 'RESERVADO';
+    formReserva.elements['estado'].dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function toggleRutaCustom() {
@@ -343,6 +365,12 @@ if (formReserva) {
         const el = formReserva.elements[name];
         el?.addEventListener('change', scheduleConflicto);
         el?.addEventListener('input', scheduleConflicto);
+    });
+
+    formReserva.elements['fecha_salida'].addEventListener('change', sugerirTipo);
+    formReserva.elements['fecha_salida'].addEventListener('input', sugerirTipo);
+    formReserva.elements['estado'].addEventListener('change', (e) => {
+        if (e.isTrusted) tipoTocadoManual = true;   // solo cuenta si lo eligió una persona
     });
 
     formReserva.addEventListener('submit', async (ev) => {
