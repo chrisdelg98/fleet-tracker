@@ -67,6 +67,14 @@ final class MovimientoController
         json_ok(null, 'Fecha de fin actualizada.');
     }
 
+    /** POST /api/movimientos/{id}/liberar/{unidad} — suelta un activo de apoyo del viaje. */
+    public function apiLiberarApoyo(array $p): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $this->service->liberarApoyo((int) $p['id'], (int) $p['unidad'], $user);
+        json_ok(null, 'Activo liberado.');
+    }
+
     public function apiSalida(array $p): void
     {
         $user = require_role_api(self::ESCRITURA);

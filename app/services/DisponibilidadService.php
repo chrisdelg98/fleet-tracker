@@ -32,6 +32,7 @@ final class DisponibilidadService
                     u.id, u.placa_unidad, u.placa_furgon, u.estacion_id,
                     e.codigo AS estacion_codigo, e.timezone,
                     te.nombre AS tipo_equipo, cap.nombre AS capacidad,
+                    cat.nombre AS categoria, cat.es_motriz,
                     ap.nombre AS piloto_asignado,
                     m.id AS mov_id, m.estado AS mov_estado, m.fecha_salida, m.fecha_fin_estimada,
                     m.retorno_disponible, m.pais_solicita_retorno_id, m.reservado_para, m.pais_origen_id,
@@ -42,15 +43,30 @@ final class DisponibilidadService
                     rgo.codigo_iso AS regreso_origen, rgd.codigo_iso AS regreso_destino,
                     rg.reservado_para AS regreso_para,
                     rg.fecha_salida AS regreso_salida, rg.fecha_fin_estimada AS regreso_fin,
+                    m.queda_con_cliente,
+                    (SELECT COUNT(*) FROM movimiento_unidades mu
+                      WHERE mu.movimiento_id = m.id AND mu.rol = \'MOTRIZ\' AND mu.liberado_en IS NULL) AS motriz_activo,
+                    (SELECT COUNT(*) FROM movimiento_unidades mu
+                      WHERE mu.movimiento_id = m.id AND mu.rol = \'MOTRIZ\') AS motriz_total,
+                    (SELECT GROUP_CONCAT(u2.placa_unidad ORDER BY u2.placa_unidad SEPARATOR \', \')
+                       FROM movimiento_unidades mu
+                       JOIN unidades u2 ON u2.id = mu.unidad_id
+                      WHERE mu.movimiento_id = m.id AND mu.liberado_en IS NULL AND mu.unidad_id <> u.id) AS acompanantes_apoyo,
+                    (SELECT up.placa_unidad FROM unidades up WHERE up.id = m.unidad_id AND m.unidad_id <> u.id) AS acompanante_principal,
                     o.id AS override_id, o.tipo AS override_tipo, o.motivo AS override_motivo
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
+                  JOIN categorias_vehiculo cat ON cat.id = u.categoria_vehiculo_id
                   LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
                   LEFT JOIN capacidades cap ON cap.id = u.capacidad_id
                   LEFT JOIN pilotos ap ON ap.id = u.piloto_asignado_id
                   LEFT JOIN movimientos m ON m.id = (
                         SELECT m2.id FROM movimientos m2
-                         WHERE m2.unidad_id = u.id
+                         WHERE (m2.unidad_id = u.id
+                                OR EXISTS (SELECT 1 FROM movimiento_unidades mu2
+                                            WHERE mu2.movimiento_id = m2.id
+                                              AND mu2.unidad_id = u.id
+                                              AND mu2.liberado_en IS NULL))
                            AND m2.estado IN (\'RESERVADO\', \'PROGRAMADO\', \'EN_TRANSITO\')
                            AND m2.fecha_salida <= :hasta1 AND m2.fecha_fin_estimada >= :desde1
                          ORDER BY (m2.estado = \'EN_TRANSITO\') DESC, m2.fecha_salida ASC
@@ -139,6 +155,8 @@ final class DisponibilidadService
                 'unidad_id'       => (int) $r['id'],
                 'placa_unidad'    => $r['placa_unidad'],
                 'placa_furgon'    => $r['placa_furgon'],
+                'categoria'       => $r['categoria'],
+                'es_motriz'       => (int) $r['es_motriz'] === 1,
                 'tipo_equipo'     => $r['tipo_equipo'],
                 'capacidad'       => $r['capacidad'],
                 'estacion_codigo' => $r['estacion_codigo'],
@@ -164,6 +182,11 @@ final class DisponibilidadService
                     'regreso_salida'          => $r['regreso_salida'],
                     'regreso_fin'             => $r['regreso_fin'],
                     'reservado_para'          => $r['reservado_para'],
+                    'queda_con_cliente'       => (int) ($r['queda_con_cliente'] ?? 0) === 1,
+                    'acompanantes'            => array_values(array_filter(array_merge(
+                        $r['acompanante_principal'] !== null ? [$r['acompanante_principal']] : [],
+                        $r['acompanantes_apoyo'] !== null ? explode(', ', $r['acompanantes_apoyo']) : []
+                    ))),
                 ] : null,
                 'override'        => $r['override_id'] ? [
                     'tipo'   => $r['override_tipo'],
@@ -187,10 +210,30 @@ final class DisponibilidadService
         return $out;
     }
 
+    /** El equipo quedó en poder del cliente: declarado al reservar o al soltar el motriz. */
+    private function conElCliente(array $r): bool
+    {
+        if ($r['mov_id'] === null) {
+            return false;
+        }
+        if ((int) ($r['queda_con_cliente'] ?? 0) === 1) {
+            return true;
+        }
+        // Hubo un cabezal y ya se liberó: lo que queda está detenido con el cliente.
+        return (int) ($r['motriz_total'] ?? 0) > 0 && (int) ($r['motriz_activo'] ?? 0) === 0;
+    }
+
     private function estadoDe(array $r): string
     {
         if ($r['override_id']) {
-            return EstadoDisponibilidad::TALLER_BLOQUEADA;
+            return $r['override_tipo'] === TipoOverride::EN_CLIENTE
+                ? EstadoDisponibilidad::EN_CLIENTE
+                : EstadoDisponibilidad::TALLER_BLOQUEADA;
+        }
+        // Con el cliente: se declaró al reservar, o el motriz ya se liberó y el equipo se
+        // quedó allá. En ambos casos sigue ocupado, pero no está viajando.
+        if ($this->conElCliente($r)) {
+            return EstadoDisponibilidad::EN_CLIENTE;
         }
         if ($r['mov_estado'] === EstadoMovimiento::EN_TRANSITO) {
             return EstadoDisponibilidad::EN_TRANSITO;

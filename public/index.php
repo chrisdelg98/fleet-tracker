@@ -113,7 +113,9 @@ $router->post('/api/catalogos/{tabla}/{id}/activo', fn($p) => $adminController->
 
 // ── Fase 2: Motor de disponibilidad (movimientos, dashboard, overrides) ──
 $movimientoModel = new MovimientoModel($pdo);
-$movimientoService = new MovimientoService($pdo, $movimientoModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService);
+$movimientoUnidadModel = new MovimientoUnidadModel($pdo);
+$movimientoUnidadModel = new MovimientoUnidadModel($pdo);
+$movimientoService = new MovimientoService($pdo, $movimientoModel, $movimientoUnidadModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService);
 $overrideService = new OverrideService($pdo, $overrideModel, $unidadModel, $notificacionService);
 $movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService);
 $disponibilidadController = new DisponibilidadController(
@@ -139,6 +141,7 @@ $router->post('/api/movimientos/{id}/salida', fn($p) => $movimientoController->a
 $router->post('/api/movimientos/{id}/llegada', fn($p) => $movimientoController->apiLlegada($p));
 $router->post('/api/movimientos/{id}/cancelar', fn($p) => $movimientoController->apiCancelar($p));
 $router->post('/api/movimientos/{id}/reprogramar-fin', fn($p) => $movimientoController->apiReprogramarFin($p));
+$router->post('/api/movimientos/{id}/liberar/{unidad}', fn($p) => $movimientoController->apiLiberarApoyo($p));
 $router->post('/api/movimientos/{id}/apartar-retorno', fn($p) => $movimientoController->apiApartarRetorno($p));
 $router->get('/api/unidades/{id}/movimientos', fn($p) => $movimientoController->apiPorUnidad($p));
 

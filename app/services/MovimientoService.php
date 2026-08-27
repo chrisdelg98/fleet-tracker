@@ -15,6 +15,7 @@ final class MovimientoService
     public function __construct(
         private PDO $pdo,
         private MovimientoModel $movimientos,
+        private MovimientoUnidadModel $apoyos,
         private UnidadModel $unidades,
         private RutaModel $rutas,
         private PilotoModel $pilotos,
@@ -39,11 +40,23 @@ final class MovimientoService
             'piloto_id'      => $this->pilotoOpcional($input, $unidad),
         ];
 
-        $id = tx($this->pdo, function () use ($data, $user, $tz): int {
+        // Activos de apoyo: cabezal y/o chasis que acompañan a la unidad reservada. Ambos
+        // opcionales — el cliente puede traer su propio cabezal y no todo equipo lleva chasis.
+        $apoyos = $this->apoyosValidados($input, $unidad, $user);
+
+        $id = tx($this->pdo, function () use ($data, $apoyos, $user, $tz): int {
             $this->assertSinTraslape((int) $data['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
             $this->assertPilotoSinTraslape($data['piloto_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
+            foreach ($apoyos as $apoyo) {
+                $this->assertApoyoLibre($apoyo, $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
+            }
             $id = $this->movimientos->crear($data, $user['id']);
-            registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CREAR, ['despues' => $data]);
+            foreach ($apoyos as $apoyo) {
+                $this->apoyos->agregar($id, (int) $apoyo['id'], $apoyo['rol'], $user['id']);
+            }
+            registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CREAR, [
+                'despues' => $data + ['apoyos' => array_column($apoyos, 'placa_unidad')],
+            ]);
             return $id;
         });
 
@@ -426,10 +439,93 @@ final class MovimientoService
         ];
     }
 
+    /**
+     * Suelta un activo de apoyo del movimiento sin cerrarlo: el cabezal vuelve a base y el
+     * equipo se queda con el cliente. No se borra la fila, para que el histórico conserve
+     * que ese activo sí hizo el viaje.
+     */
+    public function liberarApoyo(int $movimientoId, int $unidadId, array $user): void
+    {
+        $mov = $this->cargarActivo($movimientoId, $user);
+        $fila = $this->apoyos->find($movimientoId, $unidadId);
+        if ($fila === null) {
+            json_error('Ese activo no forma parte del movimiento.', 404);
+        }
+        if ($fila['liberado_en'] !== null) {
+            json_error('Ese activo ya fue liberado.', 409);
+        }
+
+        tx($this->pdo, function () use ($movimientoId, $unidadId, $mov, $user): void {
+            $this->apoyos->liberar($movimientoId, $unidadId);
+            $unidad = $this->unidades->find($unidadId);
+            registrar_bitacora($this->pdo, $user['id'], 'movimiento', $movimientoId, AccionBitacora::EDITAR, [
+                'antes'   => ['estado' => $mov['estado']],
+                'despues' => ['activo_liberado' => $unidad['placa_unidad'] ?? $unidadId],
+            ]);
+        });
+    }
+
+    /**
+     * Normaliza y valida los activos de apoyo recibidos del formulario.
+     *
+     * @return array<int, array{id:int, rol:string, placa_unidad:string}>
+     */
+    private function apoyosValidados(array $input, array $unidad, array $user): array
+    {
+        $ids = array_filter([
+            RolUnidadMovimiento::MOTRIZ   => $input['apoyo_motriz_id'] ?? null,
+            RolUnidadMovimiento::ARRASTRE => $input['apoyo_arrastre_id'] ?? null,
+        ]);
+
+        $out = [];
+        foreach ($ids as $rol => $id) {
+            $id = (int) $id;
+            if ($id === (int) $unidad['id']) {
+                json_unprocessable(['apoyos' => 'Un activo no puede acompañarse a sí mismo.']);
+            }
+            $apoyo = $this->unidades->find($id);
+            if ($apoyo === null || (int) $apoyo['activo'] !== 1) {
+                json_unprocessable(['apoyos' => 'El activo de apoyo no existe.']);
+            }
+            if ((int) $apoyo['estacion_id'] !== (int) $unidad['estacion_id']) {
+                json_unprocessable(['apoyos' => 'El activo de apoyo es de otra estación.']);
+            }
+            if ($apoyo['estado_vehiculo'] !== EstadoVehiculo::OPERATIVO) {
+                json_unprocessable(['apoyos' => "{$apoyo['placa_unidad']} no está operativa."]);
+            }
+            $out[] = ['id' => $id, 'rol' => $rol, 'placa_unidad' => $apoyo['placa_unidad']];
+        }
+        return $out;
+    }
+
+    /** Corta con 409 si el activo de apoyo ya está comprometido en ese rango. */
+    private function assertApoyoLibre(array $apoyo, string $salidaUtc, string $finUtc, ?int $exceptId, string $tz): void
+    {
+        // Puede estar ocupado como protagonista de otro viaje o como apoyo de otro.
+        $comoUnidad = $this->movimientos->conflictos((int) $apoyo['id'], $salidaUtc, $finUtc, $exceptId);
+        $comoApoyo  = $this->apoyos->conflictos((int) $apoyo['id'], $salidaUtc, $finUtc, $exceptId);
+        $conflicto = $comoUnidad[0] ?? $comoApoyo[0] ?? null;
+        if ($conflicto === null) {
+            return;
+        }
+        $desde = format_local($conflicto['fecha_salida'], $tz, 'd M H:i');
+        $hasta = format_local($conflicto['fecha_fin_estimada'], $tz, 'd M H:i');
+        json_error(
+            "{$apoyo['placa_unidad']} ya está en un movimiento {$conflicto['estado']} del {$desde} al {$hasta} (mov. #{$conflicto['id']}).",
+            409,
+            "Traslape del activo de apoyo con el movimiento #{$conflicto['id']}."
+        );
+    }
+
     /** Corta con 409 si el rango se traslapa con otro movimiento activo de la unidad. */
     private function assertSinTraslape(int $unidadId, string $salidaUtc, string $finUtc, ?int $exceptId, string $tz): void
     {
+        // La unidad puede estar comprometida como protagonista de otro viaje o acompañando
+        // a otro activo: ambas ocupaciones cuentan igual.
         $conflictos = $this->movimientos->conflictos($unidadId, $salidaUtc, $finUtc, $exceptId);
+        if ($conflictos === []) {
+            $conflictos = $this->apoyos->conflictos($unidadId, $salidaUtc, $finUtc, $exceptId);
+        }
         if ($conflictos === []) {
             return;
         }

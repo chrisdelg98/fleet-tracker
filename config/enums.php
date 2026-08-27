@@ -110,15 +110,29 @@ final class EstadoMovimiento
     }
 }
 
-/** Tipo de override de unidad (plan §5.8). */
-final class TipoOverride
+/** Papel de un activo dentro de un movimiento (tabla movimiento_unidades). */
+final class RolUnidadMovimiento
 {
-    public const EN_TALLER = 'EN_TALLER';
-    public const BLOQUEADA = 'BLOQUEADA';
+    public const MOTRIZ   = 'MOTRIZ';
+    public const ARRASTRE = 'ARRASTRE';
 
     public static function values(): array
     {
-        return [self::EN_TALLER, self::BLOQUEADA];
+        return [self::MOTRIZ, self::ARRASTRE];
+    }
+}
+
+/** Tipo de override de unidad (plan §5.8). */
+final class TipoOverride
+{
+    public const EN_TALLER  = 'EN_TALLER';
+    public const BLOQUEADA  = 'BLOQUEADA';
+    /** El equipo está en poder del cliente: rentado o esperando descarga. */
+    public const EN_CLIENTE = 'EN_CLIENTE';
+
+    public static function values(): array
+    {
+        return [self::EN_TALLER, self::BLOQUEADA, self::EN_CLIENTE];
     }
 }
 
@@ -141,11 +155,13 @@ final class EstadoDisponibilidad
     public const DISPONIBLE         = 'DISPONIBLE';
     public const RESERVADA          = 'RESERVADA';
     public const EN_TRANSITO        = 'EN_TRANSITO';
+    /** Con el cliente: rentado o esperando descarga, sin motriz que lo traiga de vuelta. */
+    public const EN_CLIENTE         = 'EN_CLIENTE';
     public const TALLER_BLOQUEADA   = 'TALLER_BLOQUEADA';
 
     public static function values(): array
     {
-        return [self::DISPONIBLE, self::RESERVADA, self::EN_TRANSITO, self::TALLER_BLOQUEADA];
+        return [self::DISPONIBLE, self::RESERVADA, self::EN_TRANSITO, self::EN_CLIENTE, self::TALLER_BLOQUEADA];
     }
 }
 
