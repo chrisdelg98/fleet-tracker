@@ -167,24 +167,37 @@ final class MovimientoService
         }
 
         $pilotoId = $mov['piloto_id'] ?? ($input['piloto_id'] ?? null);
-        if (empty($pilotoId)) {
+        $estacion = $this->unidadEstacion((int) $mov['unidad_id']);
+
+        // Un furgón o un contenedor no lleva piloto: lo conduce quien va en el cabezal. Solo
+        // se exige piloto si en el viaje va un motorizado nuestro (plan §6, regla 11).
+        if (empty($pilotoId) && $this->llevaMotriz($mov)) {
             json_unprocessable(['piloto_id' => 'Debes asignar un piloto para marcar la salida.']);
         }
-        $estacion = $this->unidadEstacion((int) $mov['unidad_id']);
-        $piloto = $this->pilotos->find((int) $pilotoId);
-        if ($piloto === null || (int) $piloto['activo'] !== 1 || (int) $piloto['estacion_id'] !== $estacion) {
-            json_unprocessable(['piloto_id' => 'El piloto no es válido para esta unidad.']);
+        if (!empty($pilotoId)) {
+            $piloto = $this->pilotos->find((int) $pilotoId);
+            if ($piloto === null || (int) $piloto['activo'] !== 1 || (int) $piloto['estacion_id'] !== $estacion) {
+                json_unprocessable(['piloto_id' => 'El piloto no es válido para esta unidad.']);
+            }
         }
 
         $tz = $this->estacionTz($estacion);
 
         tx($this->pdo, function () use ($id, $mov, $pilotoId, $user, $tz): void {
             // Al marcar salida se puede asignar un piloto distinto: vuelve a validarse aquí.
-            $this->assertPilotoSinTraslape((int) $pilotoId, $mov['fecha_salida'], $mov['fecha_fin_estimada'], $id, $tz);
-            $this->movimientos->cambiarEstado($id, EstadoMovimiento::EN_TRANSITO, ['piloto_id' => (int) $pilotoId]);
+            $this->assertPilotoSinTraslape(
+                $pilotoId !== null ? (int) $pilotoId : null,
+                $mov['fecha_salida'],
+                $mov['fecha_fin_estimada'],
+                $id,
+                $tz
+            );
+            $this->movimientos->cambiarEstado($id, EstadoMovimiento::EN_TRANSITO, [
+                'piloto_id' => $pilotoId !== null ? (int) $pilotoId : null,
+            ]);
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CAMBIO_ESTADO, [
                 'antes'   => ['estado' => $mov['estado']],
-                'despues' => ['estado' => EstadoMovimiento::EN_TRANSITO, 'piloto_id' => (int) $pilotoId],
+                'despues' => ['estado' => EstadoMovimiento::EN_TRANSITO, 'piloto_id' => $pilotoId !== null ? (int) $pilotoId : null],
             ]);
         });
     }
@@ -516,6 +529,21 @@ final class MovimientoService
             409,
             "Traslape del activo de apoyo con el movimiento #{$conflicto['id']}."
         );
+    }
+
+    /** ¿El viaje incluye un motorizado nuestro (la unidad misma o un cabezal de apoyo)? */
+    private function llevaMotriz(array $mov): bool
+    {
+        $unidad = $this->unidades->find((int) $mov['unidad_id']);
+        if ($unidad !== null && (int) $unidad['es_motriz'] === 1) {
+            return true;
+        }
+        foreach ($this->apoyos->porMovimiento((int) $mov['id']) as $apoyo) {
+            if ($apoyo['rol'] === RolUnidadMovimiento::MOTRIZ && $apoyo['liberado_en'] === null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Corta con 409 si el rango se traslapa con otro movimiento activo de la unidad. */

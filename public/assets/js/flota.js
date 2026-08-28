@@ -2,7 +2,7 @@
  * Módulo Flota (plan §7.2). Alta/edición de unidades y cambio de estado (poka-yoke),
  * consumiendo /api/unidades. Tras cada escritura recarga la tabla server-rendered.
  */
-import { api, showError } from './api.js';
+import { api, showError, mensajeError } from './api.js';
 import { confirmar } from './confirm.js';
 
 const dlgUnidad = document.getElementById('dlg-unidad');
@@ -70,13 +70,13 @@ document.addEventListener('click', async (ev) => {
         });
         if (!ok) return;
         const resp = await api('POST', `/api/unidades/${id}/desbloquear`, {});
-        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo desbloquear.');
+        if (resp.ok) location.reload(); else alert(mensajeError(resp, 'No se pudo desbloquear.'));
         return;
     }
 
     if (action === 'editar') {
         const resp = await api('GET', `/api/unidades/${id}`);
-        if (!resp.ok) { alert(resp.message || 'No se pudo cargar la unidad.'); return; }
+        if (!resp.ok) { alert(mensajeError(resp, 'No se pudo cargar la unidad.')); return; }
         fillForm(resp.data);
         dispTocadoManual = true; // en edición el valor ya es el guardado, no re-heredar
         errUnidad.hidden = true;
@@ -103,7 +103,7 @@ document.addEventListener('click', async (ev) => {
         });
         if (!ok) return;
         const resp = await api('DELETE', `/api/unidades/${id}`);
-        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo eliminar.');
+        if (resp.ok) location.reload(); else alert(mensajeError(resp, 'No se pudo eliminar.'));
     }
 });
 

@@ -1,5 +1,5 @@
 /** Administración › Catálogos. Formulario dirigido por la spec de cada tabla. */
-import { api, showError } from './api.js';
+import { api, showError, mensajeError } from './api.js';
 import { enhanceSelects } from './searchable-select.js';
 import { confirmar } from './confirm.js';
 
@@ -107,7 +107,7 @@ document.addEventListener('click', async (ev) => {
         });
         if (!ok) return;
         const resp = await api('POST', `/api/catalogos/${tabla}/${id}/activo`, { activo: siguiente });
-        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo actualizar.');
+        if (resp.ok) location.reload(); else alert(mensajeError(resp, 'No se pudo actualizar.'));
     }
 });
 

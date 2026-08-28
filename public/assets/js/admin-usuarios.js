@@ -1,5 +1,5 @@
 /** Administración › Usuarios. Coherencia rol/estación en el form; contraseña opcional al editar. */
-import { api, showError } from './api.js';
+import { api, showError, mensajeError } from './api.js';
 
 const dlg = document.getElementById('dlg-usuario');
 const form = document.getElementById('form-usuario');
@@ -121,7 +121,7 @@ document.addEventListener('click', async (ev) => {
 
     if (btn.dataset.action === 'editar-usuario') {
         const resp = await api('GET', `/api/usuarios/${id}`);
-        if (!resp.ok) { alert(resp.message || 'No se pudo cargar.'); return; }
+        if (!resp.ok) { alert(mensajeError(resp, 'No se pudo cargar.')); return; }
         form.reset();
         form.elements['nombre'].value = resp.data.nombre;
         form.elements['email'].value = resp.data.email;
@@ -140,7 +140,7 @@ document.addEventListener('click', async (ev) => {
     if (btn.dataset.action === 'activo-usuario') {
         const activar = btn.dataset.activo === '0';
         const resp = await api('POST', `/api/usuarios/${id}/activo`, { activo: activar });
-        if (resp.ok) location.reload(); else alert(resp.message || 'No se pudo actualizar.');
+        if (resp.ok) location.reload(); else alert(mensajeError(resp, 'No se pudo actualizar.'));
     }
 });
 

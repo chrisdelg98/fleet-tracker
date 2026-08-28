@@ -21,7 +21,12 @@ final class UnidadModel
 
     public function find(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM unidades WHERE id = :id LIMIT 1');
+        $stmt = $this->pdo->prepare(
+            'SELECT u.*, c.nombre AS categoria, c.es_motriz
+               FROM unidades u
+               JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
+              WHERE u.id = :id LIMIT 1'
+        );
         $stmt->execute([':id' => $id]);
         return $stmt->fetch() ?: null;
     }

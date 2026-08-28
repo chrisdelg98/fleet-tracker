@@ -3,7 +3,7 @@
  * filtros (incluida fecha futura) recalculan el estado de toda la flota (§2). Auto-refresh
  * cada 60s. Las horas se muestran en la timezone de cada estación (Intl), la BD está en UTC.
  */
-import { api, showError } from './api.js';
+import { api, showError, mensajeError } from './api.js';
 import { confirmar } from './confirm.js';
 
 const cfg = JSON.parse(document.getElementById('dash-config').textContent);
@@ -136,7 +136,7 @@ function rowHtml(u) {
     const m = u.movimiento;
     const demora = u.con_demora ? '<span class="delay-flag"><span class="delay-flag__icon" aria-hidden="true">!</span><span>Con demora</span></span>' : '';
     const juntos = (m?.acompanantes || []).length
-        ? `<small class="muted block">Va con ${esc(m.acompanantes.join(', '))} · Mov #${esc(m.id)}</small>`
+        ? `<small class="muted block">Va con ${esc(m.acompanantes.map((c) => c.placa).join(', '))} · Mov #${esc(m.id)}</small>`
         : '';
     const actividad = m
         ? `${esc(m.origen || '?')} → ${esc(m.destino || '?')} <small class="muted">· sale ${fmtLibera(m.fecha_salida, u.timezone)}</small>${juntos}`
@@ -243,14 +243,14 @@ if (cfg.puedeReservar) {
         if (mov === 'llegada') return postAccion(`/api/movimientos/${id}/llegada`);
         if (mov === 'salida') {
             const r = await api('POST', `/api/movimientos/${id}/salida`, {});
-            if (r.ok) load(); else alert(r.message || 'Para marcar salida asigna un piloto al movimiento.');
+            if (r.ok) load(); else alert(mensajeError(r, 'No se pudo marcar la salida.'));
         }
     });
 }
 
 async function postAccion(url) {
     const r = await api('POST', url, {});
-    if (r.ok) load(); else alert(r.message || 'No se pudo completar la acción.');
+    if (r.ok) load(); else alert(mensajeError(r));
 }
 
 // ── Formulario de reserva ──

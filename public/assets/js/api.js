@@ -26,6 +26,16 @@ export async function api(method, url, body) {
 }
 
 /** Muestra el primer error de validación (o el mensaje general) en un contenedor. */
+/**
+ * Texto de error para mostrar al usuario. En un 422 el `message` es genérico ("Revisa los
+ * datos ingresados") y lo que importa está en `errors`: sin esto el usuario no sabe qué falla.
+ */
+export function mensajeError(resp, porDefecto = 'No se pudo completar la acción.') {
+    const errs = resp.errors ? Object.values(resp.errors) : [];
+    if (errs.length) return errs.join(' ');
+    return resp.message || porDefecto;
+}
+
 export function showError(el, resp) {
     const errs = resp.errors ? Object.values(resp.errors) : [];
     el.textContent = errs.length ? errs.join(' ') : (resp.message || 'Ocurrió un error.');
