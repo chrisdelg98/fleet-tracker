@@ -24,7 +24,7 @@ final class DisponibilidadService
     /**
     * @param string $desdeUtc 'Y-m-d H:i:s'
     * @param string $hastaUtc 'Y-m-d H:i:s'
-    * @param array  $filtros  estacion_id?, categoria_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_desde?, ocultar_fuera_operacion?, solo_demora?
+    * @param array  $filtros  estacion_id?, categoria_id?, tipo_equipo_id?, placa?, estados?(array), solo_retorno?, sin_retorno?, retorno_desde?, internacional?, ocultar_fuera_operacion?, solo_demora?
      */
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
@@ -53,7 +53,12 @@ final class DisponibilidadService
                        JOIN unidades u2 ON u2.id = mu.unidad_id
                       WHERE mu.movimiento_id = m.id AND mu.liberado_en IS NULL AND mu.unidad_id <> u.id) AS acompanantes_apoyo,
                     (SELECT CONCAT(up.id, \':\', up.placa_unidad) FROM unidades up WHERE up.id = m.unidad_id AND m.unidad_id <> u.id) AS acompanante_principal,
-                    o.id AS override_id, o.tipo AS override_tipo, o.motivo AS override_motivo
+                    o.id AS override_id, o.tipo AS override_tipo, o.motivo AS override_motivo,
+                    EXISTS (SELECT 1 FROM unidad_permisos up2
+                              JOIN permisos_especiales pe2 ON pe2.id = up2.permiso_especial_id
+                             WHERE up2.unidad_id = u.id
+                               AND pe2.activo = 1
+                               AND pe2.habilita_internacional = 1) AS puede_internacional
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
                   JOIN categorias_vehiculo cat ON cat.id = u.categoria_vehiculo_id
@@ -101,6 +106,13 @@ final class DisponibilidadService
         if (!empty($filtros['tipo_equipo_id'])) {
             $sql .= ' AND u.tipo_equipo_id = :tipo';
             $params[':tipo'] = (int) $filtros['tipo_equipo_id'];
+        }
+        if (isset($filtros['internacional']) && $filtros['internacional'] !== null) {
+            // Filtrar por la capacidad, no por el permiso concreto: mañana puede habilitarla otro.
+            $tiene = 'EXISTS (SELECT 1 FROM unidad_permisos up3
+                                JOIN permisos_especiales pe3 ON pe3.id = up3.permiso_especial_id
+                               WHERE up3.unidad_id = u.id AND pe3.activo = 1 AND pe3.habilita_internacional = 1)';
+            $sql .= (int) $filtros['internacional'] === 1 ? ' AND ' . $tiene : ' AND NOT ' . $tiene;
         }
         if (!empty($filtros['placa'])) {
             $sql .= ' AND u.placa_unidad LIKE :placa';
@@ -165,6 +177,7 @@ final class DisponibilidadService
                 'timezone'        => $r['timezone'],
                 'estado'          => $estado,
                 'con_demora'      => $conDemora,
+                'puede_internacional' => (int) $r['puede_internacional'] === 1,
                 'piloto'          => $r['mov_piloto'] ?? $r['piloto_asignado'],
                 'movimiento'      => $r['mov_id'] ? [
                     'id'                      => (int) $r['mov_id'],

@@ -100,6 +100,38 @@ try {
         $unidadIds[$placa] = (int) $pdo->lastInsertId();
     }
 
+    // ── Permisos especiales de cada unidad ──
+    // Un permiso lo emite una autoridad nacional: solo se puede asignar si es global o del
+    // mismo país que la estación de la unidad. Lo que no cuadre se avisa en vez de colarse.
+    $permisosCat = [];
+    foreach ($pdo->query('SELECT id, nombre, pais_id FROM permisos_especiales WHERE activo = 1') as $r) {
+        $permisosCat[$r['nombre']] = ['id' => (int) $r['id'], 'pais' => $r['pais_id'] !== null ? (int) $r['pais_id'] : null];
+    }
+    $paisDeEstacion = [];
+    foreach ($pdo->query('SELECT codigo, pais_id FROM estaciones') as $r) {
+        $paisDeEstacion[$r['codigo']] = (int) $r['pais_id'];
+    }
+    $estacionDeUnidad = [];
+    foreach ($demo['unidades'] as $u) {
+        $estacionDeUnidad[$u[0]] = $u[7];
+    }
+    $insPermiso = $pdo->prepare(
+        'INSERT INTO unidad_permisos (unidad_id, permiso_especial_id, created_by)
+         VALUES (:unidad, :permiso, :uid)'
+    );
+    $omitidos = [];
+    foreach ($demo['permisos'] ?? [] as $placa => $nombres) {
+        $paisUnidad = $paisDeEstacion[$estacionDeUnidad[$placa]] ?? null;
+        foreach ($nombres as $nombre) {
+            $permiso = $permisosCat[$nombre] ?? null;
+            if ($permiso === null || ($permiso['pais'] !== null && $permiso['pais'] !== $paisUnidad)) {
+                $omitidos[] = "{$placa}: {$nombre}";
+                continue;
+            }
+            $insPermiso->execute([':unidad' => $unidadIds[$placa], ':permiso' => $permiso['id'], ':uid' => $usuarioId]);
+        }
+    }
+
     // ── Movimientos ──
     $insMov = $pdo->prepare(
         'INSERT INTO movimientos (unidad_id, piloto_id, pais_origen_id, pais_destino_id, tipo_ruta,
@@ -147,3 +179,10 @@ printf(
     count($demo['movimientos']),
     count($demo['overrides'])
 );
+if ($omitidos) {
+    fwrite(STDERR, "Permisos omitidos (no existen en el catálogo o son de otro país):
+  - "
+        . implode("
+  - ", $omitidos) . "
+");
+}

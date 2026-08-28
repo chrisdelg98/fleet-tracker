@@ -198,10 +198,16 @@ set_page_meta(
             <label class="field"><span class="field__label">Estación *</span>
                 <select name="estacion_id" required>
                     <option value="">Selecciona…</option>
-                    <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                    <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" data-pais="<?= (int) $es['pais_id'] ?>"><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
             <?php else: ?>
-                <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>">
+                <?php
+                $paisUsuario = 0;
+                foreach ($estaciones as $es) {
+                    if ((int) $es['id'] === (int) $usuario['estacion_id']) { $paisUsuario = (int) $es['pais_id']; break; }
+                }
+                ?>
+                <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>" data-pais="<?= $paisUsuario ?>">
             <?php endif; ?>
             <label class="field"><span class="field__label">Piloto asignado</span>
                 <select name="piloto_asignado_id">
@@ -209,14 +215,28 @@ set_page_meta(
                     <?php foreach ($pilotos as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e($p['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
         </div>
-        <fieldset class="field">
-            <legend class="field__label">Permisos especiales</legend>
-            <div class="checks">
+        <details class="colapso" id="permisos-colapso">
+            <summary class="colapso__head">
+                <span class="colapso__title">Permisos especiales</span>
+                <span class="colapso__meta" id="permisos-resumen">Ninguno</span>
+                <span class="colapso__chevron" aria-hidden="true">▾</span>
+            </summary>
+            <div class="checks checks--grid">
                 <?php foreach ($permisos as $pe): ?>
-                    <label class="check"><input type="checkbox" name="permisos[]" value="<?= (int) $pe['id'] ?>"> <?= e($pe['nombre']) ?></label>
+                    <label class="check" data-pais="<?= (int) ($pe['pais_id'] ?? 0) ?>"<?= !empty($pe['descripcion']) ? ' title="' . e($pe['descripcion']) . '"' : '' ?>>
+                        <input type="checkbox" name="permisos[]" value="<?= (int) $pe['id'] ?>">
+                        <span><?= e($pe['nombre']) ?></span>
+                        <?php if (!empty($pe['habilita_internacional'])): ?>
+                            <span class="alcance alcance--int" title="Marcar este permiso habilita a la unidad para rutas internacionales">INT</span>
+                        <?php endif; ?>
+                        <?php if (!empty($pe['descripcion'])): ?>
+                            <button type="button" class="infotip" tabindex="-1" aria-label="Qué habilita este permiso"
+                                    data-infotip="<?= e($pe['descripcion']) ?>">i</button>
+                        <?php endif; ?>
+                    </label>
                 <?php endforeach; ?>
             </div>
-        </fieldset>
+        </details>
         </div>
         <p class="form__error" id="form-unidad-error" hidden></p>
         <div class="dialog__actions">

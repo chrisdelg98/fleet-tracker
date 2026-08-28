@@ -85,6 +85,12 @@ set_page_meta(
                     <option value="">Todas</option>
                     <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e($c['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
+            <label class="field"><span class="field__label">Alcance</span>
+                <select id="f-alcance" data-no-search>
+                    <option value="">Todas</option>
+                    <option value="1">Puede salir del país</option>
+                    <option value="0">Solo rutas nacionales</option>
+                </select></label>
             <label class="field"><span class="field__label">Tipo de equipo</span>
                 <select id="f-tipo">
                     <option value="">Todos</option>

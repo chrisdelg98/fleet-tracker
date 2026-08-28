@@ -45,6 +45,45 @@ function syncNotasReq() {
 }
 selEstado.addEventListener('change', syncNotasReq);
 
+/**
+ * Los permisos son autorizaciones nacionales: solo se ofrecen los del país de la estación de
+ * la unidad, más los globales (sin país). Evita listas con trámites que no aplican.
+ */
+const selEstacionUnidad = formUnidad.elements['estacion_id'];
+
+function filtrarPermisos() {
+    const opcion = selEstacionUnidad.tagName === 'SELECT'
+        ? selEstacionUnidad.selectedOptions[0]
+        : selEstacionUnidad;   // estación fija del encargado
+    const pais = Number(opcion?.dataset.pais || 0);
+
+    formUnidad.querySelectorAll('.checks .check').forEach((label) => {
+        const suyo = Number(label.dataset.pais || 0);
+        const marcado = label.querySelector('input').checked;
+        const aplica = suyo === 0 || pais === 0 || suyo === pais;
+        // Uno ya marcado se queda a la vista aunque no aplique: ocultarlo lo borraría al
+        // guardar sin que nadie lo viera. Se muestra para que la persona decida.
+        label.hidden = !aplica && !marcado;
+    });
+}
+
+selEstacionUnidad.addEventListener('change', () => { filtrarPermisos(); resumirPermisos(); });
+
+/**
+ * La sección va plegada: no es obligatoria y ocupaba media pantalla. El resumen dice cuántos
+ * hay marcados para no tener que abrirla solo para comprobarlo.
+ */
+const resumenPermisos = document.getElementById('permisos-resumen');
+
+function resumirPermisos() {
+    const n = formUnidad.querySelectorAll('input[name="permisos[]"]:checked').length;
+    resumenPermisos.textContent = n === 0 ? 'Ninguno' : `${n} seleccionado${n === 1 ? '' : 's'}`;
+}
+
+formUnidad.addEventListener('change', (ev) => {
+    if (ev.target.name === 'permisos[]') resumirPermisos();
+});
+
 // ── Apertura de diálogos ──
 document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-action]');
@@ -58,6 +97,9 @@ document.addEventListener('click', async (ev) => {
         dispTocadoManual = false;
         errUnidad.hidden = true;
         syncSelects();
+        filtrarPermisos();
+        resumirPermisos();
+        document.getElementById('permisos-colapso').open = false;
         document.getElementById('dlg-unidad-title').textContent = 'Nueva unidad';
         dlgUnidad.showModal();
     }
@@ -81,6 +123,8 @@ document.addEventListener('click', async (ev) => {
         dispTocadoManual = true; // en edición el valor ya es el guardado, no re-heredar
         errUnidad.hidden = true;
         syncSelects();
+        filtrarPermisos();
+        document.getElementById('permisos-colapso').open = false;
         document.getElementById('dlg-unidad-title').textContent = 'Editar unidad';
         dlgUnidad.showModal();
     }
@@ -154,4 +198,5 @@ function fillForm(data) {
     }
     const permisos = (data.permisos || []).map(String);
     formUnidad.querySelectorAll('input[name="permisos[]"]').forEach((c) => { c.checked = permisos.includes(c.value); });
+    resumirPermisos();
 }

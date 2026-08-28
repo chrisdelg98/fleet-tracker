@@ -4,14 +4,27 @@
  * @var array $catalogos  tabla => ['spec'=>['label','fields'=>[campo=>tipo]], 'items'=>[...]]
  */
 $regionLabels = REGION_LABELS;
-$fmtCampo = static function (string $tipo, $valor) use ($regionLabels): string {
+$paisesPorId = [];
+foreach (paises_activos() as $pais) {
+    $paisesPorId[(int) $pais['id']] = $pais['nombre'];
+}
+$fmtCampo = static function (string $tipo, $valor) use ($regionLabels, &$paisesPorId): string {
     if ($tipo === 'bool') {
         return ((int) $valor === 1) ? 'Sí' : 'No';
     }
     if ($tipo === 'region') {
         return $regionLabels[$valor] ?? (string) $valor;
     }
+    if ($tipo === 'pais') {
+        return $valor ? ($paisesPorId[(int) $valor] ?? (string) $valor) : 'Global';
+    }
     return (string) $valor;
+};
+// El ancho lo decide el tipo de dato: los cortos (país, sí/no, orden) se ajustan a su contenido
+// y el texto largo se queda con lo que sobra. Sin esto, "El Salvador" se partía en dos líneas.
+$claseCampo = static function (string $tipo): string {
+    return 'col col--' . ($tipo === 'text' ? 'text' : ($tipo === 'string' ? 'nombre' : 'corta'))
+        . ($tipo === 'bool' ? ' col--bool' : '');
 };
 $tablas = array_keys($catalogos);
 $catalogoActivo = $tablas[0] ?? null;
@@ -46,18 +59,24 @@ set_page_meta(
                 <table class="table">
                     <thead><tr>
                         <?php foreach ($cat['spec']['fields'] as $campo => $tipo): ?>
-                            <th><?= e(ucfirst(str_replace('_', ' ', $campo))) ?></th>
+                            <th class="<?= $claseCampo($tipo) ?>"><?= e(CatalogoAdminService::etiqueta($campo)) ?></th>
                         <?php endforeach; ?>
-                        <th></th>
+                        <th class="col--acciones"></th>
                     </tr></thead>
                     <tbody>
                     <?php foreach ($cat['items'] as $item): ?>
                         <?php $activo = isset($item['activo']) ? (int) $item['activo'] : 1; ?>
                         <tr class="<?= $activo === 0 ? 'is-inactive' : '' ?>">
                             <?php foreach ($cat['spec']['fields'] as $campo => $tipo): ?>
-                                <td><?= e($fmtCampo($tipo, $item[$campo] ?? '')) ?></td>
+                                <?php $valor = $fmtCampo($tipo, $item[$campo] ?? ''); ?>
+                                <td class="<?= $claseCampo($tipo) ?>"><?php
+                                    // El "No" en gris deja que el "Sí" salte a la vista al recorrer la columna.
+                                    echo $tipo === 'bool' && $valor === 'No'
+                                        ? '<span class="muted">No</span>'
+                                        : e($valor);
+                                ?></td>
                             <?php endforeach; ?>
-                            <td class="row-actions">
+                            <td class="row-actions col--acciones">
                                 <?= row_menu([
                                     ['label' => 'Editar', 'attrs' => ['data-action' => 'editar-catalogo', 'data-tabla' => $tabla, 'data-id' => (int) $item['id']]],
                                     ['label' => $activo === 1 ? 'Desactivar' : 'Activar', 'attrs' => ['data-action' => 'activo-catalogo', 'data-tabla' => $tabla, 'data-id' => (int) $item['id'], 'data-activo' => $activo]],
@@ -100,4 +119,19 @@ set_page_meta(
     JSON_UNESCAPED_UNICODE
 ) ?></script>
 <script type="application/json" id="catalogos-regiones"><?= json_encode(REGION_LABELS, JSON_UNESCAPED_UNICODE) ?></script>
+<script type="application/json" id="catalogos-etiquetas"><?= json_encode(
+    array_reduce(
+        array_merge(...array_values(array_map(static fn(array $c): array => array_keys($c['spec']['fields']), $catalogos))),
+        static function (array $acc, string $campo): array {
+            $acc[$campo] = CatalogoAdminService::etiqueta($campo);
+            return $acc;
+        },
+        []
+    ),
+    JSON_UNESCAPED_UNICODE
+) ?></script>
+<script type="application/json" id="catalogos-paises"><?= json_encode(
+    array_map(static fn(array $p): array => ['id' => (int) $p['id'], 'nombre' => $p['nombre']], paises_activos()),
+    JSON_UNESCAPED_UNICODE
+) ?></script>
 <script src="/assets/js/admin-catalogos.js" type="module"></script>

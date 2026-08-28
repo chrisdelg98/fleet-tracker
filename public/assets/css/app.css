@@ -1008,6 +1008,19 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .table td strong { color: var(--color-ink); }
 .table tbody tr:hover { background: #f9fafb; }
+/* ── Reparto de ancho por tipo de columna ──
+   Truco clásico de table-layout automático: las columnas cortas piden 1% y no envuelven, así
+   se encogen a su contenido; la de texto pide el 100% y absorbe todo lo que sobra. */
+.table th.col--corta, .table td.col--corta,
+.table th.col--acciones, .table td.col--acciones { width: 1%; white-space: nowrap; }
+.table th.col--nombre, .table td.col--nombre { width: 1%; white-space: nowrap; font-weight: 600; }
+.table th.col--text, .table td.col--text { width: 100%; min-width: 22ch; }
+.table td.col--text { color: var(--color-ink-soft); }
+.table th.col--bool, .table td.col--bool { text-align: center; }
+/* Los encabezados no se parten (regla de .table th): una columna de "Sí"/"No" con el título
+   troceado en cuatro líneas es peor que una etiqueta corta. Se resuelve nombrando bien. */
+
+
 .row-actions {
     white-space: normal;
     text-align: right;
@@ -1815,6 +1828,37 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .retorno--tomado { background: #eef1f4; color: var(--color-ink-soft); text-decoration: line-through; }
 /* El badge tomado abre su detalle: se comporta como botón sin parecer otro elemento. */
 button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+/* ── Alcance de la unidad (dashboard) ──
+   Responde de un vistazo "¿puedo pedirla para una ruta a otro país?": el negativo es el que
+   evita el viaje en balde, así que NAC pesa más que INT, que se queda como confirmación. */
+.alcance {
+    display: inline-block; vertical-align: middle; cursor: help;
+    padding: 1px 5px; border-radius: 3px; border: 1px solid transparent;
+    font-size: 0.625rem; font-weight: 700; letter-spacing: 0.04em; line-height: 1.4;
+}
+.alcance--int { background: #eaf5ee; border-color: #cbe6d5; color: #1f7a45; }
+.alcance--nac { background: #f4f5f7; border-color: #dfe3e8; color: var(--color-ink-soft); }
+
+/* ── Sección plegable dentro de un formulario (<details>) ──
+   Para bloques opcionales: el resumen dice qué hay dentro sin obligar a abrirlo. */
+.colapso { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); }
+.colapso__head {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3); cursor: pointer; list-style: none;
+    font-size: var(--fs-sm); font-weight: 600; color: var(--color-ink);
+}
+.colapso__head::-webkit-details-marker { display: none; }
+.colapso__head:hover { background: var(--color-surface-soft); }
+.colapso__head:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.colapso__title { flex: 1; }
+.colapso__meta { font-weight: normal; font-size: var(--fs-xs); color: var(--color-ink-soft); }
+.colapso__chevron { color: var(--color-ink-soft); transition: transform 0.15s ease; }
+.colapso[open] .colapso__chevron { transform: rotate(180deg); }
+.colapso[open] .colapso__head { border-bottom: 1px solid var(--color-border); }
+.colapso__head + * { padding: var(--sp-3); }
+/* Rejilla estable: en flex los permisos largos dejaban huecos de ancho irregular. */
+.checks--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-1) var(--sp-3); }
+
 .grid-2__full { grid-column: 1 / -1; }
 
 /* ── Desplegable buscable (searchable-select.js) ── */
@@ -2356,6 +2400,13 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
         text-align: right;
         line-height: 1.35;
     }
+    /* En modo tarjeta el ancho lo manda la tarjeta, no el tipo de dato: se anulan los
+       repartos de la vista de tabla para que nada se salga ni quede a media línea. */
+    .table td.col--corta,
+    .table td.col--nombre,
+    .table td.col--text,
+    .table td.col--bool,
+    .table td.col--acciones { width: auto; white-space: normal; text-align: right; }
     .table tr td:last-child { border-bottom: none; }
     .table td::before {
         content: attr(data-label);

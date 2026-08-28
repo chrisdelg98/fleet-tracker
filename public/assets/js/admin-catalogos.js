@@ -15,7 +15,12 @@ const title = document.getElementById('dlg-catalogo-title');
 const catalogTabs = Array.from(document.querySelectorAll('[data-catalogo-tab]'));
 const catalogPanels = Array.from(document.querySelectorAll('[data-catalogo-panel]'));
 
-function activateCatalog(tabla) {
+/**
+ * El catálogo activo vive en la URL (#permisos_especiales). Guardar recarga la página para
+ * releer del servidor, y sin esto la recarga devolvía siempre al primer catálogo: se perdía
+ * la sección en la que estabas trabajando. De paso, la pestaña queda enlazable.
+ */
+function activateCatalog(tabla, recordar = true) {
     catalogTabs.forEach((tab) => {
         const active = tab.dataset.catalogoTab === tabla;
         tab.classList.toggle('is-active', active);
@@ -26,17 +31,29 @@ function activateCatalog(tabla) {
         panel.hidden = !active;
         panel.classList.toggle('is-active', active);
     });
+    if (recordar) {
+        // replaceState y no location.hash: no ensucia el historial ni salta el scroll.
+        history.replaceState(null, '', `#${tabla}`);
+    }
 }
 
 if (catalogTabs.length > 0) {
-    activateCatalog(catalogTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.catalogoTab || catalogTabs[0].dataset.catalogoTab);
+    const enUrl = decodeURIComponent(location.hash.replace('#', ''));
+    const valido = catalogTabs.some((tab) => tab.dataset.catalogoTab === enUrl);
+    activateCatalog(
+        valido ? enUrl : (catalogTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.catalogoTab || catalogTabs[0].dataset.catalogoTab),
+        valido
+    );
 }
+
+const paises = JSON.parse(document.getElementById('catalogos-paises')?.textContent || '[]');
+const etiquetas = JSON.parse(document.getElementById('catalogos-etiquetas')?.textContent || '{}');
 
 function buildFields(tabla, item) {
     const fields = specs[tabla].fields;
     fieldsBox.innerHTML = '';
     for (const [campo, tipo] of Object.entries(fields)) {
-        const label = campo.charAt(0).toUpperCase() + campo.slice(1).replace(/_/g, ' ');
+        const label = etiquetas[campo] || (campo.charAt(0).toUpperCase() + campo.slice(1).replace(/_/g, ' '));
         const val = item ? item[campo] : '';
         const wrap = document.createElement('label');
         wrap.className = 'field';
@@ -46,9 +63,15 @@ function buildFields(tabla, item) {
         } else if (tipo === 'int') {
             control = `<input type="number" name="${campo}" min="0" value="${val ?? ''}">`;
         } else if (tipo === 'text') {
-            control = `<input type="text" name="${campo}" maxlength="255" value="${escapeAttr(val)}">`;
+            control = `<textarea name="${campo}" rows="2" maxlength="255">${escapeTexto(val)}</textarea>`;
         } else if (tipo === 'iso2') {
             control = `<input type="text" name="${campo}" maxlength="2" required value="${escapeAttr(val)}">`;
+        } else if (tipo === 'pais') {
+            // Vacío = global. El alcance es por país porque el permiso lo emite una autoridad
+            // nacional: el mismo trámite vale para todas las estaciones de ese país.
+            const opts = paises.map((p) =>
+                `<option value="${p.id}" ${String(val) === String(p.id) ? 'selected' : ''}>${p.nombre}</option>`).join('');
+            control = `<select name="${campo}"><option value="">Global (todos los países)</option>${opts}</select>`;
         } else if (tipo === 'region') {
             const opts = Object.entries(regiones).map(([k, lbl]) =>
                 `<option value="${k}" ${val === k ? 'selected' : ''}>${lbl}</option>`).join('');
@@ -129,6 +152,11 @@ form.addEventListener('submit', async (ev) => {
         : await api('POST', `/api/catalogos/${tabla}`, payload);
     if (resp.ok) location.reload(); else showError(err, resp);
 });
+
+/** Escape para contenido de elemento (el de atributo no sirve dentro de un textarea). */
+function escapeTexto(v) {
+    return String(v ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
 
 function escapeAttr(v) {
     return String(v ?? '').replace(/"/g, '&quot;').replace(/</g, '&lt;');

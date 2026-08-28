@@ -58,6 +58,8 @@ function buildQuery() {
     if (categoria) p.set('categoria_id', categoria);
     const tipo = document.getElementById('f-tipo').value;
     if (tipo) p.set('tipo_equipo_id', tipo);
+    const alcance = document.getElementById('f-alcance').value;
+    if (alcance !== '') p.set('internacional', alcance);
     const placa = document.getElementById('f-placa').value.trim();
     if (placa) p.set('placa', placa);
     const estados = [...document.querySelectorAll('.f-estado:checked')].map((c) => c.value);
@@ -131,6 +133,14 @@ function render(unidades, meta) {
     body.innerHTML = unidades.map(rowHtml).join('');
 }
 
+// Antes de pedir una unidad a otra estación hay que saber si puede cruzar la frontera; que el
+// dato viva solo en el formulario de edición obliga a abrir cada unidad para descartarla.
+function alcanceBadge(u) {
+    return u.puede_internacional
+        ? `<span class="alcance alcance--int" data-infotip="Tiene permiso vigente para cruzar frontera: sirve para rutas internacionales.">INT</span>`
+        : `<span class="alcance alcance--nac" data-infotip="Sin permiso internacional: solo puede hacer rutas dentro de su país.">NAC</span>`;
+}
+
 function rowHtml(u) {
     const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
     const m = u.movimiento;
@@ -163,7 +173,7 @@ function rowHtml(u) {
         }
     }
     return `<tr>
-        <td><strong>${esc(u.placa_unidad)}</strong>${u.placa_furgon ? `<small class="muted block">${esc(u.placa_furgon)}</small>` : ''}</td>
+        <td><strong>${esc(u.placa_unidad)}</strong> ${alcanceBadge(u)}${u.placa_furgon ? `<small class="muted block">${esc(u.placa_furgon)}</small>` : ''}</td>
         <td>${esc(u.tipo_equipo || '—')}${u.capacidad ? ` · ${esc(u.capacidad)}` : ''}</td>
         <td>${esc(u.estacion_codigo)}</td>
         <td><span class="chip ${cls}">${label}</span>${demora ? `<small class="block delay-flag__wrap">${demora}</small>` : ''}</td>
@@ -443,6 +453,9 @@ function filtrosActivos() {
     const tipo = document.getElementById('f-tipo');
     if (tipo.value) activos.push({ etiqueta: texto(tipo), limpiar: () => { tipo.value = ''; } });
 
+    const alcance = document.getElementById('f-alcance');
+    if (alcance.value) activos.push({ etiqueta: texto(alcance), limpiar: () => { alcance.value = ''; } });
+
     const ret = document.getElementById('f-retorno');
     if (ret.value) activos.push({ etiqueta: `Retorno: ${texto(ret)}`, limpiar: () => { ret.value = ''; } });
 
@@ -473,7 +486,7 @@ chipsEl.addEventListener('click', (ev) => {
     if (!quitar && !todo) return;
     (todo ? activosActuales : [activosActuales[Number(quitar.dataset.quitar)]]).forEach((f) => f?.limpiar());
     // Los combobox buscables reflejan el <select>, así que hay que avisarles del cambio.
-    document.querySelectorAll('#f-estacion, #f-categoria, #f-tipo, #f-retorno, [name="retorno_desde_sel"]')
+    document.querySelectorAll('#f-estacion, #f-categoria, #f-tipo, #f-alcance, #f-retorno, [name="retorno_desde_sel"]')
         .forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
     load();
 });
@@ -547,7 +560,7 @@ function abrirPanelUnidad(u) {
 
 // Un clic en la fila abre el panel; los controles propios de la fila siguen mandando.
 body.addEventListener('click', (ev) => {
-    if (ev.target.closest('button, a, .rowmenu')) return;
+    if (ev.target.closest('button, a, .rowmenu, .alcance')) return;
     const fila = ev.target.closest('tr');
     const placa = fila?.querySelector('strong')?.textContent;
     const u = ultimasUnidades.find((x) => x.placa_unidad === placa);
@@ -633,7 +646,7 @@ document.getElementById('f-fecha').addEventListener('change', () => {
     fechaMode = 'fecha';
     load();
 });
-['f-estacion', 'f-categoria', 'f-tipo', 'f-retorno', 'f-demora'].forEach((id) => document.getElementById(id).addEventListener('change', load));
+['f-estacion', 'f-categoria', 'f-tipo', 'f-alcance', 'f-retorno', 'f-demora'].forEach((id) => document.getElementById(id).addEventListener('change', load));
 document.querySelectorAll('.f-estado').forEach((c) => c.addEventListener('change', () => {
     syncStateSummary();
     load();

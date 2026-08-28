@@ -84,6 +84,28 @@ return [
         ['C127994',  'PROGRAMADO',  'GT', 'SV',  20,  44,  11,   true,  'EFL Trucking',          null],
     ],
 
+    // placa => permisos especiales por nombre. Solo se aplican los que existen en el catálogo y
+    // son del país de la estación (o globales); el resto se ignora avisando. Da sentido al
+    // indicador INT/NAC del tablero: quién puede cruzar frontera y quién no.
+    'permisos' => [
+        'C96670'    => ['Registro de Transportista Internacional', 'Registro Aduanero de Unidades'],
+        'C93264'    => ['Registro de Transportista Internacional', 'Carga peligrosa'],
+        'C102766'   => ['Registro de Transportista Internacional', 'Tarjeta de Pesos y Dimensiones'],
+        'C107579'   => ['Registro de Transportista Internacional'],
+        'C114757'   => ['Registro de Transportista Internacional', 'Registro Aduanero de Unidades'],
+        'C96096'    => ['Registro de Transportista Internacional'],
+        'C117304'   => ['Registro de Transportista Internacional', 'Tarjeta de Pesos y Dimensiones'],
+        'C127939'   => ['Registro de Transportista Internacional'],
+        'CONT-4401' => ['Registro de Transportista Internacional'],
+        'C99679'    => ['Registro de Transportista Nacional'],
+        'C97609'    => ['Registro de Transportista Nacional', 'SVC'],
+        'C65472'    => ['Registro de Transportista Nacional'],
+        'C88198'    => ['Registro de Transportista Nacional'],
+        'P1315F'    => ['Registro de Transportista Nacional'],
+        'CONT-2001' => ['Registro de Transportista Nacional'],
+        'RE14326'   => ['Registro de Transportista Nacional'],
+    ],
+
     // [placa, tipo, origen, motivo, desde_h, hasta_h]
     'overrides' => [
         ['C88198',  'EN_TALLER', 'AUTO_ESTADO', 'Cambio de turbo y frenos',        -72,  null],

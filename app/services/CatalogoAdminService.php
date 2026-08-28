@@ -13,7 +13,7 @@ final class CatalogoAdminService
     private const SPEC = [
         'tipos_equipo'        => ['label' => 'Tipo de equipo',       'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'tipos_licencia'      => ['label' => 'Tipo de licencia',     'fields' => ['nombre' => 'string']],
-        'permisos_especiales' => ['label' => 'Permiso especial',     'fields' => ['nombre' => 'string']],
+        'permisos_especiales' => ['label' => 'Permiso especial',     'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'pais_id' => 'pais', 'habilita_internacional' => 'bool']],
         'categorias_vehiculo' => ['label' => 'Categoría de vehículo','fields' => ['nombre' => 'string', 'es_flota_operativa' => 'bool', 'requiere_furgon' => 'bool', 'es_motriz' => 'bool', 'orden' => 'int']],
         'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'paises'              => ['label' => 'País',                 'fields' => ['codigo_iso' => 'iso2', 'nombre' => 'string', 'region' => 'region', 'orden' => 'int']],
@@ -21,6 +21,25 @@ final class CatalogoAdminService
 
     public function __construct(private PDO $pdo)
     {
+    }
+
+    /** Nombres de columna → etiqueta de interfaz; el resto se deriva del propio campo. */
+    private const ETIQUETAS = [
+        'nombre' => 'Nombre',
+        'descripcion' => 'Descripción',
+        'pais_id' => 'Alcance',
+        'habilita_internacional' => 'Cruza frontera',
+        'codigo_iso' => 'Código ISO',
+        'es_flota_operativa' => 'Flota operativa',
+        'requiere_furgon' => 'Requiere furgón',
+        'es_motriz' => 'Se mueve sola',
+        'orden' => 'Orden',
+        'region' => 'Región',
+    ];
+
+    public static function etiqueta(string $campo): string
+    {
+        return self::ETIQUETAS[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
     }
 
     /** @return string[] tablas editables. */
@@ -125,6 +144,12 @@ final class CatalogoAdminService
                 case 'int':
                     $v->positiveInt($campo, $label);
                     break;
+                case 'pais': // alcance del registro: un país del catálogo o vacío = global
+                    $valor = trim((string) ($input[$campo] ?? ''));
+                    if ($valor !== '' && !in_array((int) $valor, paises_ids_validos(), true)) {
+                        json_unprocessable([$campo => 'El país no es válido.']);
+                    }
+                    break;
                 case 'region':
                     $v->required($campo, $label)->inEnum($campo, RegionPais::values(), $label);
                     break;
@@ -139,6 +164,7 @@ final class CatalogoAdminService
                 'int'    => $val !== null && $val !== '' ? (int) $val : 0,
                 'iso2'   => strtoupper((string) $val),
                 'text'   => $val === null || $val === '' ? null : $val,
+                'pais'   => $val === null || $val === '' ? null : (int) $val,
                 default  => $val,
             };
         }

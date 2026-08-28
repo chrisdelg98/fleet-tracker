@@ -106,6 +106,7 @@ final class DisponibilidadController
             'sin_retorno'    => !empty($q['sin_retorno']),
             'solo_demora'    => !empty($q['solo_demora']),
             'retorno_desde'  => $q['retorno_desde'] ?? null,
+            'internacional'  => isset($q['internacional']) && $q['internacional'] !== '' ? (int) $q['internacional'] : null,
             'ocultar_fuera_operacion' => true,
         ];
     }
