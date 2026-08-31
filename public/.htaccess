@@ -1,0 +1,55 @@
+# Front controller de la aplicación (Apache).
+#
+# El enrutador despacha por la URL completa (/flota, /api/unidades/12…), pero esas rutas no
+# son archivos reales: sin esta reescritura, Apache respondería 404 a todo lo que no fuera
+# la portada. Este archivo va DENTRO de public/, que es el único directorio que debe estar
+# expuesto por web; el resto del proyecto queda un nivel arriba, fuera del alcance HTTP.
+
+DirectoryIndex index.php
+
+# Sin listados de directorio (evita que /assets/ enseñe su contenido).
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Los archivos y directorios que existen de verdad (assets, favicon) se sirven directos.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # La aplicación es interna: nunca debe indexarse ni incrustarse en otro sitio.
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "same-origin"
+
+    # Descargas y respuestas del API nunca se cachean: llevan datos de sesión.
+    <FilesMatch "\.(php)$">
+        Header always set Cache-Control "no-store"
+    </FilesMatch>
+</IfModule>
+
+# Estáticos con caché larga. Si cambias un asset y no se refleja, fuerza recarga (Ctrl+F5)
+# o renómbralo: no hay versionado de nombres todavía.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/x-icon "access plus 30 days"
+</IfModule>
+
+# Nada de puntos-archivo servidos por accidente (.env, .git, editores).
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

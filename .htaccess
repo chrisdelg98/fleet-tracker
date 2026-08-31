@@ -1,0 +1,17 @@
+# Red de seguridad, no configuración normal.
+#
+# Este directorio contiene .env (credenciales de base de datos), el código de la aplicación y
+# los scripts de migración. NADA de esto debe ser accesible por web: el document root del
+# dominio tiene que apuntar a public/, y entonces Apache ni siquiera lee este archivo.
+#
+# Existe por si algún día alguien sube el proyecto entero dentro de public_html o cambia el
+# document root por error. En ese caso esto lo bloquea todo, y la aplicación dejará de
+# responder — que es exactamente la señal que se necesita para darse cuenta del fallo.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
