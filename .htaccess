@@ -1,17 +1,28 @@
-# Red de seguridad, no configuración normal.
+# Protección puntual de la carpeta del proyecto. NO es un bloqueo total.
 #
-# Este directorio contiene .env (credenciales de base de datos), el código de la aplicación y
-# los scripts de migración. NADA de esto debe ser accesible por web: el document root del
-# dominio tiene que apuntar a public/, y entonces Apache ni siquiera lee este archivo.
+# Apache busca los .htaccess desde la raíz del sistema de archivos hacia abajo, no desde el
+# document root: un "Require all denied" aquí también bloquearía public/, que sí debe servirse.
+# Por eso esto se limita a tapar lo sensible por nombre.
 #
-# Existe por si algún día alguien sube el proyecto entero dentro de public_html o cambia el
-# document root por error. En ese caso esto lo bloquea todo, y la aplicación dejará de
-# responder — que es exactamente la señal que se necesita para darse cuenta del fallo.
+# Con el document root en public/ —lo correcto— este archivo es inerte: nada de este nivel es
+# alcanzable por URL. Existe por si algún día el document root se apunta a esta carpeta, en
+# cuyo caso al menos .env y los scripts de base de datos quedan fuera del alcance.
 
-<IfModule mod_authz_core.c>
-    Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-    Order allow,deny
-    Deny from all
+# Archivos que empiezan por punto: .env con las credenciales, .gitignore, restos de editores.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Código y scripts de base de datos. Inerte con el document root bien puesto: ninguna URL
+# resuelve a estas rutas. Si el document root estuviera mal, evita que se pueda lanzar una
+# migración o un seed desde el navegador.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(app|config|database|docs)/ - [F,L]
 </IfModule>
