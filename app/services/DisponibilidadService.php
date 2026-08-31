@@ -29,7 +29,7 @@ final class DisponibilidadService
     public function calcular(string $desdeUtc, string $hastaUtc, array $filtros = []): array
     {
         $sql = 'SELECT
-                    u.id, u.placa_unidad, u.placa_furgon, u.estacion_id,
+                    u.id, u.placa_unidad, u.estacion_id,
                     e.codigo AS estacion_codigo, e.timezone,
                     te.nombre AS tipo_equipo, cap.nombre AS capacidad,
                     cat.nombre AS categoria, cat.es_motriz,
@@ -168,7 +168,6 @@ final class DisponibilidadService
             $out[] = [
                 'unidad_id'       => (int) $r['id'],
                 'placa_unidad'    => $r['placa_unidad'],
-                'placa_furgon'    => $r['placa_furgon'],
                 'categoria'       => $r['categoria'],
                 'es_motriz'       => (int) $r['es_motriz'] === 1,
                 'tipo_equipo'     => $r['tipo_equipo'],

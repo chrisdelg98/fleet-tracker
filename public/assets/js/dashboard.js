@@ -173,7 +173,7 @@ function rowHtml(u) {
         }
     }
     return `<tr>
-        <td><strong>${esc(u.placa_unidad)}</strong> ${alcanceBadge(u)}${u.placa_furgon ? `<small class="muted block">${esc(u.placa_furgon)}</small>` : ''}</td>
+        <td><strong>${esc(u.placa_unidad)}</strong> ${alcanceBadge(u)}</td>
         <td>${esc(u.tipo_equipo || '—')}${u.capacidad ? ` · ${esc(u.capacidad)}` : ''}</td>
         <td>${esc(u.estacion_codigo)}</td>
         <td><span class="chip ${cls}">${label}</span>${demora ? `<small class="block delay-flag__wrap">${demora}</small>` : ''}</td>

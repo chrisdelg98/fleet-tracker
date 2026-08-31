@@ -34,7 +34,7 @@ final class InventarioService
     public function listar(array $user, array $filtros): array
     {
         [$where, $params] = $this->where($user, $filtros);
-        $sql = 'SELECT u.id, u.placa_unidad, u.placa_furgon, u.marca, u.modelo, u.en_disponibilidad,
+        $sql = 'SELECT u.id, u.placa_unidad, u.marca, u.modelo, u.en_disponibilidad,
                        u.estado_vehiculo, u.estado_notas, c.nombre AS categoria, e.codigo AS estacion_codigo, e.nombre AS estacion
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id

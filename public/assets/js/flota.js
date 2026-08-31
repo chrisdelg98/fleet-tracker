@@ -13,8 +13,6 @@ const errUnidad = document.getElementById('form-unidad-error');
 const errEstado = document.getElementById('form-estado-error');
 const selCategoria = formUnidad.elements['categoria_vehiculo_id'];
 const chkDisp = formUnidad.elements['en_disponibilidad'];
-const placaFurgon = formUnidad.elements['placa_furgon'];
-const furgonReq = formUnidad.querySelector('[data-furgon-req]');
 
 let dispTocadoManual = false;
 
@@ -23,10 +21,6 @@ selCategoria.addEventListener('change', () => {
     const opt = selCategoria.selectedOptions[0];
     // el check de disponibilidad hereda el default de la categoría (regla 14)
     if (!dispTocadoManual) chkDisp.checked = !!opt && opt.dataset.flota === '1';
-    // placa de furgón obligatoria si la categoría jala furgón (ej. Cabezal)
-    const requiere = !!opt && opt.dataset.requiereFurgon === '1';
-    placaFurgon.required = requiere;
-    furgonReq.hidden = !requiere;
 });
 chkDisp.addEventListener('change', () => { dispTocadoManual = true; });
 

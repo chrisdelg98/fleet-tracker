@@ -200,7 +200,7 @@ final class InteligenciaService
     {
         [$scopeSql, $scopeParams] = $this->scopeClause($user, $filtros, 'u.estacion_id');
         $stmt = $this->pdo->prepare(
-            'SELECT u.id, u.placa_unidad, u.placa_furgon, e.codigo AS estacion_codigo,
+            'SELECT u.id, u.placa_unidad, e.codigo AS estacion_codigo,
                     COUNT(m.id) AS movimientos,
                     SUM(TIMESTAMPDIFF(SECOND,
                         GREATEST(m.fecha_salida, :desde_calc),
@@ -215,7 +215,7 @@ final class InteligenciaService
                 AND m.fecha_salida < :hasta_limite
                 AND COALESCE(m.fecha_fin_real, m.fecha_fin_estimada) > :desde_limite'
             . $scopeSql . '
-              GROUP BY u.id, u.placa_unidad, u.placa_furgon, e.codigo
+              GROUP BY u.id, u.placa_unidad, e.codigo
               ORDER BY segundos DESC, movimientos DESC, u.placa_unidad'
         );
         $stmt->execute($scopeParams + [
@@ -231,7 +231,6 @@ final class InteligenciaService
             return [
                 'unidad_id' => (int) $row['id'],
                 'placa_unidad' => $row['placa_unidad'],
-                'placa_furgon' => $row['placa_furgon'],
                 'estacion_codigo' => $row['estacion_codigo'],
                 'movimientos' => (int) $row['movimientos'],
                 'dias' => round($segundos / 86400, 2),

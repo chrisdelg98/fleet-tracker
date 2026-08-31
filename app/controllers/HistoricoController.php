@@ -54,9 +54,9 @@ final class HistoricoController
         header('Content-Disposition: attachment; filename="historico-' . date('Ymd-His') . '.csv"');
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF");
-        fputcsv($out, ['Fecha (UTC)', 'Usuario', 'Entidad', 'ID', 'Acción', 'Detalle']);
+        fputcsv($out, ['Fecha (UTC)', 'Usuario', 'Entidad', 'ID', 'Acción', 'Detalle'], ',', '"', '');
         foreach ($filas as $f) {
-            fputcsv($out, [$f['timestamp'], $f['usuario'], $f['entidad'], $f['entidad_id'], $f['accion'], $f['detalle']]);
+            fputcsv($out, [$f['timestamp'], $f['usuario'], $f['entidad'], $f['entidad_id'], $f['accion'], $f['detalle']], ',', '"', '');
         }
         fclose($out);
     }

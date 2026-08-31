@@ -252,7 +252,7 @@ function openModal(u) {
     $('live-modal-body').innerHTML = `
         <div class="mm__head" style="--c:${m.color}">
             <div class="mm__icon">${SVG.truck}</div>
-            <div class="mm__title"><strong>${esc(u.placa_unidad)}</strong>${u.placa_furgon ? `<small>${esc(u.placa_furgon)}</small>` : ''}</div>
+            <div class="mm__title"><strong>${esc(u.placa_unidad)}</strong></div>
             <span class="mm__chip">${esc(m.label)}</span>
         </div>
         <dl class="mm__list">

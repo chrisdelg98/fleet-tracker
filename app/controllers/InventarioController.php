@@ -50,13 +50,13 @@ final class InventarioController
 
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
-        fputcsv($out, ['Placa', 'Furgón', 'Categoría', 'Marca', 'Modelo', 'Estación', 'Flota operativa', 'Estado', 'Notas']);
+        fputcsv($out, ['Placa', 'Categoría', 'Marca', 'Modelo', 'Estación', 'Flota operativa', 'Estado', 'Notas'], ',', '"', '');
         foreach ($unidades as $u) {
             fputcsv($out, [
-                $u['placa_unidad'], $u['placa_furgon'], $u['categoria'], $u['marca'], $u['modelo'],
+                $u['placa_unidad'], $u['categoria'], $u['marca'], $u['modelo'],
                 $u['estacion_codigo'], ((int) $u['en_disponibilidad'] === 1 ? 'Sí' : 'No'),
                 $u['estado_vehiculo'], $u['estado_notas'],
-            ]);
+            ], ',', '"', '');
         }
         fclose($out);
     }

@@ -206,7 +206,7 @@ set_page_meta('Inteligencia', 'Resume utilización, retornos, tránsito y rutas 
                 <tbody>
                 <?php foreach ($dias as $fila): ?>
                     <tr>
-                        <td><strong><?= e($fila['placa_unidad']) ?></strong><?php if (!empty($fila['placa_furgon'])): ?><small class="muted block"><?= e($fila['placa_furgon']) ?></small><?php endif; ?></td>
+                        <td><strong><?= e($fila['placa_unidad']) ?></strong></td>
                         <td><?= e($fila['estacion_codigo']) ?></td>
                         <td><?= (int) $fila['movimientos'] ?></td>
                         <td><?= e($fmtDias($fila['dias'])) ?></td>

@@ -10,7 +10,7 @@ final class UnidadModel
 {
     /** Columnas escribibles desde el formulario de alta/edición. */
     private const CAMPOS = [
-        'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
+        'placa_unidad', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
         'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id',
         'piloto_asignado_id', 'estado_vehiculo', 'estado_notas',
     ];
@@ -37,7 +37,7 @@ final class UnidadModel
     {
         // El override abierto (bloqueo manual o taller) se trae aquí para que la gestión de
         // flota vea por qué una unidad está fuera de operación, no solo el tablero.
-        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.requiere_furgon, c.es_motriz,
+        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.es_motriz,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
                        cap.nombre AS capacidad, p.nombre AS piloto_asignado,
                        o.tipo AS override_tipo, o.motivo AS override_motivo,
@@ -82,7 +82,7 @@ final class UnidadModel
         }
         if (!empty($filtros['q'])) {
             // CONCAT con un solo placeholder: los prepares nativos no permiten reusar :q.
-            $sql .= " AND CONCAT(u.placa_unidad, ' ', COALESCE(u.placa_furgon, '')) LIKE :q";
+            $sql .= ' AND u.placa_unidad LIKE :q';
             $params[':q'] = '%' . $filtros['q'] . '%';
         }
         $sql .= ' ORDER BY u.placa_unidad';
