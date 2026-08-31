@@ -23,9 +23,29 @@ function paises_activos(): array
         return $cache;
     }
     $cache = db()
-        ->query('SELECT id, codigo_iso, nombre, region FROM paises WHERE activo = 1 ORDER BY orden')
+        ->query('SELECT id, codigo_iso, nombre, region,
+                        etiqueta_codigo_nacional, etiqueta_codigo_internacional
+                   FROM paises WHERE activo = 1 ORDER BY orden')
         ->fetchAll();
     return $cache;
+}
+
+/**
+ * Cómo llama cada país a los dos códigos de transporte del piloto. En El Salvador son "SV" y
+ * "SVC"; donde no se haya definido, se usa el nombre genérico, que es lo que significan.
+ *
+ * @return array<int, array{nacional:string, internacional:string}> por id de país
+ */
+function etiquetas_codigo_piloto(): array
+{
+    $out = [];
+    foreach (paises_activos() as $pais) {
+        $out[(int) $pais['id']] = [
+            'nacional'      => $pais['etiqueta_codigo_nacional'] ?: 'Código de transporte nacional',
+            'internacional' => $pais['etiqueta_codigo_internacional'] ?: 'Código de transporte internacional',
+        ];
+    }
+    return $out;
 }
 
 /** IDs válidos de país (para validar contra el catálogo). */

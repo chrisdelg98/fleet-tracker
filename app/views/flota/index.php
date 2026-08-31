@@ -268,70 +268,19 @@ set_page_meta(
     </form>
 </dialog>
 
-<dialog id="dlg-import" class="dialog dialog--ancho">
-    <form method="dialog" class="form" id="form-import" novalidate>
-        <div class="dialog__head">
-            <h2>Carga masiva de unidades</h2>
-            <p class="dialog__lede">Se revisa el archivo completo antes de guardar nada: si una fila falla, no se carga ninguna.</p>
-        </div>
-        <div class="dialog__body">
-            <ol class="pasos">
-                <li class="paso">
-                    <span class="paso__n">1</span>
-                    <div class="paso__cuerpo">
-                        <strong>Descarga la plantilla</strong>
-                        <p class="paso__nota">Trae tus catálogos actuales como listas desplegables y una hoja de instrucciones. No cambies el encabezado.</p>
-                        <a class="btn btn--linea" href="/flota/plantilla.xlsx" download>Descargar plantilla .xlsx</a>
-                    </div>
-                </li>
-                <li class="paso">
-                    <span class="paso__n">2</span>
-                    <div class="paso__cuerpo">
-                        <strong>Sube el archivo lleno</strong>
-                        <p class="paso__nota">Formato .xlsx o .csv, hasta <?= FlotaImportService::MAX_FILAS ?> unidades.</p>
-                        <label class="soltar" id="import-soltar">
-                            <input type="file" id="import-archivo" name="archivo" accept=".xlsx,.csv" hidden>
-                            <span class="soltar__texto" id="import-nombre">Arrastra el archivo aquí o haz clic para elegirlo</span>
-                        </label>
-                    </div>
-                </li>
-            </ol>
-
-            <div id="import-resultado" hidden>
-                <div class="import-resumen" id="import-resumen"></div>
-                <div class="table-wrap" id="import-vista-wrap" hidden>
-                    <table class="table">
-                        <thead><tr>
-                            <th class="col col--corta">Fila</th>
-                            <th class="col col--nombre">Placa</th>
-                            <th class="col col--corta">Categoría</th>
-                            <th class="col col--corta">Estación</th>
-                            <th class="col col--text">Vehículo</th>
-                        </tr></thead>
-                        <tbody id="import-vista"></tbody>
-                    </table>
-                </div>
-                <p class="muted" id="import-vista-pie" hidden></p>
-                <div class="table-wrap" id="import-errores-wrap" hidden>
-                    <table class="table">
-                        <thead><tr>
-                            <th class="col col--corta">Fila</th>
-                            <th class="col col--corta">Columna</th>
-                            <th class="col col--corta">Valor</th>
-                            <th class="col col--text">Problema</th>
-                        </tr></thead>
-                        <tbody id="import-errores"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <p class="form__error" id="form-import-error" hidden></p>
-        <div class="dialog__actions">
-            <button type="button" class="btn btn--ghost-dark" data-close>Cerrar</button>
-            <button type="button" class="btn btn--primary" id="import-confirmar" disabled>Cargar unidades</button>
-        </div>
-    </form>
-</dialog>
+<?= dialogo_import([
+    'titulo'    => 'Carga masiva de unidades',
+    'plantilla' => '/flota/plantilla.xlsx',
+    'url'       => '/api/flota/importar',
+    'singular'  => 'unidad',
+    'plural'    => 'unidades',
+    'columnas'  => [
+        ['clave' => 'placa_unidad', 'label' => 'Placa'],
+        ['clave' => 'categoria',    'label' => 'Categoría'],
+        ['clave' => 'estacion',     'label' => 'Estación'],
+        ['clave' => 'marca',        'label' => 'Marca', 'clase' => 'col col--text'],
+    ],
+]) ?>
 
 <script src="/assets/js/flota.js" type="module"></script>
-<script src="/assets/js/flota-import.js" type="module"></script>
+<script src="/assets/js/import-excel.js" type="module"></script>

@@ -11,6 +11,27 @@ function syncSelects() {
     form.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
 }
 
+/**
+ * Los dos códigos de transporte son el mismo concepto en toda la región, pero cada país los
+ * llama a su manera (en El Salvador, SV y SVC). La etiqueta sigue al país de la estación.
+ */
+const ETIQUETAS = JSON.parse(document.getElementById('pilotos-etiquetas-codigo').textContent);
+const selEstacion = form.elements['estacion_id'];
+
+function syncEtiquetasCodigo() {
+    const opcion = selEstacion.tagName === 'SELECT' ? selEstacion.selectedOptions[0] : selEstacion;
+    const pais = Number(opcion?.dataset.pais || 0);
+    const etiquetas = ETIQUETAS[pais];
+    form.querySelectorAll('[data-etiqueta-codigo]').forEach((el) => {
+        const ambito = el.dataset.etiquetaCodigo;
+        el.textContent = etiquetas
+            ? etiquetas[ambito]
+            : (ambito === 'nacional' ? 'Código de transporte nacional' : 'Código de transporte internacional');
+    });
+}
+
+selEstacion.addEventListener('change', syncEtiquetasCodigo);
+
 document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-action]');
     if (!btn) return;
@@ -21,6 +42,7 @@ document.addEventListener('click', async (ev) => {
         form.elements['id'].value = '';
         err.hidden = true;
         syncSelects();
+        syncEtiquetasCodigo();
         document.getElementById('dlg-piloto-title').textContent = 'Nuevo piloto';
         dlg.showModal();
     }
@@ -34,6 +56,7 @@ document.addEventListener('click', async (ev) => {
         form.elements['id'].value = resp.data.id;
         err.hidden = true;
         syncSelects();
+        syncEtiquetasCodigo();
         document.getElementById('dlg-piloto-title').textContent = 'Editar piloto';
         dlg.showModal();
     }

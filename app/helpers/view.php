@@ -62,6 +62,94 @@ function action_chip_icon(string $icon): string
 }
 
 /**
+ * Diálogo de carga masiva (estándar reutilizable). El recorrido es el mismo para cualquier
+ * entidad —descargar plantilla, subir, revisar, confirmar—, así que el marcado vive aquí en
+ * vez de copiarse en cada vista: si cambia el flujo, cambia en un solo sitio.
+ *
+ * @param array $o titulo, lede, plantilla (URL), url (API), singular, plural,
+ *                 columnas (encabezados de la vista previa: clave, label, clase?)
+ */
+function dialogo_import(array $o): string
+{
+    $plantilla = e($o['plantilla']);
+    $url = e($o['url']);
+    $titulo = e($o['titulo']);
+    $lede = e($o['lede'] ?? 'Se revisa el archivo completo antes de guardar nada: si una fila falla, no se carga ninguna.');
+    $max = ImportadorExcel::MAX_FILAS;
+
+    $columnas = '';
+    foreach ($o['columnas'] as $col) {
+        $clase = $col['clase'] ?? 'col col--corta';
+        $columnas .= '<th class="' . e($clase) . '">' . e($col['label']) . '</th>';
+    }
+    $campos = htmlspecialchars(json_encode(array_column($o['columnas'], 'clave')), ENT_QUOTES);
+    $singular = e($o['singular']);
+    $plural = e($o['plural']);
+
+    return <<<HTML
+<dialog id="dlg-import" class="dialog dialog--ancho" data-import-url="{$url}"
+        data-import-campos="{$campos}" data-import-singular="{$singular}" data-import-plural="{$plural}">
+    <form method="dialog" class="form" id="form-import" novalidate>
+        <div class="dialog__head">
+            <h2>{$titulo}</h2>
+            <p class="dialog__lede">{$lede}</p>
+        </div>
+        <div class="dialog__body">
+            <ol class="pasos">
+                <li class="paso">
+                    <span class="paso__n">1</span>
+                    <div class="paso__cuerpo">
+                        <strong>Descarga la plantilla</strong>
+                        <p class="paso__nota">Trae tus catálogos actuales como listas desplegables y una hoja de instrucciones. No cambies el encabezado.</p>
+                        <a class="btn btn--linea" href="{$plantilla}" download>Descargar plantilla .xlsx</a>
+                    </div>
+                </li>
+                <li class="paso">
+                    <span class="paso__n">2</span>
+                    <div class="paso__cuerpo">
+                        <strong>Sube el archivo lleno</strong>
+                        <p class="paso__nota">Formato .xlsx o .csv, hasta {$max} registros.</p>
+                        <label class="soltar" id="import-soltar">
+                            <input type="file" id="import-archivo" name="archivo" accept=".xlsx,.csv" hidden>
+                            <span class="soltar__texto" id="import-nombre">Arrastra el archivo aquí o haz clic para elegirlo</span>
+                        </label>
+                    </div>
+                </li>
+            </ol>
+
+            <div id="import-resultado" hidden>
+                <div class="import-resumen" id="import-resumen"></div>
+                <div class="table-wrap" id="import-vista-wrap" hidden>
+                    <table class="table">
+                        <thead><tr><th class="col col--corta">Fila</th>{$columnas}</tr></thead>
+                        <tbody id="import-vista"></tbody>
+                    </table>
+                </div>
+                <p class="muted" id="import-vista-pie" hidden></p>
+                <div class="table-wrap" id="import-errores-wrap" hidden>
+                    <table class="table">
+                        <thead><tr>
+                            <th class="col col--corta">Fila</th>
+                            <th class="col col--corta">Columna</th>
+                            <th class="col col--corta">Valor</th>
+                            <th class="col col--text">Problema</th>
+                        </tr></thead>
+                        <tbody id="import-errores"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <p class="form__error" id="form-import-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cerrar</button>
+            <button type="button" class="btn btn--primary" id="import-confirmar" disabled>Cargar registros</button>
+        </div>
+    </form>
+</dialog>
+HTML;
+}
+
+/**
  * Menú de acciones por fila (estándar reutilizable para todas las tablas). Emite el markup
  * que consume rowmenu.js (botón "⋮" + menú porteado a <body>). Cada item:
  *   ['label' => 'Editar', 'danger' => false, 'attrs' => ['data-action' => 'editar', 'data-id' => 5]]

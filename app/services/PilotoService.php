@@ -36,7 +36,7 @@ final class PilotoService
         }
         $this->assertPuedeEscribir($user, (int) $actual['estacion_id']);
 
-        $data = $this->validar($input);
+        $data = $this->validar($input, $id);
         $this->assertPuedeEscribir($user, (int) $data['estacion_id']);
 
         tx($this->pdo, function () use ($id, $data, $actual, $user): void {
@@ -70,28 +70,78 @@ final class PilotoService
         return $this->pilotos->listar($estacion, $filtros);
     }
 
-    private function validar(array $input): array
+    private function validar(array $input, ?int $exceptId = null): array
+    {
+        ['data' => $data, 'errores' => $errores] = $this->evaluar($input, $exceptId);
+        if ($errores !== []) {
+            json_unprocessable($errores);
+        }
+        return $data;
+    }
+
+    /**
+     * Aplica las reglas del piloto SIN cortar la petición y devuelve
+     * ['data' => array|null, 'errores' => array<campo, mensaje>].
+     *
+     * Igual que en unidades: la carga masiva valida por aquí, así el Excel no puede aceptar
+     * nada que el formulario rechace.
+     */
+    public function evaluar(array $input, ?int $exceptId = null): array
     {
         $v = new Validator($input);
         $v->required('nombre', 'El nombre')->maxLen('nombre', 150, 'El nombre')
+          ->maxLen('documento_identidad', 40, 'El documento de identificación')
+          ->maxLen('telefonos', 255, 'Los teléfonos')
           ->required('tipo_licencia_id', 'El tipo de licencia')->positiveInt('tipo_licencia_id', 'El tipo de licencia')
           ->required('no_licencia', 'El número de licencia')->maxLen('no_licencia', 60, 'El número de licencia')
           ->date('licencia_vence', 'El vencimiento de licencia')
+          ->maxLen('codigo_nacional', 40, 'El código de transporte nacional')
+          ->maxLen('codigo_internacional', 40, 'El código de transporte internacional')
           ->required('estacion_id', 'La estación')->positiveInt('estacion_id', 'La estación');
-        $v->validateOrFail();
+        if ($v->fails()) {
+            return ['data' => null, 'errores' => $v->errors()];
+        }
 
+        $errores = [];
         if ($this->catalogos->find('tipos_licencia', (int) $v->value('tipo_licencia_id')) === null) {
-            json_unprocessable(['tipo_licencia_id' => 'El tipo de licencia no existe.']);
+            $errores['tipo_licencia_id'] = 'El tipo de licencia no existe.';
+        }
+
+        // La licencia y el documento identifican a la persona: si se repiten, es la misma
+        // dos veces. Sin esta comprobación, subir el mismo archivo duplicaría la plantilla.
+        $licencia = (string) $v->value('no_licencia');
+        if ($this->pilotos->existeCon('no_licencia', $licencia, $exceptId)) {
+            $errores['no_licencia'] = 'Ya hay un piloto con ese número de licencia.';
+        }
+        $documento = $this->nullable($v->value('documento_identidad'));
+        if ($documento !== null && $this->pilotos->existeCon('documento_identidad', $documento, $exceptId)) {
+            $errores['documento_identidad'] = 'Ya hay un piloto con ese documento de identificación.';
+        }
+
+        if ($errores !== []) {
+            return ['data' => null, 'errores' => $errores];
         }
 
         $vence = $v->value('licencia_vence');
-        return [
-            'nombre'           => $v->value('nombre'),
-            'tipo_licencia_id' => (int) $v->value('tipo_licencia_id'),
-            'no_licencia'      => $v->value('no_licencia'),
-            'licencia_vence'   => $vence !== null && $vence !== '' ? $vence : null,
-            'estacion_id'      => (int) $v->value('estacion_id'),
+        $data = [
+            'nombre'               => $v->value('nombre'),
+            'documento_identidad'  => $documento,
+            'telefonos'            => $this->nullable($v->value('telefonos')),
+            'tipo_licencia_id'     => (int) $v->value('tipo_licencia_id'),
+            'no_licencia'          => $licencia,
+            'licencia_vence'       => $vence !== null && $vence !== '' ? $vence : null,
+            'codigo_nacional'      => $this->nullable($v->value('codigo_nacional')),
+            'codigo_internacional' => $this->nullable($v->value('codigo_internacional')),
+            'estacion_id'          => (int) $v->value('estacion_id'),
         ];
+
+        return ['data' => $data, 'errores' => []];
+    }
+
+    private function nullable(?string $valor): ?string
+    {
+        $valor = $valor !== null ? trim($valor) : '';
+        return $valor === '' ? null : $valor;
     }
 
     private function assertPuedeEscribir(array $user, int $estacionId): void
@@ -103,6 +153,9 @@ final class PilotoService
 
     private function snapshot(array $row): array
     {
-        return array_intersect_key($row, array_flip(['nombre', 'tipo_licencia_id', 'no_licencia', 'licencia_vence', 'estacion_id']));
+        return array_intersect_key($row, array_flip([
+            'nombre', 'documento_identidad', 'telefonos', 'tipo_licencia_id', 'no_licencia',
+            'licencia_vence', 'codigo_nacional', 'codigo_internacional', 'estacion_id',
+        ]));
     }
 }

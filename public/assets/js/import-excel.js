@@ -1,12 +1,19 @@
 /**
- * Carga masiva de flota. Dos pasos deliberados: al elegir el archivo se analiza (sin escribir
- * nada) y solo cuando el informe sale limpio se habilita el botón de cargar. Así el usuario ve
- * qué va a pasar antes de que pase, y un archivo con errores nunca deja media flota cargada.
+ * Carga masiva desde Excel. Sirve a cualquier entidad: el diálogo declara a qué endpoint
+ * subir y qué columnas enseñar en la vista previa (helper dialogo_import()).
+ *
+ * Dos pasos deliberados: al elegir el archivo se analiza (sin escribir nada) y solo cuando el
+ * informe sale limpio se habilita el botón de cargar. Así el usuario ve qué va a pasar antes
+ * de que pase, y un archivo con errores nunca deja media carga aplicada.
  */
 
 import { apiArchivo, mensajeError } from './api.js';
 
 const dlg = document.getElementById('dlg-import');
+const URL_IMPORT = dlg.dataset.importUrl;
+const CAMPOS_VISTA = JSON.parse(dlg.dataset.importCampos);
+const SINGULAR = dlg.dataset.importSingular;
+const PLURAL = dlg.dataset.importPlural;
 const inputArchivo = document.getElementById('import-archivo');
 const zona = document.getElementById('import-soltar');
 const nombre = document.getElementById('import-nombre');
@@ -50,7 +57,11 @@ document.addEventListener('click', (ev) => {
     dlg.showModal();
 });
 
-// El cierre por [data-close] ya lo enlaza flota.js para todos los diálogos de la página.
+// El diálogo cierra por su cuenta: el módulo se monta en varias páginas y no todas enlazan
+// [data-close] igual. Un doble cierre donde la página ya lo hace es inofensivo.
+dlg.addEventListener('click', (ev) => {
+    if (ev.target.closest('[data-close]')) dlg.close();
+});
 
 function reiniciar() {
     archivo = null;
@@ -108,7 +119,7 @@ async function analizar(elegido) {
     datos.append('archivo', elegido);
 
     try {
-        const resp = await apiArchivo('/api/flota/importar', datos);
+        const resp = await apiArchivo(URL_IMPORT, datos);
         if (!resp.ok) {
             resultado.hidden = true;
             error.textContent = mensajeError(resp, 'No se pudo leer el archivo.');
@@ -137,7 +148,7 @@ btnConfirmar.addEventListener('click', async () => {
 
     let recargando = false;
     try {
-        const resp = await apiArchivo('/api/flota/importar', datos);
+        const resp = await apiArchivo(URL_IMPORT, datos);
         if (!resp.ok) {
             error.textContent = mensajeError(resp, 'No se pudo completar la carga.');
             error.hidden = false;
@@ -174,8 +185,8 @@ function pintar(data, mensaje) {
     resumen.innerHTML = `<span class="import-resumen__estado ${limpio ? 'es-ok' : 'es-error'}">${esc(mensaje)}</span>`;
     btnConfirmar.disabled = !limpio;
     btnConfirmar.innerHTML = limpio
-        ? `Cargar ${listas} unidad${listas === 1 ? '' : 'es'}`
-        : 'Cargar unidades';
+        ? `Cargar ${listas} ${listas === 1 ? SINGULAR : PLURAL}`
+        : `Cargar ${PLURAL}`;
 
     if (errores.length === 0) {
         erroresWrap.hidden = true;
@@ -207,13 +218,11 @@ function pintarVista(vista, listas) {
     vistaBody.innerHTML = vista.map((f) => `
         <tr>
             <td class="col col--corta">${esc(f.fila)}</td>
-            <td class="col col--nombre">${esc(f.placa_unidad)}</td>
-            <td class="col col--corta">${esc(f.categoria)}</td>
-            <td class="col col--corta">${esc(f.estacion)}</td>
-            <td class="col col--text">${esc([f.marca, f.modelo, f.anio].filter(Boolean).join(' '))}</td>
+            ${CAMPOS_VISTA.map((campo, i) => `
+                <td class="col ${i === 0 ? 'col--nombre' : 'col--corta'}">${esc(f[campo] ?? '')}</td>`).join('')}
         </tr>`).join('');
     vistaPie.textContent = listas > vista.length
-        ? `Se muestran las primeras ${vista.length} de ${listas} unidades.`
+        ? `Se muestran las primeras ${vista.length} de ${listas} ${PLURAL}.`
         : '';
     vistaPie.hidden = listas <= vista.length;
     vistaWrap.hidden = false;

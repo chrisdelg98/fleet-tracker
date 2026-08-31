@@ -8,7 +8,9 @@ declare(strict_types=1);
 
 final class PilotoModel
 {
-    private const CAMPOS = ['nombre', 'tipo_licencia_id', 'no_licencia', 'licencia_vence', 'estacion_id'];
+    private const CAMPOS = ['nombre', 'documento_identidad', 'telefonos', 'tipo_licencia_id',
+                            'no_licencia', 'licencia_vence', 'codigo_nacional', 'codigo_internacional',
+                            'estacion_id'];
 
     public function __construct(private PDO $pdo)
     {
@@ -21,13 +23,35 @@ final class PilotoModel
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * ¿Hay otro piloto activo con ese valor en esa columna? Sirve para el número de licencia y
+     * el documento: sin esto, una carga masiva repetida duplicaría a la misma persona.
+     */
+    public function existeCon(string $columna, string $valor, ?int $exceptId = null): bool
+    {
+        if (!in_array($columna, ['no_licencia', 'documento_identidad'], true)) {
+            throw new InvalidArgumentException("Columna no permitida: {$columna}");
+        }
+        $sql = "SELECT 1 FROM pilotos WHERE {$columna} = :valor AND activo = 1";
+        $params = [':valor' => $valor];
+        if ($exceptId !== null) {
+            $sql .= ' AND id <> :id';
+            $params[':id'] = $exceptId;
+        }
+        $stmt = $this->pdo->prepare($sql . ' LIMIT 1');
+        $stmt->execute($params);
+        return $stmt->fetchColumn() !== false;
+    }
+
     /** Lista con nombres resueltos (tipo de licencia, estación). Filtra por estación si se indica. */
     public function listar(?int $estacionId = null, array $filtros = [], bool $soloActivos = true): array
     {
-        $sql = 'SELECT p.*, tl.nombre AS tipo_licencia, e.codigo AS estacion_codigo
+        $sql = 'SELECT p.*, tl.nombre AS tipo_licencia, e.codigo AS estacion_codigo,
+                       e.pais_id, pa.etiqueta_codigo_nacional, pa.etiqueta_codigo_internacional
                   FROM pilotos p
                   JOIN tipos_licencia tl ON tl.id = p.tipo_licencia_id
                   JOIN estaciones e ON e.id = p.estacion_id
+                  JOIN paises pa ON pa.id = e.pais_id
                  WHERE 1 = 1';
         $params = [];
         if ($soloActivos) {
@@ -43,7 +67,9 @@ final class PilotoModel
         }
         if (!empty($filtros['q'])) {
             // CONCAT con un solo placeholder: los prepares nativos no permiten reusar :q.
-            $sql .= " AND CONCAT(p.nombre, ' ', p.no_licencia) LIKE :q";
+            $sql .= " AND CONCAT(p.nombre, ' ', p.no_licencia, ' ',
+                                 COALESCE(p.documento_identidad, ''), ' ',
+                                 COALESCE(p.telefonos, '')) LIKE :q";
             $params[':q'] = '%' . $filtros['q'] . '%';
         }
         // Estado de licencia respecto a hoy (alerta de vencimiento, plan §7.3).

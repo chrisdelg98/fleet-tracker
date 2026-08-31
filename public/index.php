@@ -46,8 +46,12 @@ $notificacionService = new NotificacionService(
 );
 $unidadService = new UnidadService($pdo, $unidadModel, $overrideModel, $catalogoModel, $notificacionService);
 $unidadController = new UnidadController($pdo, $unidadService, $unidadModel, $catalogoModel);
-$flotaImportController = new FlotaImportController(
-    new FlotaImportService($pdo, $unidadService, $unidadModel, $overrideModel, $catalogoModel)
+$flotaImportController = new ImportController(
+    new FlotaImportService($pdo, $unidadService, $unidadModel, $overrideModel, $catalogoModel),
+    'flota',
+    'unidad',
+    'unidades',
+    true
 );
 
 $router->get('/flota', fn() => $unidadController->index());
@@ -65,12 +69,18 @@ $router->post('/api/flota/importar', fn() => $flotaImportController->importar())
 
 // ── Pilotos (Fase 1) ──
 $pilotoModel = new PilotoModel($pdo);
-$pilotoController = new PilotoController(
-    new PilotoService($pdo, $pilotoModel, $catalogoModel),
-    $pilotoModel,
-    $catalogoModel
+$pilotoService = new PilotoService($pdo, $pilotoModel, $catalogoModel);
+$pilotoController = new PilotoController($pilotoService, $pilotoModel, $catalogoModel);
+$pilotoImportController = new ImportController(
+    new PilotoImportService($pdo, $pilotoService, $pilotoModel, $catalogoModel),
+    'pilotos',
+    'piloto',
+    'pilotos'
 );
+
 $router->get('/pilotos', fn() => $pilotoController->index());
+$router->get('/pilotos/plantilla.xlsx', fn() => $pilotoImportController->plantilla());
+$router->post('/api/pilotos/importar', fn() => $pilotoImportController->importar());
 $router->post('/api/pilotos', fn() => $pilotoController->apiCreate());
 $router->get('/api/pilotos/{id}', fn($p) => $pilotoController->apiShow($p));
 $router->put('/api/pilotos/{id}', fn($p) => $pilotoController->apiUpdate($p));
