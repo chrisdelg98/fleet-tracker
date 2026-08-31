@@ -24,8 +24,25 @@ const error = document.getElementById('form-import-error');
 const MAX_ERRORES = 50;
 
 let archivo = null;
+let trabajando = false;
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/**
+ * Estado de trabajo: además del botón, se bloquea la zona de subida. Si no, se puede soltar
+ * un segundo archivo mientras el primero se valida y llega la respuesta equivocada.
+ */
+function trabajar(activo, texto = '') {
+    trabajando = activo;
+    inputArchivo.disabled = activo;
+    zona.classList.toggle('is-bloqueado', activo);
+    btnConfirmar.disabled = activo || btnConfirmar.disabled;
+    if (activo) {
+        resultado.hidden = false;
+        resumen.innerHTML = `<span class="cargando" role="status" aria-live="polite">
+            <span class="cargando__aro" aria-hidden="true"></span>${esc(texto)}</span>`;
+    }
+}
 
 document.addEventListener('click', (ev) => {
     if (!ev.target.closest('[data-action="carga-masiva"]')) return;
@@ -37,6 +54,7 @@ document.addEventListener('click', (ev) => {
 
 function reiniciar() {
     archivo = null;
+    trabajar(false);
     inputArchivo.value = '';
     nombre.textContent = 'Arrastra el archivo aquí o haz clic para elegirlo';
     zona.classList.remove('is-cargado');
@@ -56,13 +74,19 @@ inputArchivo.addEventListener('change', () => {
     if (inputArchivo.files.length) analizar(inputArchivo.files[0]);
 });
 
+
 ['dragenter', 'dragover'].forEach((evento) => {
-    zona.addEventListener(evento, (ev) => { ev.preventDefault(); zona.classList.add('is-encima'); });
+    zona.addEventListener(evento, (ev) => {
+        ev.preventDefault();
+        if (trabajando) { ev.dataTransfer.dropEffect = 'none'; return; }
+        zona.classList.add('is-encima');
+    });
 });
 ['dragleave', 'drop'].forEach((evento) => {
     zona.addEventListener(evento, (ev) => { ev.preventDefault(); zona.classList.remove('is-encima'); });
 });
 zona.addEventListener('drop', (ev) => {
+    if (trabajando) return;
     const soltado = ev.dataTransfer?.files?.[0];
     if (soltado) analizar(soltado);
 });
@@ -70,54 +94,74 @@ zona.addEventListener('drop', (ev) => {
 // ── Paso 1: analizar sin escribir ──
 
 async function analizar(elegido) {
+    if (trabajando) return;
     archivo = elegido;
     nombre.textContent = elegido.name;
     zona.classList.add('is-cargado');
     error.hidden = true;
     btnConfirmar.disabled = true;
-    resumen.innerHTML = '<span class="muted">Revisando el archivo…</span>';
-    resultado.hidden = false;
     erroresWrap.hidden = true;
     vistaWrap.hidden = true;
+    trabajar(true, `Revisando ${elegido.name}…`);
 
     const datos = new FormData();
     datos.append('archivo', elegido);
-    const resp = await apiArchivo('/api/flota/importar', datos);
 
-    if (!resp.ok) {
-        resultado.hidden = true;
-        error.textContent = mensajeError(resp, 'No se pudo leer el archivo.');
-        error.hidden = false;
-        return;
+    try {
+        const resp = await apiArchivo('/api/flota/importar', datos);
+        if (!resp.ok) {
+            resultado.hidden = true;
+            error.textContent = mensajeError(resp, 'No se pudo leer el archivo.');
+            error.hidden = false;
+            return;
+        }
+        pintar(resp.data, resp.message);
+    } finally {
+        // En finally: si la petición falla, la zona tiene que volver a aceptar archivos.
+        trabajar(false);
     }
-    pintar(resp.data, resp.message);
 }
 
 // ── Paso 2: confirmar ──
 
 btnConfirmar.addEventListener('click', async () => {
-    if (!archivo) return;
+    if (!archivo || trabajando) return;
+    const etiquetaPrevia = btnConfirmar.innerHTML;
     btnConfirmar.disabled = true;
-    resumen.innerHTML = '<span class="muted">Cargando unidades…</span>';
+    btnConfirmar.innerHTML = '<span class="cargando__aro" aria-hidden="true"></span>Cargando…';
+    trabajar(true, 'Guardando las unidades…');
 
     const datos = new FormData();
     datos.append('archivo', archivo);
     datos.append('confirmar', '1');
-    const resp = await apiArchivo('/api/flota/importar', datos);
 
-    if (!resp.ok) {
-        error.textContent = mensajeError(resp, 'No se pudo completar la carga.');
-        error.hidden = false;
-        btnConfirmar.disabled = false;
-        return;
+    let recargando = false;
+    try {
+        const resp = await apiArchivo('/api/flota/importar', datos);
+        if (!resp.ok) {
+            error.textContent = mensajeError(resp, 'No se pudo completar la carga.');
+            error.hidden = false;
+            btnConfirmar.disabled = false;   // fallo de red: se puede reintentar
+            return;
+        }
+        if (resp.data?.confirmado) {
+            // La tabla la pinta el servidor: recargar deja ver lo cargado. El indicador se
+            // queda puesto a propósito hasta que la página se vaya.
+            recargando = true;
+            location.reload();
+            return;
+        }
+        // El archivo dejó de estar limpio entre la vista previa y la confirmación (por ejemplo,
+        // alguien dio de alta una de esas placas desde el formulario).
+        pintar(resp.data, resp.message);
+    } finally {
+        if (!recargando) {
+            // pintar() ya decidió si el botón sigue habilitado: si el archivo dejó de estar
+            // limpio, tiene que quedarse bloqueado. Aquí solo se devuelve la etiqueta.
+            trabajar(false);
+            btnConfirmar.innerHTML = etiquetaPrevia;
+        }
     }
-    if (resp.data?.confirmado) {
-        location.reload();   // la tabla la pinta el servidor: recargar deja ver lo cargado
-        return;
-    }
-    // El archivo dejó de estar limpio entre la vista previa y la confirmación (por ejemplo,
-    // alguien dio de alta una de esas placas desde el formulario).
-    pintar(resp.data, resp.message);
 });
 
 // ── Informe ──
@@ -129,7 +173,7 @@ function pintar(data, mensaje) {
 
     resumen.innerHTML = `<span class="import-resumen__estado ${limpio ? 'es-ok' : 'es-error'}">${esc(mensaje)}</span>`;
     btnConfirmar.disabled = !limpio;
-    btnConfirmar.textContent = limpio
+    btnConfirmar.innerHTML = limpio
         ? `Cargar ${listas} unidad${listas === 1 ? '' : 'es'}`
         : 'Cargar unidades';
 

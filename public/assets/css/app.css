@@ -1032,6 +1032,34 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .soltar:hover, .soltar.is-encima { border-color: var(--color-primary); background: var(--primary-soft); }
 .soltar.is-cargado { border-style: solid; border-color: var(--color-primary-border, var(--primary-border)); color: var(--color-ink); font-weight: 600; }
 
+/* Indicador de trabajo: un aro girando junto al texto. Pequeño y en el sitio donde el
+   usuario ya está mirando (el resumen), no un velo sobre todo el diálogo. */
+.cargando { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--color-ink-soft); }
+.cargando__aro {
+    flex: none; width: 14px; height: 14px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: girar .7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Dentro de un botón primario el aro va en blanco, sobre el naranja. */
+.btn .cargando__aro {
+    display: inline-block; vertical-align: -2px; margin-right: 6px;
+    width: 13px; height: 13px;
+    border-color: rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+}
+/* Quien pide menos movimiento sigue viendo que algo pasa, pero sin el giro rápido. */
+@media (prefers-reduced-motion: reduce) {
+    .cargando__aro { animation-duration: 2.4s; }
+}
+
+/* La zona de subida no acepta nada mientras se valida: que se note. */
+.soltar.is-bloqueado { cursor: progress; opacity: .55; border-style: solid; }
+.soltar.is-bloqueado:hover { border-color: var(--color-border); background: var(--color-surface-soft); }
+
 .import-resumen { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-sm); }
 .import-resumen__estado { font-weight: 600; }
 .import-resumen__estado.es-ok { color: var(--estado-disponible); }
