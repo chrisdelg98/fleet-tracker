@@ -17,10 +17,7 @@
  * @var array $estados
  */
 $esAdmin = $usuario['rol'] === Rol::ADMIN_GLOBAL;
-$labelEstado = [
-    EstadoVehiculo::OPERATIVO => 'Operativo', EstadoVehiculo::EN_MANTENIMIENTO => 'En mantenimiento',
-    EstadoVehiculo::INOPERATIVO => 'Inoperativo', EstadoVehiculo::DE_BAJA => 'De baja',
-];
+$labelEstado = EstadoVehiculo::labels();
 $claseEstado = [
     EstadoVehiculo::OPERATIVO => 'ok', EstadoVehiculo::EN_MANTENIMIENTO => 'warn',
     EstadoVehiculo::INOPERATIVO => 'warn', EstadoVehiculo::DE_BAJA => 'muted',
@@ -28,7 +25,10 @@ $claseEstado = [
 set_page_meta(
     'Flota',
     'Administra unidades, estados operativos, clasificación y asignaciones base de la flota.',
-    ['accion' => '<button type="button" class="btn btn--primary" data-action="nueva-unidad">＋ Nueva unidad</button>']
+    [
+        'accion' => '<button type="button" class="btn btn--primary" data-action="nueva-unidad">＋ Nueva unidad</button>',
+        'acciones' => '<button type="button" class="btn btn--ghost-dark" data-action="carga-masiva">Carga masiva</button>',
+    ]
 );
 ?>
 <section class="module">
@@ -108,7 +108,6 @@ set_page_meta(
                     <tr data-id="<?= (int) $u['id'] ?>">
                         <td>
                             <strong><?= e($u['placa_unidad']) ?></strong>
-                            <?php if (!empty($u['placa_furgon'])): ?><small class="muted"><?= e($u['placa_furgon']) ?></small><?php endif; ?>
                         </td>
                         <td><?= e($u['categoria']) ?></td>
                         <td><?= e($u['tipo_equipo'] ?? '—') ?><?php if (!empty($u['capacidad'])): ?> · <?= e($u['capacidad']) ?><?php endif; ?>
@@ -167,13 +166,11 @@ set_page_meta(
         <div class="grid-2">
             <label class="field"><span class="field__label">Placa de unidad *</span>
                 <input type="text" name="placa_unidad" maxlength="30" required></label>
-            <label class="field"><span class="field__label">Placa de furgón <span data-furgon-req hidden>*</span></span>
-                <input type="text" name="placa_furgon" maxlength="30"></label>
             <label class="field"><span class="field__label">Categoría *</span>
                 <select name="categoria_vehiculo_id" required>
                     <option value="">Selecciona…</option>
                     <?php foreach ($categorias as $c): ?>
-                        <option value="<?= (int) $c['id'] ?>" data-flota="<?= (int) $c['es_flota_operativa'] ?>" data-requiere-furgon="<?= (int) $c['requiere_furgon'] ?>"><?= e($c['nombre']) ?></option>
+                        <option value="<?= (int) $c['id'] ?>" data-flota="<?= (int) $c['es_flota_operativa'] ?>"><?= e($c['nombre']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
             <label class="field field--check"><span class="field__label">Disponibilidad</span>
@@ -271,4 +268,70 @@ set_page_meta(
     </form>
 </dialog>
 
+<dialog id="dlg-import" class="dialog dialog--ancho">
+    <form method="dialog" class="form" id="form-import" novalidate>
+        <div class="dialog__head">
+            <h2>Carga masiva de unidades</h2>
+            <p class="dialog__lede">Se revisa el archivo completo antes de guardar nada: si una fila falla, no se carga ninguna.</p>
+        </div>
+        <div class="dialog__body">
+            <ol class="pasos">
+                <li class="paso">
+                    <span class="paso__n">1</span>
+                    <div class="paso__cuerpo">
+                        <strong>Descarga la plantilla</strong>
+                        <p class="paso__nota">Trae tus catálogos actuales como listas desplegables y una hoja de instrucciones. No cambies el encabezado.</p>
+                        <a class="btn btn--linea" href="/flota/plantilla.xlsx" download>Descargar plantilla .xlsx</a>
+                    </div>
+                </li>
+                <li class="paso">
+                    <span class="paso__n">2</span>
+                    <div class="paso__cuerpo">
+                        <strong>Sube el archivo lleno</strong>
+                        <p class="paso__nota">Formato .xlsx o .csv, hasta <?= FlotaImportService::MAX_FILAS ?> unidades.</p>
+                        <label class="soltar" id="import-soltar">
+                            <input type="file" id="import-archivo" name="archivo" accept=".xlsx,.csv" hidden>
+                            <span class="soltar__texto" id="import-nombre">Arrastra el archivo aquí o haz clic para elegirlo</span>
+                        </label>
+                    </div>
+                </li>
+            </ol>
+
+            <div id="import-resultado" hidden>
+                <div class="import-resumen" id="import-resumen"></div>
+                <div class="table-wrap" id="import-vista-wrap" hidden>
+                    <table class="table">
+                        <thead><tr>
+                            <th class="col col--corta">Fila</th>
+                            <th class="col col--nombre">Placa</th>
+                            <th class="col col--corta">Categoría</th>
+                            <th class="col col--corta">Estación</th>
+                            <th class="col col--text">Vehículo</th>
+                        </tr></thead>
+                        <tbody id="import-vista"></tbody>
+                    </table>
+                </div>
+                <p class="muted" id="import-vista-pie" hidden></p>
+                <div class="table-wrap" id="import-errores-wrap" hidden>
+                    <table class="table">
+                        <thead><tr>
+                            <th class="col col--corta">Fila</th>
+                            <th class="col col--corta">Columna</th>
+                            <th class="col col--corta">Valor</th>
+                            <th class="col col--text">Problema</th>
+                        </tr></thead>
+                        <tbody id="import-errores"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <p class="form__error" id="form-import-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cerrar</button>
+            <button type="button" class="btn btn--primary" id="import-confirmar" disabled>Cargar unidades</button>
+        </div>
+    </form>
+</dialog>
+
 <script src="/assets/js/flota.js" type="module"></script>
+<script src="/assets/js/flota-import.js" type="module"></script>

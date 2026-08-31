@@ -1008,6 +1008,38 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .table td strong { color: var(--color-ink); }
 .table tbody tr:hover { background: #f9fafb; }
+/* ── Carga masiva de flota ── */
+.pasos { list-style: none; display: grid; gap: var(--sp-4); margin: 0; padding: 0; }
+.paso { display: flex; gap: var(--sp-3); align-items: flex-start; }
+.paso__n {
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--color-bg-strong); color: var(--color-ink-soft);
+    font-size: var(--fs-xs); font-weight: 700;
+}
+.paso__cuerpo { flex: 1; min-width: 0; }
+.paso__nota { margin: 2px 0 var(--sp-2); font-size: var(--fs-sm); color: var(--color-ink-soft); }
+
+/* Zona de subida: es un <label> sobre un input oculto, así el clic y el teclado ya funcionan. */
+.soltar {
+    display: grid; place-items: center; gap: var(--sp-1);
+    padding: var(--sp-5); cursor: pointer; text-align: center;
+    border: 2px dashed var(--color-border); border-radius: var(--radius-lg);
+    background: var(--color-surface-soft);
+    font-size: var(--fs-sm); color: var(--color-ink-soft);
+    transition: border-color .15s ease, background .15s ease;
+}
+.soltar:hover, .soltar.is-encima { border-color: var(--color-primary); background: var(--primary-soft); }
+.soltar.is-cargado { border-style: solid; border-color: var(--color-primary-border, var(--primary-border)); color: var(--color-ink); font-weight: 600; }
+
+.import-resumen { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-sm); }
+.import-resumen__estado { font-weight: 600; }
+.import-resumen__estado.es-ok { color: var(--estado-disponible); }
+.import-resumen__estado.es-error { color: var(--color-error); }
+/* La lista de problemas no debe empujar el diálogo: crece hasta donde cabe y luego rueda. */
+#import-errores-wrap, #import-vista-wrap { max-height: 42vh; overflow: auto; }
+#import-vista-pie { margin-top: var(--sp-2); font-size: var(--fs-xs); }
+
 /* ── Reparto de ancho por tipo de columna ──
    Truco clásico de table-layout automático: las columnas cortas piden 1% y no envuelven, así
    se encogen a su contenido; la de texto pide el 100% y absorbe todo lo que sobra. */

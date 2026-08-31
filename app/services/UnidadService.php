@@ -138,9 +138,25 @@ final class UnidadService
     /** Valida y normaliza el input; resuelve el default de en_disponibilidad. Corta 422 si falla. */
     private function validar(array $input, ?int $exceptId): array
     {
+        ['data' => $data, 'errores' => $errores] = $this->evaluar($input, $exceptId);
+        if ($errores !== []) {
+            json_unprocessable($errores);
+        }
+        return $data;
+    }
+
+    /**
+     * Aplica las reglas de una unidad SIN cortar la petición y devuelve
+     * ['data' => array|null, 'errores' => array<campo, mensaje>].
+     *
+     * Existe para que la carga masiva valide con exactamente las mismas reglas que el alta
+     * individual: si viviera duplicada en el importador, las dos se separarían con el tiempo
+     * y el Excel dejaría pasar cosas que el formulario rechaza.
+     */
+    public function evaluar(array $input, ?int $exceptId): array
+    {
         $v = new Validator($input);
         $v->required('placa_unidad', 'La placa')->maxLen('placa_unidad', 30, 'La placa')
-          ->maxLen('placa_furgon', 30, 'La placa del furgón')
           ->maxLen('marca', 80, 'La marca')->maxLen('modelo', 80, 'El modelo')
           ->positiveInt('capacidad_id', 'La capacidad')
           ->required('categoria_vehiculo_id', 'La categoría')->positiveInt('categoria_vehiculo_id', 'La categoría')
@@ -148,33 +164,33 @@ final class UnidadService
           ->positiveInt('tipo_equipo_id', 'El tipo de equipo')
           ->positiveInt('piloto_asignado_id', 'El piloto')
           ->inEnum('estado_vehiculo', EstadoVehiculo::values(), 'El estado');
-        $v->validateOrFail();
+        // Sin los tipos básicos en orden, las comprobaciones que dependen de ellos solo
+        // producirían ruido ("la categoría 0 no existe"): se devuelve lo que ya se sabe.
+        if ($v->fails()) {
+            return ['data' => null, 'errores' => $v->errors()];
+        }
 
+        $errores = [];
         $placa = $v->value('placa_unidad');
         if ($this->unidades->placaExiste($placa, $exceptId)) {
-            json_unprocessable(['placa_unidad' => 'Ya existe una unidad con esa placa.']);
+            $errores['placa_unidad'] = 'Ya existe una unidad con esa placa.';
         }
 
         $categoria = $this->catalogos->find('categorias_vehiculo', (int) $v->value('categoria_vehiculo_id'));
         if ($categoria === null) {
-            json_unprocessable(['categoria_vehiculo_id' => 'La categoría seleccionada no existe.']);
-        }
-
-        // placa_furgon obligatoria si la categoría jala furgón (ej. Cabezal).
-        if ((int) $categoria['requiere_furgon'] === 1 && $this->nullable($v->value('placa_furgon')) === null) {
-            json_unprocessable(['placa_furgon' => 'Esta categoría requiere la placa del furgón.']);
+            $errores['categoria_vehiculo_id'] = 'La categoría seleccionada no existe.';
         }
 
         $capacidadId = $v->value('capacidad_id') ? (int) $v->value('capacidad_id') : null;
         if ($capacidadId !== null && $this->catalogos->find('capacidades', $capacidadId) === null) {
-            json_unprocessable(['capacidad_id' => 'La capacidad seleccionada no existe.']);
+            $errores['capacidad_id'] = 'La capacidad seleccionada no existe.';
         }
 
         // en_disponibilidad: si el formulario lo envía, se respeta (excepción editable);
         // si no, hereda el default de la categoría (regla 14).
         $enDisponibilidad = array_key_exists('en_disponibilidad', $input)
             ? (int) (bool) $input['en_disponibilidad']
-            : (int) $categoria['es_flota_operativa'];
+            : (int) ($categoria['es_flota_operativa'] ?? 0);
 
         $estado = $v->value('estado_vehiculo') ?: EstadoVehiculo::OPERATIVO;
 
@@ -184,14 +200,17 @@ final class UnidadService
         if ($anioRaw !== '') {
             $limite = (int) date('Y') + 1;
             if (!ctype_digit($anioRaw) || (int) $anioRaw < 1950 || (int) $anioRaw > $limite) {
-                json_unprocessable(['anio' => "El año debe estar entre 1950 y {$limite}."]);
+                $errores['anio'] = "El año debe estar entre 1950 y {$limite}.";
             }
-            $anio = (int) $anioRaw;
+            $anio = ctype_digit($anioRaw) ? (int) $anioRaw : null;
         }
 
-        return [
+        if ($errores !== []) {
+            return ['data' => null, 'errores' => $errores];
+        }
+
+        $data = [
             'placa_unidad'          => $placa,
-            'placa_furgon'          => $this->nullable($v->value('placa_furgon')),
             'marca'                 => $this->nullable($v->value('marca')),
             'modelo'                => $this->nullable($v->value('modelo')),
             'anio'                  => $anio,
@@ -204,6 +223,8 @@ final class UnidadService
             'estado_vehiculo'       => $estado,
             'estado_notas'          => $this->nullable($v->value('estado_notas')),
         ];
+
+        return ['data' => $data, 'errores' => []];
     }
 
     /** @return int[] */
@@ -223,7 +244,7 @@ final class UnidadService
     private function snapshot(array $row): array
     {
         return array_intersect_key($row, array_flip([
-            'placa_unidad', 'placa_furgon', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
+            'placa_unidad', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
             'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id', 'piloto_asignado_id',
         ]));
     }

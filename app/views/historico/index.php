@@ -17,10 +17,7 @@ $estadoMov = [
     'RESERVADO' => 'Reservado', 'PROGRAMADO' => 'Programado', 'EN_TRANSITO' => 'En tránsito',
     'COMPLETADO' => 'Completado', 'CANCELADO' => 'Cancelado',
 ];
-$estadoVeh = [
-    'OPERATIVO' => 'Operativo', 'EN_MANTENIMIENTO' => 'En mantenimiento',
-    'INOPERATIVO' => 'Inoperativo', 'DE_BAJA' => 'De baja',
-];
+$estadoVeh = EstadoVehiculo::labels();
 $labelCampo = [
     'estado' => 'Estado', 'estado_vehiculo' => 'Estado del vehículo', 'estado_notas' => 'Notas',
     'unidad_id' => 'Unidad', 'piloto_id' => 'Piloto', 'ruta_id' => 'Ruta', 'estacion_id' => 'Estación',
@@ -31,7 +28,7 @@ $labelCampo = [
     'retorno_de' => 'Retorno de', 'bloqueos_cerrados' => 'Bloqueos cerrados',
     'codigo' => 'Código', 'nombre' => 'Nombre', 'pais' => 'País', 'pais_id' => 'País',
     'timezone' => 'Zona horaria', 'capacidad' => 'Capacidad', 'tipo_equipo_id' => 'Tipo de equipo',
-    'email' => 'Correo', 'rol' => 'Rol', 'placa_unidad' => 'Placa', 'placa_furgon' => 'Placa furgón',
+    'email' => 'Correo', 'rol' => 'Rol', 'placa_unidad' => 'Placa',
     'unidad_id_regreso' => 'Unidad de regreso',
 ];
 $fmtVal = static function (string $key, $val) use ($estadoMov, $estadoVeh) {

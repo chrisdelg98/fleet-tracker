@@ -44,11 +44,10 @@ $notificacionService = new NotificacionService(
     $correoService,
     (string) ($env['APP_URL'] ?? 'http://localhost:8000')
 );
-$unidadController = new UnidadController(
-    $pdo,
-    new UnidadService($pdo, $unidadModel, $overrideModel, $catalogoModel, $notificacionService),
-    $unidadModel,
-    $catalogoModel
+$unidadService = new UnidadService($pdo, $unidadModel, $overrideModel, $catalogoModel, $notificacionService);
+$unidadController = new UnidadController($pdo, $unidadService, $unidadModel, $catalogoModel);
+$flotaImportController = new FlotaImportController(
+    new FlotaImportService($pdo, $unidadService, $unidadModel, $overrideModel, $catalogoModel)
 );
 
 $router->get('/flota', fn() => $unidadController->index());
@@ -58,6 +57,11 @@ $router->get('/api/unidades/{id}', fn($p) => $unidadController->apiShow($p));
 $router->put('/api/unidades/{id}', fn($p) => $unidadController->apiUpdate($p));
 $router->post('/api/unidades/{id}/estado', fn($p) => $unidadController->apiEstado($p));
 $router->delete('/api/unidades/{id}', fn($p) => $unidadController->apiDelete($p));
+
+// Carga masiva: la plantilla se descarga con los catálogos vigentes y la subida va en dos
+// pasos (analizar, luego confirmar) para no escribir nada hasta que el archivo esté limpio.
+$router->get('/flota/plantilla.xlsx', fn() => $flotaImportController->plantilla());
+$router->post('/api/flota/importar', fn() => $flotaImportController->importar());
 
 // ── Pilotos (Fase 1) ──
 $pilotoModel = new PilotoModel($pdo);

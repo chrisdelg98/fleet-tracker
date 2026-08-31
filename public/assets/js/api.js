@@ -25,6 +25,24 @@ export async function api(method, url, body) {
     };
 }
 
+/**
+ * Envío de formulario con archivo. Comparte el sobre de respuesta con api(), pero no fija
+ * Content-Type: el navegador tiene que ponerlo con el boundary del multipart.
+ */
+export async function apiArchivo(url, formData) {
+    const res = await fetch(url, { method: 'POST', headers: { Accept: 'application/json' }, body: formData });
+    let payload = {};
+    try { payload = await res.json(); } catch { /* respuesta sin cuerpo JSON */ }
+
+    return {
+        ok: res.ok,
+        status: res.status,
+        data: payload.data ?? null,
+        message: payload.message || '',
+        errors: payload.errors || null,
+    };
+}
+
 /** Muestra el primer error de validación (o el mensaje general) en un contenedor. */
 /**
  * Texto de error para mostrar al usuario. En un 422 el `message` es genérico ("Revisa los

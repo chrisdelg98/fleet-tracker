@@ -75,6 +75,27 @@ final class EstadoVehiculo
     {
         return [self::OPERATIVO, self::EN_MANTENIMIENTO, self::INOPERATIVO, self::DE_BAJA];
     }
+
+    /** Etiqueta de interfaz. Vivía copiada en tres vistas; la carga masiva sería la cuarta. */
+    public static function label(string $estado): string
+    {
+        return [
+            self::OPERATIVO        => 'Operativo',
+            self::EN_MANTENIMIENTO => 'En mantenimiento',
+            self::INOPERATIVO      => 'Inoperativo',
+            self::DE_BAJA          => 'De baja',
+        ][$estado] ?? $estado;
+    }
+
+    /** @return array<string, string> estado => etiqueta, para pintar selects y mapas. */
+    public static function labels(): array
+    {
+        $out = [];
+        foreach (self::values() as $estado) {
+            $out[$estado] = self::label($estado);
+        }
+        return $out;
+    }
 }
 
 /** Tipo de ruta (plan §5.6/§5.7). Auto-derivable: origen == destino => NACIONAL. */

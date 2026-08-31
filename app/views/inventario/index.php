@@ -10,10 +10,7 @@
  * @var array $categorias
  * @var array $estados
  */
-$labelEstado = [
-    EstadoVehiculo::OPERATIVO => 'Operativo', EstadoVehiculo::EN_MANTENIMIENTO => 'En mantenimiento',
-    EstadoVehiculo::INOPERATIVO => 'Inoperativo', EstadoVehiculo::DE_BAJA => 'De baja',
-];
+$labelEstado = EstadoVehiculo::labels();
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
 set_page_meta(
     'Inventario vehicular',
@@ -95,7 +92,7 @@ set_page_meta(
             <tbody>
             <?php foreach ($unidades as $u): ?>
                 <tr>
-                    <td><strong><?= e($u['placa_unidad']) ?></strong><?php if (!empty($u['placa_furgon'])): ?> <small class="muted"><?= e($u['placa_furgon']) ?></small><?php endif; ?></td>
+                    <td><strong><?= e($u['placa_unidad']) ?></strong></td>
                     <td><?= e($u['categoria']) ?></td>
                     <td><?= e(trim(($u['marca'] ?? '') . ' ' . ($u['modelo'] ?? ''))) ?: '—' ?></td>
                     <td><?= e($u['estacion_codigo']) ?></td>
