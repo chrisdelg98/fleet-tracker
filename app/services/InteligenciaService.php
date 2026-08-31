@@ -58,7 +58,8 @@ final class InteligenciaService
     {
         return [
             'utilizacion' => $this->utilizacionPorEstacion($user, $filtros),
-            'dias_transito' => $this->diasEnTransitoPorUnidad($user, $filtros),
+            'rendimiento_unidad' => $this->rendimiento($user, $filtros, 'unidad'),
+            'rendimiento_piloto' => $this->rendimiento($user, $filtros, 'piloto'),
             'rutas' => $this->rutasMasUsadas($user, $filtros),
             'retornos' => $this->retornos($user, $filtros),
         ];
@@ -196,45 +197,82 @@ final class InteligenciaService
         return $filas;
     }
 
-    private function diasEnTransitoPorUnidad(array $user, array $filtros): array
+    /**
+     * Rendimiento por unidad o por piloto en el rango: cuánto trabajó y si cumplió.
+     *
+     * El tiempo se recorta al rango (GREATEST/LEAST) para que un viaje que empezó antes o
+     * termina después no infle el periodo consultado. La demora se mide contra el fin
+     * estimado, que es el compromiso que se dio: si se reprogramó, cuenta el vigente, y el
+     * porqué queda en la bitácora.
+     *
+     * @param string $por 'unidad' o 'piloto'
+     */
+    private function rendimiento(array $user, array $filtros, string $por): array
     {
-        [$scopeSql, $scopeParams] = $this->scopeClause($user, $filtros, 'u.estacion_id');
+        $esUnidad = $por === 'unidad';
+
+        // El alcance del piloto es su propia estación, no la de la unidad que condujo.
+        [$scopeSql, $scopeParams] = $this->scopeClause($user, $filtros, $esUnidad ? 'u.estacion_id' : 'p.estacion_id');
+
+        $sujeto = $esUnidad
+            ? ['tabla' => 'unidades u', 'union' => 'u.id = m.unidad_id', 'id' => 'u.id',
+               'nombre' => 'u.placa_unidad', 'estacion' => 'u.estacion_id']
+            : ['tabla' => 'pilotos p', 'union' => 'p.id = m.piloto_id', 'id' => 'p.id',
+               'nombre' => 'p.nombre', 'estacion' => 'p.estacion_id'];
+
         $stmt = $this->pdo->prepare(
-            'SELECT u.id, u.placa_unidad, e.codigo AS estacion_codigo,
+            "SELECT {$sujeto['id']} AS id, {$sujeto['nombre']} AS nombre, e.codigo AS estacion_codigo,
                     COUNT(m.id) AS movimientos,
+                    SUM(m.tipo_ruta = :internacional) AS internacionales,
                     SUM(TIMESTAMPDIFF(SECOND,
                         GREATEST(m.fecha_salida, :desde_calc),
                         LEAST(COALESCE(m.fecha_fin_real, m.fecha_fin_estimada), :hasta_calc)
-                    )) AS segundos
+                    )) AS segundos,
+                    SUM(m.fecha_fin_real IS NOT NULL AND m.fecha_fin_real > m.fecha_fin_estimada) AS con_demora,
+                    SUM(CASE WHEN m.fecha_fin_real > m.fecha_fin_estimada
+                             THEN TIMESTAMPDIFF(SECOND, m.fecha_fin_estimada, m.fecha_fin_real)
+                             ELSE 0 END) AS segundos_demora
                FROM movimientos m
-               JOIN unidades u ON u.id = m.unidad_id
-               JOIN estaciones e ON e.id = u.estacion_id
+               JOIN {$sujeto['tabla']} ON {$sujeto['union']}
+               JOIN estaciones e ON e.id = {$sujeto['estacion']}
               WHERE m.estado = :estado
-                AND u.activo = 1
-                AND u.en_disponibilidad = 1
                 AND m.fecha_salida < :hasta_limite
-                AND COALESCE(m.fecha_fin_real, m.fecha_fin_estimada) > :desde_limite'
-            . $scopeSql . '
-              GROUP BY u.id, u.placa_unidad, e.codigo
-              ORDER BY segundos DESC, movimientos DESC, u.placa_unidad'
+                AND COALESCE(m.fecha_fin_real, m.fecha_fin_estimada) > :desde_limite"
+            . $scopeSql . "
+              GROUP BY {$sujeto['id']}, {$sujeto['nombre']}, e.codigo
+              ORDER BY movimientos DESC, segundos DESC, {$sujeto['nombre']}"
         );
         $stmt->execute($scopeParams + [
             ':estado' => EstadoMovimiento::COMPLETADO,
+            ':internacional' => TipoRuta::INTERNACIONAL,
             ':desde_calc' => $filtros['desde'] . ' 00:00:00',
             ':hasta_calc' => $filtros['hasta'] . ' 23:59:59',
             ':desde_limite' => $filtros['desde'] . ' 00:00:00',
             ':hasta_limite' => $filtros['hasta'] . ' 23:59:59',
         ]);
 
-        return array_map(static function (array $row): array {
+        // El periodo completo, para expresar la ocupación como porcentaje comparable.
+        $periodo = max(1, strtotime($filtros['hasta'] . ' 23:59:59') - strtotime($filtros['desde'] . ' 00:00:00'));
+
+        return array_map(static function (array $row) use ($periodo): array {
             $segundos = (int) $row['segundos'];
+            $conDemora = (int) $row['con_demora'];
             return [
-                'unidad_id' => (int) $row['id'],
-                'placa_unidad' => $row['placa_unidad'],
+                'id' => (int) $row['id'],
+                'nombre' => $row['nombre'],
                 'estacion_codigo' => $row['estacion_codigo'],
                 'movimientos' => (int) $row['movimientos'],
-                'dias' => round($segundos / 86400, 2),
+                'internacionales' => (int) $row['internacionales'],
+                'dias' => round($segundos / 86400, 1),
                 'horas' => round($segundos / 3600, 1),
+                'utilizacion' => round(min(100, $segundos / $periodo * 100), 1),
+                'con_demora' => $conDemora,
+                // Media sobre los viajes que se retrasaron, no sobre todos: promediar con los
+                // puntuales diluye el dato y esconde el tamaño real del problema.
+                'demora_media_h' => $conDemora > 0 ? round(((int) $row['segundos_demora']) / 3600 / $conDemora, 1) : 0.0,
+                'puntualidad' => (int) $row['movimientos'] > 0
+                    ? round(((int) $row['movimientos'] - $conDemora) / (int) $row['movimientos'] * 100)
+                    : 100,
             ];
         }, $stmt->fetchAll());
     }

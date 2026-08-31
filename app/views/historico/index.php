@@ -1,153 +1,162 @@
 <?php
 /**
- * Histórico de actividad (plan §7.7).
+ * Histórico: historial de viajes.
  *
+ * Un movimiento es la unidad de trabajo de la operación, así que la vista principal cuenta
+ * viajes: qué se prometió, qué pasó de verdad y quién intervino. El registro crudo de toda
+ * escritura del sistema vive un nivel adentro, en /historico/sistema.
+ *
+ * @var array $usuario
  * @var array $resultado
  * @var array $filtros
- * @var array $usuarios
- * @var array $entidades
- * @var array $acciones
+ * @var array $estaciones
+ * @var bool  $verTodas
  */
-$qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
 $r = $resultado;
+$qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
+$hayFiltros = implode('', array_map(static fn($v) => (string) $v, $filtros)) !== '';
 $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
 
-// ── Traducción del JSON crudo de la bitácora a algo legible (etiquetas + enums en español) ──
-$estadoMov = [
-    'RESERVADO' => 'Reservado', 'PROGRAMADO' => 'Programado', 'EN_TRANSITO' => 'En tránsito',
-    'COMPLETADO' => 'Completado', 'CANCELADO' => 'Cancelado',
+$estadoLabel = [
+    EstadoMovimiento::RESERVADO => 'Reservado', EstadoMovimiento::PROGRAMADO => 'Programado',
+    EstadoMovimiento::EN_TRANSITO => 'En tránsito', EstadoMovimiento::COMPLETADO => 'Completado',
+    EstadoMovimiento::CANCELADO => 'Cancelado',
 ];
-$estadoVeh = EstadoVehiculo::labels();
-$labelCampo = [
-    'estado' => 'Estado', 'estado_vehiculo' => 'Estado del vehículo', 'estado_notas' => 'Notas',
-    'unidad_id' => 'Unidad', 'piloto_id' => 'Piloto', 'ruta_id' => 'Ruta', 'estacion_id' => 'Estación',
-    'motivo' => 'Motivo', 'motivo_cancelacion' => 'Motivo de cancelación',
-    'origen' => 'Origen', 'destino' => 'Destino', 'tipo' => 'Tipo', 'activo' => 'Activo',
-    'fecha_salida' => 'Salida', 'fecha_fin_estimada' => 'Fin estimado', 'fecha_fin_real' => 'Fin real',
-    'pais_solicita_retorno_id' => 'País solicita retorno', 'movimiento_regreso' => 'Mov. de regreso',
-    'retorno_de' => 'Retorno de', 'bloqueos_cerrados' => 'Bloqueos cerrados',
-    'codigo' => 'Código', 'nombre' => 'Nombre', 'pais' => 'País', 'pais_id' => 'País',
-    'timezone' => 'Zona horaria', 'capacidad' => 'Capacidad', 'tipo_equipo_id' => 'Tipo de equipo',
-    'email' => 'Correo', 'rol' => 'Rol', 'placa_unidad' => 'Placa',
-    'unidad_id_regreso' => 'Unidad de regreso',
+$estadoClase = [
+    EstadoMovimiento::COMPLETADO => 'badge--ok', EstadoMovimiento::CANCELADO => 'badge--muted',
+    EstadoMovimiento::EN_TRANSITO => 'badge--warn',
 ];
-$fmtVal = static function (string $key, $val) use ($estadoMov, $estadoVeh) {
-    if ($val === null) {
+
+/** Fecha corta en la zona de la estación: el histórico se lee en hora local, no en UTC. */
+$fmt = static function (?string $utc, ?string $tz): string {
+    if (empty($utc)) {
+        return '';
+    }
+    $d = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
+    return $d->setTimezone(new DateTimeZone($tz ?: 'UTC'))->format('d/m/Y H:i');
+};
+
+/** Una demora se entiende en horas o días, no en 4 320 minutos. */
+$fmtDemora = static function (int $minutos): string {
+    if ($minutos < 60) {
+        return $minutos . ' min';
+    }
+    $horas = $minutos / 60;
+    return $horas < 48 ? round($horas, 1) . ' h' : round($horas / 24, 1) . ' d';
+};
+
+// ── Traducción del detalle de bitácora a lenguaje llano ──
+$accLabel = [
+    'CREAR' => 'Se creó la reserva', 'EDITAR' => 'Se editó', 'CAMBIO_ESTADO' => 'Cambió de estado',
+    'CANCELAR' => 'Se canceló', 'ELIMINAR' => 'Se eliminó',
+];
+$campoLabel = [
+    'estado' => 'Estado', 'fecha_salida' => 'Salida', 'fecha_fin_estimada' => 'Fin estimado',
+    'fecha_fin_real' => 'Fin real', 'motivo' => 'Motivo', 'motivo_cancelacion' => 'Motivo de cancelación',
+    'piloto_id' => 'Piloto', 'unidad_id' => 'Unidad', 'ruta_id' => 'Ruta',
+    'retorno_disponible' => 'Retorno disponible', 'queda_con_cliente' => 'Queda con el cliente',
+    'reservado_para' => 'Reservado para', 'notas' => 'Notas',
+];
+$valorLabel = static function (string $campo, $v) use ($estadoLabel): string {
+    if ($v === null || $v === '') {
         return '—';
     }
-    if (is_bool($val)) {
-        return $val ? 'Sí' : 'No';
+    if ($campo === 'estado') {
+        return $estadoLabel[$v] ?? (string) $v;
     }
-    if (is_array($val)) {
-        return json_encode($val, JSON_UNESCAPED_UNICODE);
+    if (in_array($campo, ['retorno_disponible', 'queda_con_cliente'], true)) {
+        return ((int) $v === 1) ? 'Sí' : 'No';
     }
-    if ($key === 'estado') {
-        return $estadoMov[$val] ?? (string) $val;
+    if (is_array($v)) {
+        return json_encode($v, JSON_UNESCAPED_UNICODE);
     }
-    if ($key === 'estado_vehiculo') {
-        return $estadoVeh[$val] ?? (string) $val;
-    }
-    if ($key === 'activo') {
-        return ((int) $val === 1) ? 'Sí' : 'No';
-    }
-    if (str_ends_with($key, '_id') && is_numeric($val)) {
-        return '#' . $val;
-    }
-    return (string) $val;
+    return (string) $v;
 };
-/** Convierte el detalle JSON en filas legibles [label, antes, despues, cambio]. */
-$detalleFilas = static function (?string $json) use ($labelCampo, $fmtVal): array {
-    $data = json_decode((string) $json, true);
-    if (!is_array($data)) {
-        return [];
+
+/** Rastro de un viaje: qué pasó, cuándo y quién lo hizo. */
+$rastroHtml = static function (array $eventos) use ($accLabel, $campoLabel, $valorLabel, $fmt, $r): string {
+    if ($eventos === []) {
+        return '<p class="muted">Sin eventos registrados para este viaje.</p>';
     }
-    $antes = (isset($data['antes']) && is_array($data['antes'])) ? $data['antes'] : [];
-    $despues = (isset($data['despues']) && is_array($data['despues'])) ? $data['despues'] : [];
-    if ($antes === [] && $despues === [] && $data !== []) {
-        $despues = $data; // detalle plano sin antes/después
-    }
-    $filas = [];
-    foreach (array_keys($antes + $despues) as $k) {
-        $filas[] = [
-            'label'   => $labelCampo[$k] ?? ucfirst(str_replace('_', ' ', (string) $k)),
-            'antes'   => array_key_exists($k, $antes) ? $fmtVal($k, $antes[$k]) : null,
-            'despues' => array_key_exists($k, $despues) ? $fmtVal($k, $despues[$k]) : null,
-            'cambio'  => array_key_exists($k, $antes) && array_key_exists($k, $despues),
-        ];
-    }
-    return $filas;
-};
-/** HTML del bloque de cambios de un evento (lista antes → después). */
-$detalleHtml = static function (array $filas): string {
-    $h = '<dl class="detalle-dl">';
-    foreach ($filas as $f) {
-        $h .= '<div class="detalle-dl__row"><dt>' . e($f['label']) . '</dt><dd>';
-        if ($f['cambio']) {
-            $h .= '<span class="detalle-was">' . e((string) $f['antes']) . '</span> <span class="detalle-arrow">→</span> <strong>' . e((string) $f['despues']) . '</strong>';
-        } elseif ($f['despues'] !== null) {
-            $h .= '<strong>' . e((string) $f['despues']) . '</strong>';
-        } else {
-            $h .= '<span class="detalle-was">' . e((string) $f['antes']) . '</span>';
-        }
-        $h .= '</dd></div>';
-    }
-    return $h . '</dl>';
-};
-/** Línea de tiempo con todos los eventos de una entidad (para el modal). */
-$accLabel = ['CREAR' => 'Creación', 'EDITAR' => 'Edición', 'CAMBIO_ESTADO' => 'Cambio de estado', 'CANCELAR' => 'Cancelación', 'ELIMINAR' => 'Eliminación'];
-$timelineHtml = static function (array $eventos) use ($detalleFilas, $detalleHtml, $accLabel): string {
     $h = '<ol class="timeline">';
     foreach ($eventos as $ev) {
-        $filas = $detalleFilas($ev['detalle']);
-        $h .= '<li class="timeline__item">';
-        $h .= '<div class="timeline__head">';
+        $d = json_decode((string) $ev['detalle'], true);
+        $antes = is_array($d['antes'] ?? null) ? $d['antes'] : [];
+        $despues = is_array($d['despues'] ?? null) ? $d['despues'] : [];
+
+        $h .= '<li class="timeline__item"><div class="timeline__head">';
         $h .= '<span class="badge badge--muted">' . e($accLabel[$ev['accion']] ?? $ev['accion']) . '</span>';
-        $h .= '<span class="timeline__meta">' . e($ev['timestamp']) . ' · ' . e($ev['usuario'] ?? 'sistema') . '</span>';
+        $h .= '<span class="timeline__meta">' . e($ev['timestamp']) . ' UTC · ' . e($ev['usuario'] ?? 'sistema') . '</span>';
         $h .= '</div>';
-        if ($filas) {
-            $h .= $detalleHtml($filas);
+
+        $lineas = [];
+        foreach (array_keys($antes + $despues) as $k) {
+            $va = array_key_exists($k, $antes) ? $valorLabel($k, $antes[$k]) : null;
+            $vd = array_key_exists($k, $despues) ? $valorLabel($k, $despues[$k]) : null;
+            if ($va !== null && $vd !== null && $va === $vd) {
+                continue;   // el snapshot guarda el registro entero; esto no cambió
+            }
+            $etiqueta = e($campoLabel[$k] ?? ucfirst(str_replace('_', ' ', (string) $k)));
+            $lineas[] = $va !== null && $vd !== null
+                ? "<div class=\"detalle-dl__row\"><dt>{$etiqueta}</dt><dd><span class=\"detalle-was\">"
+                  . e($va) . '</span> <span class="detalle-arrow">→</span> <strong>' . e($vd) . '</strong></dd></div>'
+                : "<div class=\"detalle-dl__row\"><dt>{$etiqueta}</dt><dd><strong>" . e((string) ($vd ?? $va)) . '</strong></dd></div>';
         }
+        $h .= $lineas ? '<dl class="detalle-dl">' . implode('', $lineas) . '</dl>' : '';
         $h .= '</li>';
     }
     return $h . '</ol>';
 };
+
 set_page_meta(
-    'Histórico de actividad',
-    'Consulta la bitácora del sistema por entidad, acción, usuario y fecha con exportación directa a CSV.',
-    ['accion' => '<a class="btn btn--primary" href="/historico/export.csv' . ($qs ? '?' . e($qs) : '') . '">⬇ Exportar CSV</a>']
+    'Historial de viajes',
+    'Qué se programó, qué pasó de verdad y quién intervino en cada movimiento.',
+    ['acciones' => '<a class="btn btn--ghost-dark" href="/historico/sistema">Registro del sistema</a>']
 );
 ?>
 <section class="module">
-    <form class="filters-panel" method="get" action="/historico" data-filters-panel data-initial-open="false">
+    <form class="filters-panel" method="get" action="/historico" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">
                 <strong>Filtros</strong>
-                <span>Rango, entidad, acción, usuario e identificador</span>
+                <span>Fechas, estación, estado, tipo de ruta y búsqueda por placa, piloto o cliente</span>
             </div>
-            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="historico-filters-more">
+            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="hist-filters">
                 <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
                 <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
             </button>
         </div>
-        <div class="filters-panel__more" id="historico-filters-more" data-filters-more hidden>
+        <div class="filters-panel__more" id="hist-filters" data-filters-more hidden>
             <div class="filters-grid">
-                <label class="field"><span class="field__label">Desde</span><input type="date" name="desde" value="<?= e($filtros['desde'] ?? '') ?>"></label>
-                <label class="field"><span class="field__label">Hasta</span><input type="date" name="hasta" value="<?= e($filtros['hasta'] ?? '') ?>"></label>
-                <label class="field"><span class="field__label">Entidad</span>
-                    <select name="entidad"><option value="">Todas</option>
-                        <?php foreach ($entidades as $ent): ?><option value="<?= e($ent) ?>" <?= $sel($filtros['entidad'] ?? '', $ent) ?>><?= e(ucfirst($ent)) ?></option><?php endforeach; ?>
+                <label class="field"><span class="field__label">Salida desde</span>
+                    <input type="date" name="desde" value="<?= e((string) $filtros['desde']) ?>"></label>
+                <label class="field"><span class="field__label">Salida hasta</span>
+                    <input type="date" name="hasta" value="<?= e((string) $filtros['hasta']) ?>"></label>
+                <?php if ($verTodas): ?>
+                <label class="field"><span class="field__label">Estación</span>
+                    <select name="estacion_id">
+                        <option value="">Todas</option>
+                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= $sel($filtros['estacion_id'], $es['id']) ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
                     </select></label>
-                <label class="field"><span class="field__label">Acción</span>
-                    <select name="accion"><option value="">Todas</option>
-                        <?php foreach ($acciones as $ac): ?><option value="<?= e($ac) ?>" <?= $sel($filtros['accion'] ?? '', $ac) ?>><?= e($ac) ?></option><?php endforeach; ?>
+                <?php endif; ?>
+                <label class="field"><span class="field__label">Estado</span>
+                    <select name="estado" data-no-search>
+                        <option value="">Todos</option>
+                        <?php foreach ($estadoLabel as $val => $lbl): ?><option value="<?= e($val) ?>" <?= $sel($filtros['estado'], $val) ?>><?= e($lbl) ?></option><?php endforeach; ?>
                     </select></label>
-                <label class="field"><span class="field__label">Usuario</span>
-                    <select name="usuario_id"><option value="">Todos</option>
-                        <?php foreach ($usuarios as $us): ?><option value="<?= (int) $us['id'] ?>" <?= $sel($filtros['usuario_id'] ?? '', $us['id']) ?>><?= e($us['nombre']) ?></option><?php endforeach; ?>
+                <label class="field"><span class="field__label">Tipo de ruta</span>
+                    <select name="tipo_ruta" data-no-search>
+                        <option value="">Todas</option>
+                        <option value="<?= TipoRuta::NACIONAL ?>" <?= $sel($filtros['tipo_ruta'], TipoRuta::NACIONAL) ?>>Nacional</option>
+                        <option value="<?= TipoRuta::INTERNACIONAL ?>" <?= $sel($filtros['tipo_ruta'], TipoRuta::INTERNACIONAL) ?>>Internacional</option>
                     </select></label>
-                <label class="field"><span class="field__label">ID de entidad</span><input type="number" name="entidad_id" value="<?= e($filtros['entidad_id'] ?? '') ?>" placeholder="ej. mov. #12" min="1"></label>
+                <label class="field"><span class="field__label">Buscar</span>
+                    <input type="search" name="q" value="<?= e((string) $filtros['q']) ?>" placeholder="Placa, piloto o cliente…" class="search" data-no-search></label>
+                <label class="field field--delay-filter"><span class="field__label">Demora</span>
+                    <label class="delay-toggle"><input type="checkbox" name="solo_demora" value="1" <?= !empty($filtros['solo_demora']) ? 'checked' : '' ?>><span>Solo con demora</span></label>
+                </label>
                 <label class="field"><span class="field__label">Por página</span>
-                    <select name="por_pagina" onchange="this.form.submit()">
+                    <select name="por_pagina" data-no-search>
                         <?php foreach (HistoricoService::POR_PAGINA_OPCIONES as $op): ?><option value="<?= $op ?>" <?= $sel($r['por_pagina'], $op) ?>><?= $op ?></option><?php endforeach; ?>
                     </select></label>
             </div>
@@ -158,26 +167,64 @@ set_page_meta(
         </div>
     </form>
 
-    <p class="dashboard__meta"><span><?= (int) $r['total'] ?> entidad<?= $r['total'] === 1 ? '' : 'es' ?> con actividad</span> · <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span></p>
+    <p class="dashboard__meta">
+        <span><?= (int) $r['total'] ?> viaje<?= $r['total'] === 1 ? '' : 's' ?></span>
+        · <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span>
+    </p>
 
     <div class="card card--table">
         <?php if (empty($r['filas'])): ?>
-            <div class="card__empty"><p>Sin actividad para estos filtros.</p></div>
+            <div class="card__empty"><p>Sin viajes para estos filtros. <a href="/historico" class="link">Limpiar filtros</a></p></div>
         <?php else: ?>
         <table class="table">
-            <thead><tr><th>Entidad</th><th>Eventos</th><th>Último usuario</th><th>Última actividad (UTC)</th><th>Historial</th></tr></thead>
+            <thead><tr>
+                <th class="col col--nombre">Unidad</th>
+                <th class="col col--corta">Ruta</th>
+                <th class="col col--corta">Piloto</th>
+                <th class="col col--corta">Salida</th>
+                <th class="col col--corta">Fin estimado</th>
+                <th class="col col--corta">Fin real</th>
+                <th class="col col--corta">Demora</th>
+                <th class="col col--text">Cliente</th>
+                <th class="col col--corta">Estado</th>
+                <th class="col--acciones"></th>
+            </tr></thead>
             <tbody>
-            <?php foreach ($r['filas'] as $g): $key = $g['entidad'] . '#' . $g['entidad_id']; $tid = 'hist-' . $g['entidad'] . '-' . (int) $g['entidad_id']; ?>
+            <?php foreach ($r['filas'] as $m): $tid = 'viaje-' . (int) $m['id']; $eventos = $r['eventos'][(int) $m['id']] ?? []; ?>
                 <tr>
-                    <td><strong><?= e($g['entidad']) ?> #<?= (int) $g['entidad_id'] ?></strong></td>
-                    <td><?= (int) $g['eventos'] ?></td>
-                    <td><?= e($g['ultimo_usuario'] ?? 'sistema') ?></td>
-                    <td><?= e($g['ultima']) ?><small class="block"><span class="badge badge--muted"><?= e($accLabel[$g['ultima_accion']] ?? $g['ultima_accion']) ?></span></small></td>
-                    <td>
-                        <button type="button" class="detalle-btn" data-detalle-open="<?= e($tid) ?>" data-detalle-title="<?= e($g['entidad'] . ' #' . $g['entidad_id']) ?>">
-                            <span class="detalle-btn__more">Ver historial (<?= (int) $g['eventos'] ?>)</span>
+                    <td class="col col--nombre">
+                        <strong><?= e($m['placa_unidad']) ?></strong>
+                        <small class="muted block"><?= e($m['estacion_codigo']) ?> · Mov. #<?= (int) $m['id'] ?></small>
+                    </td>
+                    <td class="col col--corta">
+                        <?= e($m['ruta']) ?>
+                        <?php if ($m['tipo_ruta'] === TipoRuta::INTERNACIONAL): ?>
+                            <span class="alcance alcance--int" title="Ruta internacional">INT</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="col col--corta"><?= $m['piloto'] ? e($m['piloto']) : '<span class="muted">—</span>' ?></td>
+                    <td class="col col--corta"><?= e($fmt($m['fecha_salida'], $m['timezone'])) ?></td>
+                    <td class="col col--corta"><?= e($fmt($m['fecha_fin_estimada'], $m['timezone'])) ?></td>
+                    <td class="col col--corta"><?= $m['fecha_fin_real'] ? e($fmt($m['fecha_fin_real'], $m['timezone'])) : '<span class="muted">—</span>' ?></td>
+                    <td class="col col--corta">
+                        <?php if ($m['con_demora']): ?>
+                            <span class="rend-alerta">+<?= e($fmtDemora((int) $m['demora_min'])) ?></span>
+                        <?php elseif ($m['fecha_fin_real']): ?>
+                            <span class="rend-ok">a tiempo</span>
+                        <?php else: ?>
+                            <span class="muted">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="col col--text"><?= $m['reservado_para'] ? e($m['reservado_para']) : '<span class="muted">—</span>' ?></td>
+                    <td class="col col--corta">
+                        <span class="badge <?= e($estadoClase[$m['estado']] ?? 'badge--muted') ?>"><?= e($estadoLabel[$m['estado']] ?? $m['estado']) ?></span>
+                    </td>
+                    <td class="col--acciones">
+                        <button type="button" class="detalle-btn" data-detalle-open="<?= e($tid) ?>"
+                                data-detalle-title="<?= e($m['placa_unidad'] . ' · ' . $m['ruta'] . ' · Mov. #' . (int) $m['id']) ?>">
+                            <span class="detalle-btn__more">Ver rastro<?= $eventos ? ' (' . count($eventos) . ')' : '' ?></span>
                         </button>
-                        <template id="<?= e($tid) ?>"><?= $timelineHtml($r['eventos'][$key] ?? []) ?></template>
+                        <template id="<?= e($tid) ?>"><?= $rastroHtml($eventos) ?></template>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -198,8 +245,8 @@ set_page_meta(
 <dialog id="dlg-detalle" class="dialog dialog--full">
     <div class="dialog__panel">
         <div class="dialog__head">
-            <h2 id="detalle-title">Historial</h2>
-            <p class="dialog__lede">Todos los eventos registrados para esta entidad, en orden cronológico (antes → después).</p>
+            <h2 id="detalle-title">Rastro del viaje</h2>
+            <p class="dialog__lede">Todo lo que se registró de este movimiento, en orden cronológico.</p>
         </div>
         <div class="dialog__body" id="detalle-body"></div>
         <div class="dialog__actions">

@@ -17,10 +17,82 @@ $clasesRetorno = [
 $sel = static fn($a, $b) => (string) $a === (string) $b ? 'selected' : '';
 $PREVIEW = 5;
 $util = $reportes['utilizacion'];
-$dias = $reportes['dias_transito'];
+$rendUnidad = $reportes['rendimiento_unidad'];
+$rendPiloto = $reportes['rendimiento_piloto'];
 $rutas = $reportes['rutas'];
 $fmtDias = static fn($v) => rtrim(rtrim(number_format((float) $v, 1, '.', ''), '0'), '.');
-set_page_meta('Inteligencia', 'Resume utilización, retornos, tránsito y rutas para apoyar decisiones operativas.');
+// Una tarjeta de rendimiento se pinta igual para unidades y para pilotos: cambia el sujeto,
+// no la lectura. Se define una vez para que las dos digan lo mismo de la misma forma.
+$tarjetaRendimiento = static function (array $filas, string $titulo, string $sujetos, string $modal) use ($PREVIEW, $fmtDias): void {
+    ?>
+    <div class="card int-card">
+        <h2><?= e($titulo) ?></h2>
+        <?php if (empty($filas)): ?>
+            <div class="card__empty"><p>Sin viajes completados para este rango.</p></div>
+        <?php else: ?>
+            <ul class="int-list">
+                <?php foreach (array_slice($filas, 0, $PREVIEW) as $f): ?>
+                    <li class="int-list__row">
+                        <div class="int-list__main">
+                            <strong><?= e($f['nombre']) ?></strong>
+                            <small class="block">
+                                <?= e($f['estacion_codigo']) ?> ·
+                                <?= (int) $f['movimientos'] ?> viaje<?= (int) $f['movimientos'] === 1 ? '' : 's' ?>
+                                <?php if ((int) $f['internacionales'] > 0): ?> · <?= (int) $f['internacionales'] ?> intl<?php endif; ?>
+                                · <?= e($fmtDias($f['dias'])) ?> d en ruta
+                            </small>
+                        </div>
+                        <div class="int-list__val">
+                            <span class="<?= (int) $f['puntualidad'] >= 80 ? 'rend-ok' : 'rend-alerta' ?>"><?= (int) $f['puntualidad'] ?>%</span>
+                            <small><?= (int) $f['con_demora'] === 0
+                                ? 'sin demoras'
+                                : (int) $f['con_demora'] . ' con demora · ' . e((string) $f['demora_media_h']) . ' h de media' ?></small>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <div class="int-card__foot">
+                <button type="button" class="int-more" data-modal-open="<?= e($modal) ?>">Ver <?= e($sujetos) ?><?= count($filas) > $PREVIEW ? ' (' . count($filas) . ')' : '' ?> →</button>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+};
+
+// El detalle completo comparte columnas: la lectura no cambia entre unidades y pilotos.
+$tablaRendimiento = static function (array $filas, string $sujeto) use ($fmtDias): void {
+    ?>
+    <table class="table">
+        <thead><tr>
+            <th class="col col--nombre"><?= e($sujeto) ?></th>
+            <th class="col col--corta">Estación</th>
+            <th class="col col--corta">Viajes</th>
+            <th class="col col--corta">Internac.</th>
+            <th class="col col--corta">Días en ruta</th>
+            <th class="col col--corta">Ocupación</th>
+            <th class="col col--corta">Con demora</th>
+            <th class="col col--corta">Demora media</th>
+            <th class="col col--text">Puntualidad</th>
+        </tr></thead>
+        <tbody>
+        <?php foreach ($filas as $f): ?>
+            <tr>
+                <td class="col col--nombre"><?= e($f['nombre']) ?></td>
+                <td class="col col--corta"><?= e($f['estacion_codigo']) ?></td>
+                <td class="col col--corta"><?= (int) $f['movimientos'] ?></td>
+                <td class="col col--corta"><?= (int) $f['internacionales'] ?: '<span class="muted">—</span>' ?></td>
+                <td class="col col--corta"><?= e($fmtDias($f['dias'])) ?></td>
+                <td class="col col--corta"><?= e((string) $f['utilizacion']) ?>%</td>
+                <td class="col col--corta"><?= (int) $f['con_demora'] ?: '<span class="muted">—</span>' ?></td>
+                <td class="col col--corta"><?= (int) $f['con_demora'] > 0 ? e((string) $f['demora_media_h']) . ' h' : '<span class="muted">—</span>' ?></td>
+                <td class="col col--text"><span class="<?= (int) $f['puntualidad'] >= 80 ? 'rend-ok' : 'rend-alerta' ?>"><?= (int) $f['puntualidad'] ?>%</span></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php
+};
+set_page_meta('Inteligencia', 'Rendimiento por unidad y por piloto, utilización, retornos y rutas para apoyar decisiones operativas.');
 ?>
 <section class="module">
     <?php if (!empty($flash)): ?>
@@ -101,27 +173,10 @@ set_page_meta('Inteligencia', 'Resume utilización, retornos, tránsito y rutas 
             <?php endif; ?>
         </div>
 
-        <div class="card int-card">
-            <h2>Días en tránsito por unidad</h2>
-            <?php if (empty($dias)): ?>
-                <div class="card__empty"><p>Sin movimientos completados para este rango.</p></div>
-            <?php else: ?>
-                <ul class="int-list">
-                    <?php foreach (array_slice($dias, 0, $PREVIEW) as $fila): ?>
-                        <li class="int-list__row">
-                            <div class="int-list__main">
-                                <strong><?= e($fila['placa_unidad']) ?></strong>
-                                <small class="block"><?= e($fila['estacion_codigo']) ?> · <?= (int) $fila['movimientos'] ?> mov</small>
-                            </div>
-                            <div class="int-list__val"><?= e($fmtDias($fila['dias'])) ?> d<small><?= e((string) $fila['horas']) ?> h</small></div>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-                <div class="int-card__foot">
-                    <button type="button" class="int-more" data-modal-open="dlg-dias">Ver todas las unidades<?= count($dias) > $PREVIEW ? ' (' . count($dias) . ')' : '' ?> →</button>
-                </div>
-            <?php endif; ?>
-        </div>
+<?php
+        $tarjetaRendimiento($rendUnidad, 'Rendimiento por unidad', 'todas las unidades', 'dlg-rend-unidad');
+        $tarjetaRendimiento($rendPiloto, 'Rendimiento por piloto', 'todos los pilotos', 'dlg-rend-piloto');
+        ?>
 
         <div class="card int-card">
             <h2>Rutas más usadas</h2>
@@ -196,26 +251,23 @@ set_page_meta('Inteligencia', 'Resume utilización, retornos, tránsito y rutas 
 </dialog>
 <?php endif; ?>
 
-<?php if (!empty($dias)): ?>
-<dialog class="dialog dialog--full" id="dlg-dias">
+<?php if (!empty($rendUnidad)): ?>
+<dialog class="dialog dialog--full" id="dlg-rend-unidad">
     <div class="dialog__panel">
-        <div class="dialog__head"><h2>Días en tránsito por unidad</h2><p class="dialog__lede">Tiempo acumulado en tránsito de cada unidad en el rango seleccionado.</p></div>
-        <div class="dialog__body">
-            <table class="table">
-                <thead><tr><th>Unidad</th><th>Estación</th><th>Movs.</th><th>Días</th><th>Horas</th></tr></thead>
-                <tbody>
-                <?php foreach ($dias as $fila): ?>
-                    <tr>
-                        <td><strong><?= e($fila['placa_unidad']) ?></strong></td>
-                        <td><?= e($fila['estacion_codigo']) ?></td>
-                        <td><?= (int) $fila['movimientos'] ?></td>
-                        <td><?= e($fmtDias($fila['dias'])) ?></td>
-                        <td><?= e((string) $fila['horas']) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+        <div class="dialog__head"><h2>Rendimiento por unidad</h2>
+            <p class="dialog__lede">Viajes completados, tiempo en ruta y cumplimiento del fin estimado en el rango seleccionado.</p></div>
+        <div class="dialog__body"><?php $tablaRendimiento($rendUnidad, 'Unidad'); ?></div>
+        <div class="dialog__actions"><button type="button" class="btn btn--primary" data-modal-close>Cerrar</button></div>
+    </div>
+</dialog>
+<?php endif; ?>
+
+<?php if (!empty($rendPiloto)): ?>
+<dialog class="dialog dialog--full" id="dlg-rend-piloto">
+    <div class="dialog__panel">
+        <div class="dialog__head"><h2>Rendimiento por piloto</h2>
+            <p class="dialog__lede">Viajes completados, tiempo en ruta y cumplimiento del fin estimado en el rango seleccionado.</p></div>
+        <div class="dialog__body"><?php $tablaRendimiento($rendPiloto, 'Piloto'); ?></div>
         <div class="dialog__actions"><button type="button" class="btn btn--primary" data-modal-close>Cerrar</button></div>
     </div>
 </dialog>

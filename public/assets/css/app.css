@@ -1008,6 +1008,10 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .table td strong { color: var(--color-ink); }
 .table tbody tr:hover { background: #f9fafb; }
+/* Cumplimiento: el número manda, el color solo confirma (no se lee solo por color). */
+.rend-ok { color: var(--estado-disponible); font-weight: 700; }
+.rend-alerta { color: var(--estado-reservada); font-weight: 700; }
+
 /* ── Carga masiva de flota ── */
 .pasos { list-style: none; display: grid; gap: var(--sp-4); margin: 0; padding: 0; }
 .paso { display: flex; gap: var(--sp-3); align-items: flex-start; }

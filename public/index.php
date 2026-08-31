@@ -169,8 +169,9 @@ $router->get('/inventario', fn() => $inventarioController->index());
 $router->get('/inventario/export.csv', fn() => $inventarioController->export());
 
 // ── Fase 3: Histórico ──
-$historicoController = new HistoricoController(new HistoricoService($pdo), $usuarioModel);
+$historicoController = new HistoricoController(new HistoricoService($pdo), $usuarioModel, $catalogoModel);
 $router->get('/historico', fn() => $historicoController->index());
+$router->get('/historico/sistema', fn() => $historicoController->sistema());
 $router->get('/historico/export.csv', fn() => $historicoController->export());
 
 // ── Fase 3: Timeline por unidad ──
