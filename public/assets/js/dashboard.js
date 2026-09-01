@@ -141,6 +141,15 @@ function alcanceBadge(u) {
         : `<span class="alcance alcance--nac" data-infotip="Sin permiso internacional: solo puede hacer rutas dentro de su país.">NAC</span>`;
 }
 
+// Categoría · capacidad · tipo: se busca un equipo en ese orden — "necesito un furgón",
+// "de 53 pies", "estándar". El "N/A" del tipo (los cabezales no llevan) se omite: es una
+// etiqueta que significa "no aplica", así que escribirla solo alarga la celda.
+function equipoDe(u) {
+    const partes = [u.categoria, u.capacidad, u.tipo_equipo]
+        .filter((v) => v && String(v).trim().toUpperCase() !== 'N/A');
+    return partes.join(' · ') || '—';
+}
+
 function rowHtml(u) {
     const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
     const m = u.movimiento;
@@ -174,7 +183,7 @@ function rowHtml(u) {
     }
     return `<tr>
         <td><strong>${esc(u.placa_unidad)}</strong> ${alcanceBadge(u)}</td>
-        <td>${esc(u.tipo_equipo || '—')}${u.capacidad ? ` · ${esc(u.capacidad)}` : ''}</td>
+        <td>${esc(equipoDe(u))}</td>
         <td>${esc(u.estacion_codigo)}</td>
         <td><span class="chip ${cls}">${label}</span>${demora ? `<small class="block delay-flag__wrap">${demora}</small>` : ''}</td>
         <td>${actividad}</td>

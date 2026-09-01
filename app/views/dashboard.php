@@ -107,7 +107,7 @@ set_page_meta(
         <table class="table dashboard__table">
             <thead>
                 <tr>
-                    <th>Unidad</th><th>Tipo / Capacidad</th><th>Estación</th><th>Estado</th>
+                    <th>Unidad</th><th>Equipo</th><th>Estación</th><th>Estado</th>
                     <th>Actividad</th><th>Se libera</th><th>Retorno</th><th>Piloto</th>
                     <?php if ($puedeReservar): ?><th></th><?php endif; ?>
                 </tr>

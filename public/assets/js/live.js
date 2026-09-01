@@ -237,7 +237,9 @@ function openModal(u) {
     const mv = u.movimiento;
     const rows = [];
     rows.push(['Estación', esc(u.estacion_codigo || '—')]);
-    rows.push(['Tipo / capacidad', `${esc(u.tipo_equipo || '—')}${u.capacidad ? ' · ' + esc(u.capacidad) : ''}`]);
+    // Mismo criterio que el tablero: categoría · capacidad · tipo, sin el "N/A" del tipo.
+    rows.push(['Equipo', esc([u.categoria, u.capacidad, u.tipo_equipo]
+        .filter((v) => v && String(v).trim().toUpperCase() !== 'N/A').join(' · ')) || '—']);
     rows.push(['Piloto', esc(u.piloto || '—')]);
     if (mv) {
         rows.push(['Ruta', `${esc(mv.origen || '?')} → ${esc(mv.destino || '?')}`]);
