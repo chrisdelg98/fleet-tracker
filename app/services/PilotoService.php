@@ -21,9 +21,14 @@ final class PilotoService
         $data = $this->validar($input);
         $this->assertPuedeEscribir($user, (int) $data['estacion_id']);
 
-        return tx($this->pdo, function () use ($data, $user): int {
+        $unidades = $this->unidadesDe($input, null);
+
+        return tx($this->pdo, function () use ($data, $unidades, $user): int {
             $id = $this->pilotos->crear($data, $user['id']);
-            registrar_bitacora($this->pdo, $user['id'], 'piloto', $id, AccionBitacora::CREAR, ['despues' => $data]);
+            $this->pilotos->setUnidadesAsignadas($id, $unidades);
+            registrar_bitacora($this->pdo, $user['id'], 'piloto', $id, AccionBitacora::CREAR, [
+                'despues' => $data + ['unidades_asignadas' => count($unidades)],
+            ]);
             return $id;
         });
     }
@@ -39,8 +44,11 @@ final class PilotoService
         $data = $this->validar($input, $id);
         $this->assertPuedeEscribir($user, (int) $data['estacion_id']);
 
-        tx($this->pdo, function () use ($id, $data, $actual, $user): void {
+        $unidades = $this->unidadesDe($input, $id);
+
+        tx($this->pdo, function () use ($id, $data, $unidades, $actual, $user): void {
             $this->pilotos->actualizar($id, $data);
+            $this->pilotos->setUnidadesAsignadas($id, $unidades);
             registrar_bitacora($this->pdo, $user['id'], 'piloto', $id, AccionBitacora::EDITAR, [
                 'antes'   => $this->snapshot($actual),
                 'despues' => $data,
@@ -136,6 +144,47 @@ final class PilotoService
         ];
 
         return ['data' => $data, 'errores' => []];
+    }
+
+    /**
+     * Unidades que el formulario o el Excel quieren asignar a este piloto. Corta con 422 si
+     * alguna no existe, no es suya o ya la lleva otro motorista.
+     *
+     * @return int[]
+     */
+    private function unidadesDe(array $input, ?int $pilotoId): array
+    {
+        ['unidades' => $ids, 'errores' => $errores] = $this->evaluarUnidades($input, $pilotoId);
+        if ($errores !== []) {
+            json_unprocessable($errores);
+        }
+        return $ids;
+    }
+
+    /**
+     * Igual que unidadesDe() pero sin cortar: lo usa la carga masiva para reportar la fila.
+     *
+     * @return array{unidades:int[], errores:array<string,string>}
+     */
+    public function evaluarUnidades(array $input, ?int $pilotoId): array
+    {
+        $ids = $input['unidades'] ?? [];
+        if (!is_array($ids) || $ids === []) {
+            return ['unidades' => [], 'errores' => []];
+        }
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        // Una unidad solo tiene un piloto habitual: si ya la lleva otro, no se le quita
+        // en silencio. La persona decide si reasigna desde la ficha de la unidad.
+        $ocupadas = $this->pilotos->unidadesConOtroPiloto($ids, $pilotoId);
+        if ($ocupadas !== []) {
+            $detalle = implode(', ', array_map(
+                static fn(array $u): string => $u['placa_unidad'] . ' (la lleva ' . $u['piloto'] . ')',
+                $ocupadas
+            ));
+            return ['unidades' => [], 'errores' => ['unidades' => "Ya tienen piloto asignado: {$detalle}."]];
+        }
+        return ['unidades' => $ids, 'errores' => []];
     }
 
     private function nullable(?string $valor): ?string

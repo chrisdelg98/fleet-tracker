@@ -43,6 +43,111 @@ final class PilotoModel
         return $stmt->fetchColumn() !== false;
     }
 
+    /**
+     * Unidades cuyo piloto habitual es este. El vínculo vive en unidades.piloto_asignado_id;
+     * desde el piloto se lee al revés, que es como lo tiene la gente en sus hojas de control:
+     * una fila por motorista con su cabezal y su equipo de arrastre.
+     *
+     * @return array<int, array{id:int, placa_unidad:string, categoria:string}>
+     */
+    public function unidadesAsignadas(int $pilotoId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT u.id, u.placa_unidad, c.nombre AS categoria
+               FROM unidades u
+               JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
+              WHERE u.piloto_asignado_id = :p AND u.activo = 1
+              ORDER BY c.orden, u.placa_unidad'
+        );
+        $stmt->execute([':p' => $pilotoId]);
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<int, array> unidades asignadas, indexadas por piloto (para listados) */
+    public function unidadesPorPiloto(array $pilotoIds): array
+    {
+        if ($pilotoIds === []) {
+            return [];
+        }
+        $marcas = implode(',', array_fill(0, count($pilotoIds), '?'));
+        $stmt = $this->pdo->prepare(
+            "SELECT u.piloto_asignado_id AS piloto_id, u.placa_unidad, c.nombre AS categoria
+               FROM unidades u
+               JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
+              WHERE u.piloto_asignado_id IN ({$marcas}) AND u.activo = 1
+              ORDER BY c.orden, u.placa_unidad"
+        );
+        $stmt->execute($pilotoIds);
+        $mapa = [];
+        foreach ($stmt->fetchAll() as $u) {
+            $mapa[(int) $u['piloto_id']][] = $u;
+        }
+        return $mapa;
+    }
+
+    /**
+     * Unidades que se pueden asignar a un piloto, con su piloto actual si ya lo tienen: el
+     * formulario las marca para que nadie se las quite a otro sin darse cuenta.
+     */
+    public function unidadesAsignables(array $user): array
+    {
+        $sql = 'SELECT u.id, u.placa_unidad, u.estacion_id, c.nombre AS categoria,
+                       u.piloto_asignado_id, p.nombre AS piloto_actual
+                  FROM unidades u
+                  JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
+                  LEFT JOIN pilotos p ON p.id = u.piloto_asignado_id
+                 WHERE u.activo = 1';
+        if ($user['rol'] !== Rol::ADMIN_GLOBAL) {
+            $stmt = $this->pdo->prepare($sql . ' AND u.estacion_id = :e ORDER BY c.orden, u.placa_unidad');
+            $stmt->execute([':e' => $user['estacion_id']]);
+            return $stmt->fetchAll();
+        }
+        return $this->pdo->query($sql . ' ORDER BY c.orden, u.placa_unidad')->fetchAll();
+    }
+
+    /**
+     * Fija exactamente qué unidades tiene asignadas el piloto: suelta las que ya no están y
+     * toma las nuevas. Debe correr dentro de transacción.
+     */
+    public function setUnidadesAsignadas(int $pilotoId, array $unidadIds): void
+    {
+        $this->pdo->prepare('UPDATE unidades SET piloto_asignado_id = NULL WHERE piloto_asignado_id = :p')
+            ->execute([':p' => $pilotoId]);
+
+        if ($unidadIds === []) {
+            return;
+        }
+        $marcas = implode(',', array_fill(0, count($unidadIds), '?'));
+        $stmt = $this->pdo->prepare("UPDATE unidades SET piloto_asignado_id = ? WHERE id IN ({$marcas})");
+        $stmt->execute(array_merge([$pilotoId], array_map('intval', $unidadIds)));
+    }
+
+    /**
+     * Unidades de la lista que ya tienen OTRO piloto asignado. Reasignar en silencio es la
+     * clase de sorpresa que una carga masiva no debe dar: se avisa y decide la persona.
+     *
+     * @return array<int, array{placa_unidad:string, piloto:string}>
+     */
+    public function unidadesConOtroPiloto(array $unidadIds, ?int $pilotoId): array
+    {
+        if ($unidadIds === []) {
+            return [];
+        }
+        $marcas = implode(',', array_fill(0, count($unidadIds), '?'));
+        $sql = "SELECT u.placa_unidad, p.nombre AS piloto
+                  FROM unidades u
+                  JOIN pilotos p ON p.id = u.piloto_asignado_id
+                 WHERE u.id IN ({$marcas}) AND u.piloto_asignado_id IS NOT NULL";
+        $params = array_map('intval', $unidadIds);
+        if ($pilotoId !== null) {
+            $sql .= ' AND u.piloto_asignado_id <> ?';
+            $params[] = $pilotoId;
+        }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     /** Lista con nombres resueltos (tipo de licencia, estación). Filtra por estación si se indica. */
     public function listar(?int $estacionId = null, array $filtros = [], bool $soloActivos = true): array
     {

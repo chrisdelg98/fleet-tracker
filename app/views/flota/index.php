@@ -204,7 +204,22 @@ set_page_meta(
                     if ((int) $es['id'] === (int) $usuario['estacion_id']) { $paisUsuario = (int) $es['pais_id']; break; }
                 }
                 ?>
-                <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>" data-pais="<?= $paisUsuario ?>">
+                <?php
+                $estacionUsuario = '';
+                foreach ($estaciones as $es) {
+                    if ((int) $es['id'] === (int) $usuario['estacion_id']) {
+                        $estacionUsuario = $es['codigo'] . ' · ' . $es['nombre'];
+                        break;
+                    }
+                }
+                ?>
+                <!-- La estación del encargado no se elige, pero se muestra: ocultarla dejaba
+                     un hueco en la rejilla y quitaba de la vista un dato que importa. El
+                     valor real viaja en el hidden, que es lo que lee el formulario. -->
+                <label class="field"><span class="field__label">Estación</span>
+                    <input type="text" value="<?= e($estacionUsuario) ?>" disabled>
+                    <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>" data-pais="<?= $paisUsuario ?>">
+                </label>
             <?php endif; ?>
             <label class="field"><span class="field__label">Piloto asignado</span>
                 <select name="piloto_asignado_id">

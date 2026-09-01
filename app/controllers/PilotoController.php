@@ -27,13 +27,20 @@ final class PilotoController
         $estacionFiltro = $verTodas
             ? (ctype_digit((string) $filtros['estacion_id']) ? (int) $filtros['estacion_id'] : null)
             : (int) $user['estacion_id'];
+        $pilotos = $this->service->listar($user, $estacionFiltro, $filtros);
+
         render('pilotos/index', [
             'usuario'        => $user,
-            'pilotos'        => $this->service->listar($user, $estacionFiltro, $filtros),
+            'pilotos'        => $pilotos,
             'filtros'        => $filtros,
             'verTodas'       => $verTodas,
             'tiposLicencia'  => $this->catalogos->activos('tipos_licencia'),
             'estaciones'     => $this->catalogos->activos('estaciones'),
+            'unidades'       => $this->pilotos->unidadesAsignables($user),
+            // Las unidades de todos los pilotos de la página en una sola consulta.
+            'porPiloto'      => $this->pilotos->unidadesPorPiloto(
+                array_map(static fn(array $p): int => (int) $p['id'], $pilotos)
+            ),
         ], 'Pilotos · Disponibilidad de Flota');
     }
 
@@ -47,6 +54,11 @@ final class PilotoController
         if (!can_write_station($user, (int) $piloto['estacion_id'])) {
             json_error('No autorizado sobre esta estación', 403);
         }
+        // El formulario necesita saber qué unidades lleva ya, para marcarlas.
+        $piloto['unidades'] = array_map(
+            static fn(array $u): int => (int) $u['id'],
+            $this->pilotos->unidadesAsignadas((int) $piloto['id'])
+        );
         json_ok($piloto);
     }
 

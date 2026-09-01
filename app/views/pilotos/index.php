@@ -7,6 +7,8 @@
  * @var bool $verTodas
  * @var array $tiposLicencia
  * @var array $estaciones
+ * @var array $unidades   asignables, con su piloto actual
+ * @var array $porPiloto  unidades ya asignadas, por id de piloto
  */
 $esAdmin = $usuario['rol'] === Rol::ADMIN_GLOBAL;
 $hoy = new DateTimeImmutable('today');
@@ -73,7 +75,7 @@ set_page_meta(
     <?php else: ?>
         <div class="card card--table">
             <table class="table">
-                <thead><tr><th>Nombre</th><th>Licencia</th><th>N.º</th><th>Vencimiento</th><th>Códigos</th><th>Contacto</th><th>Estación</th><th></th></tr></thead>
+                <thead><tr><th>Nombre</th><th>Licencia</th><th>N.º</th><th>Vencimiento</th><th>Códigos</th><th>Unidades</th><th>Contacto</th><th>Estación</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($pilotos as $p): ?>
                     <tr>
@@ -104,6 +106,14 @@ set_page_meta(
                             <?php else: ?>
                                 <span class="muted">—</span>
                             <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php $suyas = $porPiloto[(int) $p['id']] ?? []; ?>
+                            <?php if ($suyas === []): ?>
+                                <span class="muted">—</span>
+                            <?php else: foreach ($suyas as $un): ?>
+                                <span class="chip-unidad" title="<?= e($un['categoria']) ?>"><?= e($un['placa_unidad']) ?></span>
+                            <?php endforeach; endif; ?>
                         </td>
                         <td><?= !empty($p['telefonos']) ? e($p['telefonos']) : '<span class="muted">—</span>' ?></td>
                         <td><?= e($p['estacion_codigo']) ?></td>
@@ -156,11 +166,25 @@ set_page_meta(
                     if ((int) $es['id'] === (int) $usuario['estacion_id']) { $paisUsuario = (int) $es['pais_id']; break; }
                 }
                 ?>
-                <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>" data-pais="<?= $paisUsuario ?>">
+                <?php
+                $estacionUsuario = '';
+                foreach ($estaciones as $es) {
+                    if ((int) $es['id'] === (int) $usuario['estacion_id']) {
+                        $estacionUsuario = $es['codigo'] . ' · ' . $es['nombre'];
+                        break;
+                    }
+                }
+                ?>
+                <!-- La estación del encargado no se elige, pero se muestra: ocultarla dejaba
+                     un hueco en la rejilla y quitaba de la vista un dato que importa. El
+                     valor real viaja en el hidden, que es lo que lee el formulario. -->
+                <label class="field"><span class="field__label">Estación</span>
+                    <input type="text" value="<?= e($estacionUsuario) ?>" disabled>
+                    <input type="hidden" name="estacion_id" value="<?= (int) $usuario['estacion_id'] ?>" data-pais="<?= $paisUsuario ?>">
+                </label>
             <?php endif; ?>
             <label class="field grid-2__full"><span class="field__label">Teléfonos</span>
-                <input type="text" name="telefonos" maxlength="255" placeholder="Varios separados por coma: 7777-0000, 2222-1111">
-                <small class="field__note">Campo libre: apunta los que hagan falta (personal, empresa, contacto de emergencia).</small></label>
+                <input type="text" name="telefonos" maxlength="255" placeholder="Varios separados por coma: 7777-0000, 2222-1111"></label>
         </div>
 
         <!-- Los dos códigos de transporte: uno habilita mover carga dentro del país y otro
@@ -174,6 +198,26 @@ set_page_meta(
                 <small class="field__note">Habilita cruzar frontera con carga.</small></label>
         </div>
         </div>
+        <details class="colapso" id="unidades-colapso">
+            <summary class="colapso__head">
+                <span class="colapso__title">Unidades asignadas</span>
+                <span class="colapso__meta" id="unidades-resumen">Ninguna</span>
+                <span class="colapso__chevron" aria-hidden="true">▾</span>
+            </summary>
+            <div class="checks checks--grid">
+                <?php foreach ($unidades as $un): ?>
+                    <label class="check" data-estacion="<?= (int) $un['estacion_id'] ?>"
+                           data-piloto-actual="<?= (int) ($un['piloto_asignado_id'] ?? 0) ?>">
+                        <input type="checkbox" name="unidades[]" value="<?= (int) $un['id'] ?>">
+                        <span><?= e($un['placa_unidad']) ?> <small class="muted"><?= e($un['categoria']) ?></small></span>
+                        <?php if (!empty($un['piloto_actual'])): ?>
+                            <span class="check__tomada" data-tomada-por="<?= e($un['piloto_actual']) ?>">· <?= e($un['piloto_actual']) ?></span>
+                        <?php endif; ?>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+        </details>
+
         <p class="form__error" id="form-piloto-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>

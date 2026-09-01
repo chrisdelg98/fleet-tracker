@@ -30,7 +30,42 @@ function syncEtiquetasCodigo() {
     });
 }
 
-selEstacion.addEventListener('change', syncEtiquetasCodigo);
+/**
+ * Unidades asignadas: solo se ofrecen las de la estación del piloto, y las que ya lleva otro
+ * motorista se bloquean. Reasignar en silencio dejaría a alguien sin su cabezal sin enterarse;
+ * para eso está la ficha de la unidad, donde el cambio es explícito.
+ */
+const resumenUnidades = document.getElementById('unidades-resumen');
+
+function filtrarUnidades() {
+    // Vale igual para el <select> del admin y para el hidden del encargado.
+    const estacion = Number(selEstacion.value) || 0;
+    const editando = Number(form.elements['id'].value) || 0;
+
+    form.querySelectorAll('#unidades-colapso .check').forEach((label) => {
+        const casilla = label.querySelector('input');
+        const suya = Number(label.dataset.estacion || 0);
+        const deOtro = Number(label.dataset.pilotoActual || 0);
+        const libre = deOtro === 0 || deOtro === editando;
+
+        label.hidden = estacion !== 0 && suya !== estacion && !casilla.checked;
+        // Una unidad de otro piloto se ve (para saber por qué no está) pero no se marca.
+        casilla.disabled = !libre;
+        label.classList.toggle('is-tomada', !libre);
+    });
+    resumirUnidades();
+}
+
+function resumirUnidades() {
+    const n = form.querySelectorAll('input[name="unidades[]"]:checked').length;
+    resumenUnidades.textContent = n === 0 ? 'Ninguna' : `${n} unidad${n === 1 ? '' : 'es'}`;
+}
+
+form.addEventListener('change', (ev) => {
+    if (ev.target.name === 'unidades[]') resumirUnidades();
+});
+
+selEstacion.addEventListener('change', () => { syncEtiquetasCodigo(); filtrarUnidades(); });
 
 document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-action]');
@@ -43,6 +78,8 @@ document.addEventListener('click', async (ev) => {
         err.hidden = true;
         syncSelects();
         syncEtiquetasCodigo();
+        filtrarUnidades();
+        document.getElementById('unidades-colapso').open = false;
         document.getElementById('dlg-piloto-title').textContent = 'Nuevo piloto';
         dlg.showModal();
     }
@@ -51,12 +88,17 @@ document.addEventListener('click', async (ev) => {
         const resp = await api('GET', `/api/pilotos/${id}`);
         if (!resp.ok) { alert(resp.message || 'No se pudo cargar.'); return; }
         for (const el of form.elements) {
-            if (el.name && el.name !== 'id') el.value = resp.data[el.name] ?? '';
+            if (!el.name || el.name === 'id' || el.type === 'checkbox') continue;
+            el.value = resp.data[el.name] ?? '';
         }
         form.elements['id'].value = resp.data.id;
+        const suyas = (resp.data.unidades || []).map(String);
+        form.querySelectorAll('input[name="unidades[]"]').forEach((c) => { c.checked = suyas.includes(c.value); });
         err.hidden = true;
         syncSelects();
         syncEtiquetasCodigo();
+        filtrarUnidades();
+        document.getElementById('unidades-colapso').open = false;
         document.getElementById('dlg-piloto-title').textContent = 'Editar piloto';
         dlg.showModal();
     }
@@ -81,8 +123,11 @@ form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const payload = {};
     for (const el of form.elements) {
-        if (el.name && el.name !== 'id') payload[el.name] = el.value;
+        if (!el.name || el.name === 'id' || el.type === 'checkbox') continue;
+        payload[el.name] = el.value;
     }
+    // Las unidades van como lista de ids, no como el valor de la última casilla.
+    payload.unidades = [...form.querySelectorAll('input[name="unidades[]"]:checked')].map((c) => c.value);
     const id = form.elements['id'].value;
     const resp = id
         ? await api('PUT', `/api/pilotos/${id}`, payload)

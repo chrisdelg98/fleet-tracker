@@ -1892,6 +1892,17 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .retorno--tomado { background: #eef1f4; color: var(--color-ink-soft); text-decoration: line-through; }
 /* El badge tomado abre su detalle: se comporta como botón sin parecer otro elemento. */
 button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+/* Placas asignadas a un piloto: se leen de un vistazo en la tabla. */
+.chip-unidad {
+    display: inline-block; margin: 1px 3px 1px 0;
+    padding: 1px 6px; border-radius: 3px;
+    background: var(--color-bg-strong); color: var(--color-ink);
+    font-size: var(--fs-xs); font-weight: 600; white-space: nowrap;
+}
+/* Unidad que ya lleva otro motorista: se ve, para saber por qué, pero no se puede marcar. */
+.check.is-tomada { opacity: .55; }
+.check__tomada { font-size: var(--fs-xs); color: var(--color-ink-soft); }
+
 /* ── Alcance de la unidad (dashboard) ──
    Responde de un vistazo "¿puedo pedirla para una ruta a otro país?": el negativo es el que
    evita el viaje en balde, así que NAC pesa más que INT, que se queda como confirmación. */

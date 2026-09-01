@@ -47,6 +47,7 @@ final class PilotoImportService extends ImportadorExcel
             ['clave' => 'codigo_nacional',      'label' => $etiquetas['nacional'],      'ancho' => 22],
             ['clave' => 'codigo_internacional', 'label' => $etiquetas['internacional'], 'ancho' => 22],
             ['clave' => 'estacion',             'label' => 'Estación',                  'ancho' => 22],
+            ['clave' => 'unidades',             'label' => 'Unidades asignadas (placas separadas por ;)', 'ancho' => 34],
         ];
     }
 
@@ -66,7 +67,15 @@ final class PilotoImportService extends ImportadorExcel
 
     protected function evaluarReglas(array $input, array $user): array
     {
-        return $this->pilotos->evaluar($input, null);
+        $resultado = $this->pilotos->evaluar($input, null);
+
+        // La asignación de unidades se valida con las mismas reglas del formulario.
+        ['errores' => $errores] = $this->pilotos->evaluarUnidades($input, null);
+        if ($errores !== []) {
+            $resultado['errores'] += $errores;
+            $resultado['data'] = null;
+        }
+        return $resultado;
     }
 
     // ── Plantilla con las etiquetas del país ──
@@ -86,10 +95,57 @@ final class PilotoImportService extends ImportadorExcel
         // El encabezado que se compara tiene que ser el mismo que se descargó.
         $this->etiquetas = $this->etiquetasDe($user);
         try {
-            return parent::analizar($ruta, $nombreOriginal, $user);
+            return $this->sinUnidadesRepetidas(parent::analizar($ruta, $nombreOriginal, $user));
         } finally {
             $this->etiquetas = null;
         }
+    }
+
+    /**
+     * Una unidad no puede aparecer en dos filas: sería el mismo cabezal con dos motoristas.
+     *
+     * Esto no lo ve la comprobación contra la base porque durante el análisis todavía no se
+     * ha insertado nada, así que se contrasta el archivo consigo mismo.
+     */
+    private function sinUnidadesRepetidas(array $informe): array
+    {
+        $vistas = [];
+        foreach ($informe['filas'] as $item) {
+            foreach ($item['input']['unidades'] ?? [] as $id) {
+                $vistas[$id][] = $item['fila'];
+            }
+        }
+        $repetidas = array_filter($vistas, static fn(array $filas): bool => count($filas) > 1);
+        if ($repetidas === []) {
+            return $informe;
+        }
+
+        $placaDe = array_flip($this->indices([
+            'rol' => Rol::ADMIN_GLOBAL, 'estacion_id' => null,
+        ])['unidades']);
+
+        $conflictivas = [];
+        foreach ($repetidas as $id => $filas) {
+            foreach ($filas as $fila) {
+                $conflictivas[$fila][] = strtoupper((string) ($placaDe[$id] ?? $id));
+            }
+        }
+
+        foreach ($conflictivas as $fila => $placas) {
+            $informe['errores'][] = [
+                'fila' => $fila,
+                'columna' => 'Unidades asignadas (placas separadas por ;)',
+                'valor' => implode(', ', array_unique($placas)),
+                'mensaje' => 'Esa unidad también aparece en otra fila del archivo: solo puede tener un piloto.',
+            ];
+        }
+        // Las filas en conflicto dejan de ser válidas; con errores no se carga nada de todos
+        // modos, pero el recuento de "listos" tiene que decir la verdad.
+        $informe['filas'] = array_values(array_filter(
+            $informe['filas'],
+            static fn(array $item): bool => !isset($conflictivas[$item['fila']])
+        ));
+        return $informe;
     }
 
     /**
@@ -131,6 +187,11 @@ final class PilotoImportService extends ImportadorExcel
             'estacion_id'          => $this->resolver($cruda, $indices, 'estacion', 'estaciones', 'las estaciones', $errores),
         ];
 
+        // Las hojas de control reales traen el cabezal y el furgón del motorista en columnas
+        // aparte. Como ahora cada uno es una unidad propia, aquí se pegan juntos separados
+        // por «;» y los dos quedan asignados al piloto.
+        $input['unidades'] = $this->unidades($cruda, $indices, $errores);
+
         if ($cruda['licencia_vence'] !== '') {
             $fecha = $this->fechaIso($cruda['licencia_vence']);
             if ($fecha === null) {
@@ -143,13 +204,62 @@ final class PilotoImportService extends ImportadorExcel
         return [$input, $errores];
     }
 
+    /**
+     * Placas separadas por «;» (o coma) → ids de unidad. Una placa desconocida se reporta con
+     * su nombre: es lo que el usuario escribió y lo que tiene que corregir en su hoja.
+     *
+     * @return int[]
+     */
+    private function unidades(array $cruda, array $indices, array &$errores): array
+    {
+        if (($cruda['unidades'] ?? '') === '') {
+            return [];
+        }
+        $ids = [];
+        foreach (preg_split('/[;,]/u', $cruda['unidades']) as $placa) {
+            $placa = trim((string) $placa);
+            // "N/A" es lo que la gente escribe cuando esa fila no lleva equipo de arrastre.
+            if ($placa === '' || $this->normalizar($placa) === 'n/a') {
+                continue;
+            }
+            $id = $indices['unidades'][$this->normalizar($placa)] ?? null;
+            if ($id === null) {
+                $errores['unidades'] = "No existe ninguna unidad con placa «{$placa}».";
+                continue;
+            }
+            $ids[] = $id;
+        }
+        return array_values(array_unique($ids));
+    }
+
     // ── Catálogos ──
 
     protected function indices(array $user): array
     {
+        $unidades = [];
+        foreach ($this->unidadesEscribibles($user) as $u) {
+            $unidades[$this->normalizar($u['placa_unidad'])] = (int) $u['id'];
+        }
+
         return $this->indiceEstaciones($this->catalogos) + [
             'tipos_licencia' => $this->indicePorNombre($this->catalogos, 'tipos_licencia'),
+            'unidades'       => $unidades,
         ];
+    }
+
+    /** Unidades activas donde el usuario puede escribir. */
+    private function unidadesEscribibles(array $user): array
+    {
+        if ($user['rol'] === Rol::ADMIN_GLOBAL) {
+            return $this->pdo->query(
+                'SELECT id, placa_unidad FROM unidades WHERE activo = 1 ORDER BY placa_unidad'
+            )->fetchAll();
+        }
+        $stmt = $this->pdo->prepare(
+            'SELECT id, placa_unidad FROM unidades WHERE activo = 1 AND estacion_id = :e ORDER BY placa_unidad'
+        );
+        $stmt->execute([':e' => $user['estacion_id']]);
+        return $stmt->fetchAll();
     }
 
     protected function listas(array $user): array
@@ -175,6 +285,8 @@ final class PilotoImportService extends ImportadorExcel
             'codigo_nacional'      => 'Opcional. Código que habilita mover carga dentro del país.',
             'codigo_internacional' => 'Opcional. Código que habilita cruzar frontera con carga.',
             'estacion'             => 'Obligatoria. Solo aparecen las estaciones donde puedes dar de alta.',
+            'unidades'             => 'Opcional. Placas separadas por punto y coma: cabezal, furgón, contenedor… '
+                                    . 'Ej.: C88198; RE15878. Una unidad que ya lleve otro piloto se rechaza.',
         ];
     }
 
@@ -190,6 +302,7 @@ final class PilotoImportService extends ImportadorExcel
             'codigo_nacional'      => '12345',
             'codigo_internacional' => 'SVC-98765',
             'estacion'             => $listas['estacion'][0] ?? '',
+            'unidades'             => 'C88198; RE15878',
         ];
     }
 
@@ -199,6 +312,7 @@ final class PilotoImportService extends ImportadorExcel
     {
         $data = $item['data'];
         $id = $this->pilotoModel->crear($data, $user['id']);
+        $this->pilotoModel->setUnidadesAsignadas($id, $item['input']['unidades'] ?? []);
         registrar_bitacora($this->pdo, $user['id'], 'piloto', $id, AccionBitacora::CREAR, [
             'despues' => $data,
             'origen'  => 'carga masiva',
