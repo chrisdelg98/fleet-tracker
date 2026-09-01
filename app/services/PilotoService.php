@@ -132,7 +132,9 @@ final class PilotoService
 
         $vence = $v->value('licencia_vence');
         $data = [
-            'nombre'               => $v->value('nombre'),
+            // El nombre del piloto va en mayúsculas, como en las hojas de control de la
+            // operación: así una misma persona no aparece escrita de tres formas distintas.
+            'nombre'               => mb_strtoupper((string) $v->value('nombre'), 'UTF-8'),
             'documento_identidad'  => $documento,
             'telefonos'            => $this->nullable($v->value('telefonos')),
             'tipo_licencia_id'     => (int) $v->value('tipo_licencia_id'),

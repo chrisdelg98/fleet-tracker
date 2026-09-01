@@ -172,7 +172,10 @@ final class UnidadService
         }
 
         $errores = [];
-        $placa = $v->value('placa_unidad');
+        // Las placas se guardan siempre en mayúsculas: es un identificador, y "c96670" y
+        // "C96670" son la misma unidad. Normalizar al escribir evita listados con dos
+        // grafías de lo mismo. mb_strtoupper y no strtoupper, que rompe los acentos.
+        $placa = mb_strtoupper((string) $v->value('placa_unidad'), 'UTF-8');
         if ($this->unidades->placaExiste($placa, $exceptId)) {
             $errores['placa_unidad'] = 'Ya existe una unidad con esa placa.';
         }
