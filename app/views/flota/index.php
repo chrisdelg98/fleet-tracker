@@ -11,6 +11,7 @@
  * @var array $categorias
  * @var array $tiposEquipo
  * @var array $capacidades
+ * @var array $combustibles
  * @var array $permisos
  * @var array $estaciones
  * @var array $pilotos
@@ -58,12 +59,7 @@ set_page_meta(
                         <option value="">Todas</option>
                         <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (string) $filtros['categoria_id'] === (string) $c['id'] ? 'selected' : '' ?>><?= e($c['nombre']) ?></option><?php endforeach; ?>
                     </select></label>
-                <label class="field"><span class="field__label">Combustible</span>
-                <select name="tipo_combustible_id">
-                    <option value="">—</option>
-                    <?php foreach ($combustibles as $cb): ?><option value="<?= (int) $cb['id'] ?>"><?= e($cb['nombre']) ?></option><?php endforeach; ?>
-                </select></label>
-            <label class="field"><span class="field__label">Tipo de equipo</span>
+                <label class="field"><span class="field__label">Tipo de equipo</span>
                     <select name="tipo_equipo_id">
                         <option value="">Todos</option>
                         <?php foreach ($tiposEquipo as $t): ?><option value="<?= (int) $t['id'] ?>" <?= (string) $filtros['tipo_equipo_id'] === (string) $t['id'] ? 'selected' : '' ?>><?= e($t['nombre']) ?></option><?php endforeach; ?>
@@ -196,6 +192,12 @@ set_page_meta(
                     <option value="">—</option>
                     <?php foreach ($capacidades as $cap): ?><option value="<?= (int) $cap['id'] ?>"><?= e($cap['nombre']) ?></option><?php endforeach; ?>
                 </select></label>
+            <label class="field"><span class="field__label">Combustible</span>
+                <select name="tipo_combustible_id">
+                    <option value="">—</option>
+                    <?php foreach ($combustibles as $cb): ?><option value="<?= (int) $cb['id'] ?>"><?= e($cb['nombre']) ?></option><?php endforeach; ?>
+                </select>
+                <small class="field__note">Vacío para el equipo de arrastre, que no consume.</small></label>
             <?php if ($esAdmin): ?>
             <label class="field"><span class="field__label">Estación *</span>
                 <select name="estacion_id" required>

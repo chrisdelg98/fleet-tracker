@@ -120,7 +120,7 @@ set_page_meta(
     </div>
 </section>
 
-<dialog id="dlg-unidad-ficha" class="dialog dialog--full">
+<dialog id="dlg-unidad-ficha" class="dialog dialog--full dialog--xl">
     <div class="dialog__panel">
         <div class="dialog__head">
             <h2 id="ficha-titulo">Unidad</h2>

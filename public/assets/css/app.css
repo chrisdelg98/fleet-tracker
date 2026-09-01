@@ -1017,12 +1017,14 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .fila-unidad:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 
 /* La ficha (estable) a un lado; el comportamiento (lo que se viene a consultar) al otro. */
-.ficha { display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: var(--sp-6); align-items: start; }
+.ficha { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: var(--sp-6); align-items: start; }
 .ficha__lateral {
     padding: var(--sp-4); border: 1px solid var(--color-border);
     border-radius: var(--radius-lg); background: var(--color-surface-soft);
 }
-.ficha__lateral .detalle-dl__row { grid-template-columns: 1fr; gap: 0; padding: 6px 0; }
+/* Etiqueta encima del valor: los nombres largos (un piloto, una lista de permisos) caben
+   sin partirse raro, que es lo que pasaba al ponerlos en dos columnas estrechas. */
+.ficha__lateral .detalle-dl__row { grid-template-columns: 1fr; gap: 0; padding: 5px 0; }
 .ficha__lateral dt { font-size: var(--fs-xs); color: var(--color-ink-soft); }
 .ficha__lateral dd { margin: 0; font-size: var(--fs-sm); }
 .ficha__principal { min-width: 0; display: grid; gap: var(--sp-5); }
@@ -1326,6 +1328,10 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 /* Modal amplio (a pantalla casi completa) para tablas extensas. */
 .dialog--full { max-width: 1100px; width: min(96vw, 1100px); }
+/* La ficha de unidad tiene dos columnas con mucho que enseñar: se le da más pantalla que a
+   un diálogo normal, en vez de estrujar la ficha contra el lateral. */
+.dialog--xl { max-width: 1440px; width: min(97vw, 1440px); }
+.dialog--xl .dialog__panel { max-height: 92vh; }
 .dialog--full .dialog__panel { max-height: min(90vh, 1100px); }
 .dialog > .form {
     display: flex;
