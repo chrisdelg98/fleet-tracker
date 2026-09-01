@@ -203,9 +203,11 @@ a { color: inherit; }
 .topbar__buscar {
     display: inline-flex;
     align-items: center;
-    gap: var(--sp-2);
+    justify-content: center;
+    /* Solo el icono: cuadrado y redondeado, en vez del óvalo que pedía el atajo al lado. */
+    width: 34px;
     height: 34px;
-    padding: 0 10px;
+    padding: 0;
     border: 1px solid rgba(255,255,255,0.22);
     border-radius: 999px;
     background: rgba(255,255,255,0.06);
@@ -215,16 +217,6 @@ a { color: inherit; }
 }
 .topbar__buscar:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.4); }
 .topbar__buscar:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.topbar__buscar-tecla {
-    padding: 0 5px;
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 4px;
-    background: rgba(255,255,255,0.10);
-    font: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 16px;
-}
 
 /* ── Menú de usuario: identidad + cerrar sesión fuera de la fila de acciones ── */
 .usermenu { position: relative; }

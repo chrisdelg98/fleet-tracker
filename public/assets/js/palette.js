@@ -17,7 +17,10 @@ if (datos) {
                 <input type="text" class="palette__input" placeholder="Buscar sección…" autocomplete="off" spellcheck="false">
             </div>
             <ul class="palette__list" role="listbox"></ul>
-            <div class="palette__foot"><kbd>↑</kbd><kbd>↓</kbd> moverse · <kbd>Enter</kbd> abrir · <kbd>Esc</kbd> cerrar</div>
+            <div class="palette__foot">
+                <span><kbd>↑</kbd><kbd>↓</kbd> moverse · <kbd>Enter</kbd> abrir · <kbd>Esc</kbd> cerrar</span>
+                <span class="palette__foot-clic"><kbd>.</kbd> abre este menú</span>
+            </div>
         </div>`;
     document.body.appendChild(overlay);
 

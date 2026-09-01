@@ -147,6 +147,8 @@
 .palette__foot {
     display: flex;
     align-items: center;
+    /* Teclado a la izquierda, ratón a la derecha: cada quien mira donde ya mira. */
+    justify-content: space-between;
     gap: 8px;
     padding: 8px 16px;
     border-top: 1px solid var(--pal-line);
@@ -154,6 +156,8 @@
     color: var(--pal-ink-mute);
     font-size: 12px;
 }
+/* El atajo para la próxima vez: aquí se descubre, ya que el botón no lo anuncia. */
+.palette__foot-clic { white-space: nowrap; }
 .palette__foot kbd {
     padding: 1px 5px;
     border: 1px solid var(--pal-line);
