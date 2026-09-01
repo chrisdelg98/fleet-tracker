@@ -81,6 +81,17 @@ abstract class ImportadorExcel
         return [];
     }
 
+    /**
+     * Cómo se llama la fila para el usuario. El informe de errores cita el número de fila,
+     * pero "fila 4" obliga a volver al Excel para saber de quién se habla; con el nombre o la
+     * placa delante, el problema se identifica sin salir de la pantalla.
+     */
+    protected function etiquetaFila(array $cruda): string
+    {
+        $primera = $this->columnas()[0]['clave'] ?? '';
+        return trim((string) ($cruda[$primera] ?? ''));
+    }
+
     // ── Plantilla ──
 
     /**
@@ -201,13 +212,25 @@ abstract class ImportadorExcel
                 }
             }
 
-            if ($erroresFila === []) {
-                ['data' => $data, 'errores' => $erroresFila] = $this->evaluarReglas($input, $user);
+            // Las reglas se aplican SIEMPRE, aunque la traducción ya haya fallado: si se
+            // cortara aquí, un nombre de catálogo mal escrito escondería el resto de fallos
+            // de la fila y obligaría a corregir el archivo en dos vueltas.
+            ['data' => $data, 'errores' => $erroresRegla] = $this->evaluarReglas($input, $user);
 
-                if ($erroresFila === [] && !can_write_station($user, (int) $data['estacion_id'])) {
-                    $erroresFila['estacion'] = 'No tienes permiso para dar de alta en esa estación.';
+            foreach ($erroresRegla as $campo => $mensaje) {
+                // Si la traducción ya habló de esa columna, su mensaje manda: cita el valor
+                // que escribió el usuario ("«Cabezote» no existe") en vez del genérico
+                // ("la categoría es obligatoria") que sale de no haberla podido resolver.
+                $clave = $this->claveDe($campo);
+                if (!isset($erroresFila[$clave]) && !isset($erroresFila[$campo])) {
+                    $erroresFila[$campo] = $mensaje;
                 }
-                if ($erroresFila === []) {
+            }
+
+            if ($erroresFila === [] && $data !== null) {
+                if (!can_write_station($user, (int) $data['estacion_id'])) {
+                    $erroresFila['estacion'] = 'No tienes permiso para dar de alta en esa estación.';
+                } else {
                     $validas[] = ['fila' => $numeroFila, 'data' => $data, 'input' => $input, 'cruda' => $cruda];
                 }
             }
@@ -216,6 +239,7 @@ abstract class ImportadorExcel
                 $clave = $this->claveDe($campo);
                 $errores[] = [
                     'fila' => $numeroFila,
+                    'registro' => $this->etiquetaFila($cruda),
                     'columna' => $this->etiquetaDe($clave),
                     'valor' => (string) ($cruda[$clave] ?? ''),
                     'mensaje' => $mensaje,
@@ -317,6 +341,7 @@ abstract class ImportadorExcel
                 $letra = XlsxWriter::letra($i + 1);
                 return [[
                     'fila' => 1,
+                    'registro' => '',
                     'columna' => $letra,
                     'mensaje' => "El encabezado no coincide con la plantilla: se esperaba «{$col['label']}»"
                         . " en la columna {$letra} y llegó «{$hay}». Descarga la plantilla otra vez.",
@@ -486,7 +511,7 @@ abstract class ImportadorExcel
     {
         return [
             'total' => $total,
-            'errores' => [['fila' => 0, 'columna' => '', 'valor' => '', 'mensaje' => $mensaje]],
+            'errores' => [['fila' => 0, 'registro' => '', 'columna' => '', 'valor' => '', 'mensaje' => $mensaje]],
             'filas' => [],
         ];
     }

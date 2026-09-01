@@ -51,6 +51,11 @@ final class PilotoImportService extends ImportadorExcel
         ];
     }
 
+    protected function etiquetaFila(array $cruda): string
+    {
+        return trim((string) ($cruda['nombre'] ?? ''));
+    }
+
     /** Ambos identifican a la persona: repetir cualquiera es cargar al mismo piloto dos veces. */
     protected function clavesUnicas(): array
     {
@@ -69,13 +74,32 @@ final class PilotoImportService extends ImportadorExcel
     {
         $resultado = $this->pilotos->evaluar($input, null);
 
+        // Si la fila es un piloto que ya existe, sus unidades ya son suyas: no son un choque
+        // aparte. Reportarlo también convertiría un solo hecho —"este piloto ya está
+        // cargado"— en dos líneas que dicen lo mismo con otras palabras.
+        $existente = $this->pilotoExistente($input);
+
         // La asignación de unidades se valida con las mismas reglas del formulario.
-        ['errores' => $errores] = $this->pilotos->evaluarUnidades($input, null);
+        ['errores' => $errores] = $this->pilotos->evaluarUnidades($input, $existente);
         if ($errores !== []) {
             $resultado['errores'] += $errores;
             $resultado['data'] = null;
         }
         return $resultado;
+    }
+
+    /** Id del piloto ya registrado al que corresponde esta fila, si lo hay. */
+    private function pilotoExistente(array $input): ?int
+    {
+        $porLicencia = $this->pilotoModel->quienTiene('no_licencia', (string) ($input['no_licencia'] ?? ''));
+        if ($porLicencia !== null) {
+            return $porLicencia['id'];
+        }
+        $documento = trim((string) ($input['documento_identidad'] ?? ''));
+        if ($documento === '') {
+            return null;
+        }
+        return $this->pilotoModel->quienTiene('documento_identidad', $documento)['id'] ?? null;
     }
 
     // ── Plantilla con las etiquetas del país ──
@@ -124,6 +148,11 @@ final class PilotoImportService extends ImportadorExcel
             'rol' => Rol::ADMIN_GLOBAL, 'estacion_id' => null,
         ])['unidades']);
 
+        $etiquetas = [];
+        foreach ($informe['filas'] as $item) {
+            $etiquetas[$item['fila']] = $this->etiquetaFila($item['cruda']);
+        }
+
         $conflictivas = [];
         foreach ($repetidas as $id => $filas) {
             foreach ($filas as $fila) {
@@ -134,6 +163,7 @@ final class PilotoImportService extends ImportadorExcel
         foreach ($conflictivas as $fila => $placas) {
             $informe['errores'][] = [
                 'fila' => $fila,
+                'registro' => $etiquetas[$fila] ?? '',
                 'columna' => 'Unidades asignadas (placas separadas por ;)',
                 'valor' => implode(', ', array_unique($placas)),
                 'mensaje' => 'Esa unidad también aparece en otra fila del archivo: solo puede tener un piloto.',

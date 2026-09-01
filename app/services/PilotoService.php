@@ -118,12 +118,23 @@ final class PilotoService
         // La licencia y el documento identifican a la persona: si se repiten, es la misma
         // dos veces. Sin esta comprobación, subir el mismo archivo duplicaría la plantilla.
         $licencia = (string) $v->value('no_licencia');
-        if ($this->pilotos->existeCon('no_licencia', $licencia, $exceptId)) {
-            $errores['no_licencia'] = 'Ya hay un piloto con ese número de licencia.';
-        }
         $documento = $this->nullable($v->value('documento_identidad'));
-        if ($documento !== null && $this->pilotos->existeCon('documento_identidad', $documento, $exceptId)) {
-            $errores['documento_identidad'] = 'Ya hay un piloto con ese documento de identificación.';
+        $porLicencia = $this->pilotos->quienTiene('no_licencia', $licencia, $exceptId);
+        $porDocumento = $documento !== null
+            ? $this->pilotos->quienTiene('documento_identidad', $documento, $exceptId)
+            : null;
+
+        if ($porLicencia !== null && $porDocumento !== null && $porLicencia['id'] === $porDocumento['id']) {
+            // Los dos apuntan a la MISMA persona: es un solo hecho, no dos problemas. Decirlo
+            // por duplicado obliga a leer el doble para entender lo mismo.
+            $errores['no_licencia'] = "Este piloto ya está registrado como «{$porLicencia['nombre']}».";
+        } else {
+            if ($porLicencia !== null) {
+                $errores['no_licencia'] = "Ese número de licencia ya lo tiene «{$porLicencia['nombre']}».";
+            }
+            if ($porDocumento !== null) {
+                $errores['documento_identidad'] = "Ese documento ya lo tiene «{$porDocumento['nombre']}».";
+            }
         }
 
         if ($errores !== []) {

@@ -165,6 +165,20 @@ final class UnidadService
           ->positiveInt('tipo_equipo_id', 'El tipo de equipo')
           ->positiveInt('piloto_asignado_id', 'El piloto')
           ->inEnum('estado_vehiculo', EstadoVehiculo::values(), 'El estado');
+        // El año no depende de ningún catálogo, así que se valida aquí y no más abajo: si
+        // esperara al final, un fallo de categoría lo escondería hasta la siguiente subida y
+        // obligaría a corregir el archivo dos veces.
+        $anio = null;
+        $anioRaw = trim((string) ($input['anio'] ?? ''));
+        if ($anioRaw !== '') {
+            $limite = (int) date('Y') + 1;
+            if (!ctype_digit($anioRaw) || (int) $anioRaw < 1950 || (int) $anioRaw > $limite) {
+                $v->addError('anio', "El año debe estar entre 1950 y {$limite}.");
+            } else {
+                $anio = (int) $anioRaw;
+            }
+        }
+
         // Sin los tipos básicos en orden, las comprobaciones que dependen de ellos solo
         // producirían ruido ("la categoría 0 no existe"): se devuelve lo que ya se sabe.
         if ($v->fails()) {
@@ -197,17 +211,6 @@ final class UnidadService
             : (int) ($categoria['es_flota_operativa'] ?? 0);
 
         $estado = $v->value('estado_vehiculo') ?: EstadoVehiculo::OPERATIVO;
-
-        // Año: opcional, pero si viene tiene que ser creíble (no hay flota de 1890 ni de 2199).
-        $anio = null;
-        $anioRaw = trim((string) ($input['anio'] ?? ''));
-        if ($anioRaw !== '') {
-            $limite = (int) date('Y') + 1;
-            if (!ctype_digit($anioRaw) || (int) $anioRaw < 1950 || (int) $anioRaw > $limite) {
-                $errores['anio'] = "El año debe estar entre 1950 y {$limite}.";
-            }
-            $anio = ctype_digit($anioRaw) ? (int) $anioRaw : null;
-        }
 
         if ($errores !== []) {
             return ['data' => null, 'errores' => $errores];

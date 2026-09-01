@@ -27,8 +27,8 @@ const vistaPie = document.getElementById('import-vista-pie');
 const btnConfirmar = document.getElementById('import-confirmar');
 const error = document.getElementById('form-import-error');
 
-/** Tope de errores en pantalla: más allá, la lista deja de ayudar y solo agobia. */
-const MAX_ERRORES = 50;
+/** Tope de filas con problemas en pantalla: más allá, la lista deja de ayudar y solo agobia. */
+const MAX_FILAS_ERROR = 25;
 
 let archivo = null;
 let trabajando = false;
@@ -195,16 +195,45 @@ function pintar(data, mensaje) {
     }
     vistaWrap.hidden = true;
 
-    const visibles = errores.slice(0, MAX_ERRORES);
-    erroresBody.innerHTML = visibles.map((e) => `
-        <tr>
-            <td class="col col--corta">${e.fila ? esc(e.fila) : '—'}</td>
-            <td class="col col--corta">${esc(e.columna || '—')}</td>
-            <td class="col col--corta">${e.valor ? esc(e.valor) : '<span class="muted">vacío</span>'}</td>
-            <td class="col col--text">${esc(e.mensaje)}</td>
-        </tr>`).join('')
-        + (errores.length > MAX_ERRORES
-            ? `<tr><td colspan="4" class="muted">y ${errores.length - MAX_ERRORES} problema${errores.length - MAX_ERRORES === 1 ? '' : 's'} más</td></tr>`
+    pintarErrores(errores);
+}
+
+/**
+ * Los problemas se agrupan por fila, no por error.
+ *
+ * Una fila mala suele fallar por varias cosas a la vez (un piloto ya registrado choca en
+ * licencia, documento y unidades), y listarlas sueltas convierte tres filas en nueve líneas
+ * sin decir de quién son. Agrupadas y con el nombre delante, cada bloque es un problema que
+ * se entiende y se va a corregir de una sola vez en el Excel.
+ */
+function pintarErrores(errores) {
+    const porFila = new Map();
+    for (const e of errores) {
+        const clave = e.fila || 0;
+        if (!porFila.has(clave)) porFila.set(clave, { fila: e.fila, registro: e.registro, problemas: [] });
+        porFila.get(clave).problemas.push(e);
+    }
+
+    const grupos = [...porFila.values()];
+    const visibles = grupos.slice(0, MAX_FILAS_ERROR);
+
+    erroresBody.innerHTML = visibles.map((g) => `
+        <article class="err-fila">
+            <header class="err-fila__head">
+                ${g.fila ? `<span class="err-fila__num">Fila ${esc(g.fila)}</span>` : ''}
+                ${g.registro ? `<strong class="err-fila__quien">${esc(g.registro)}</strong>` : ''}
+            </header>
+            <ul class="err-fila__lista">
+                ${g.problemas.map((p) => `
+                    <li>
+                        ${p.columna ? `<span class="err-campo">${esc(p.columna)}</span>` : ''}
+                        ${p.valor ? `<span class="err-valor">${esc(p.valor)}</span>` : ''}
+                        <span class="err-texto">${esc(p.mensaje)}</span>
+                    </li>`).join('')}
+            </ul>
+        </article>`).join('')
+        + (grupos.length > MAX_FILAS_ERROR
+            ? `<p class="muted">y ${grupos.length - MAX_FILAS_ERROR} fila${grupos.length - MAX_FILAS_ERROR === 1 ? '' : 's'} más con problemas</p>`
             : '');
     erroresWrap.hidden = false;
 }

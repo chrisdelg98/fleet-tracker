@@ -29,10 +29,21 @@ final class PilotoModel
      */
     public function existeCon(string $columna, string $valor, ?int $exceptId = null): bool
     {
+        return $this->quienTiene($columna, $valor, $exceptId) !== null;
+    }
+
+    /**
+     * Piloto que ya usa ese valor, o null. Devuelve quién es (no solo si existe) para poder
+     * decir "ya está registrado como X" en vez de repetir un choque por cada columna.
+     *
+     * @return array{id:int, nombre:string}|null
+     */
+    public function quienTiene(string $columna, string $valor, ?int $exceptId = null): ?array
+    {
         if (!in_array($columna, ['no_licencia', 'documento_identidad'], true)) {
             throw new InvalidArgumentException("Columna no permitida: {$columna}");
         }
-        $sql = "SELECT 1 FROM pilotos WHERE {$columna} = :valor AND activo = 1";
+        $sql = "SELECT id, nombre FROM pilotos WHERE {$columna} = :valor AND activo = 1";
         $params = [':valor' => $valor];
         if ($exceptId !== null) {
             $sql .= ' AND id <> :id';
@@ -40,7 +51,8 @@ final class PilotoModel
         }
         $stmt = $this->pdo->prepare($sql . ' LIMIT 1');
         $stmt->execute($params);
-        return $stmt->fetchColumn() !== false;
+        $fila = $stmt->fetch();
+        return $fila ? ['id' => (int) $fila['id'], 'nombre' => (string) $fila['nombre']] : null;
     }
 
     /**

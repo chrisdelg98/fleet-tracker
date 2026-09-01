@@ -1110,12 +1110,38 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .soltar.is-bloqueado { cursor: progress; opacity: .55; border-style: solid; }
 .soltar.is-bloqueado:hover { border-color: var(--color-border); background: var(--color-surface-soft); }
 
+/* ── Problemas de una carga, agrupados por fila ── */
+/* Sin scroll propio: el cuerpo del diálogo ya desplaza, y anidar barras deja tres seguidas
+   en el mismo borde. La lista está acotada a 25 filas, así que crecer no es problema. */
+.err-lista { display: grid; gap: var(--sp-2); }
+.err-fila {
+    border: 1px solid var(--color-error-bg); border-left: 3px solid var(--color-error);
+    border-radius: var(--radius); background: var(--color-surface);
+    padding: var(--sp-3);
+}
+.err-fila__head { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: var(--sp-1); }
+.err-fila__num {
+    flex: none; padding: 1px 6px; border-radius: 3px;
+    background: var(--color-bg-strong); color: var(--color-ink-soft);
+    font-size: var(--fs-xs); font-weight: 700;
+}
+.err-fila__quien { font-size: var(--fs-sm); color: var(--color-ink); }
+.err-fila__lista { margin: 0; padding-left: var(--sp-4); display: grid; gap: 3px; }
+.err-fila__lista li { font-size: var(--fs-sm); line-height: 1.45; }
+/* El campo y el valor delante: dicen dónde mirar antes de leer el porqué. */
+.err-campo { font-weight: 600; color: var(--color-ink); }
+.err-valor {
+    padding: 0 4px; border-radius: 3px;
+    background: var(--color-bg-strong); color: var(--color-ink);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-xs);
+}
+.err-texto { color: var(--color-ink-soft); }
+
 .import-resumen { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-sm); }
 .import-resumen__estado { font-weight: 600; }
 .import-resumen__estado.es-ok { color: var(--estado-disponible); }
 .import-resumen__estado.es-error { color: var(--color-error); }
 /* La lista de problemas no debe empujar el diálogo: crece hasta donde cabe y luego rueda. */
-#import-errores-wrap, #import-vista-wrap { max-height: 42vh; overflow: auto; }
 #import-vista-pie { margin-top: var(--sp-2); font-size: var(--fs-xs); }
 
 /* ── Reparto de ancho por tipo de columna ──
