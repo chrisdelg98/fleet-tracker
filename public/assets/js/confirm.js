@@ -36,18 +36,33 @@ export function confirmar({ titulo = '¿Confirmas la acción?', mensaje = '', ac
     si.classList.toggle('btn--peligro', peligro);
     si.classList.toggle('btn--primary', !peligro);
 
+    const no = d.querySelector('[data-confirm-no]');
+
     return new Promise((resolve) => {
-        const cerrar = (valor) => {
-            d.close();
+        let resuelto = false;
+
+        const terminar = (valor) => {
+            if (resuelto) return;          // close() dispara 'close' y volvería a entrar
+            resuelto = true;
             si.removeEventListener('click', alAceptar);
+            no.removeEventListener('click', alCancelar);
+            d.removeEventListener('click', alFondo);
             d.removeEventListener('close', alCerrar);
+            if (d.open) d.close();
             resolve(valor);
         };
-        const alAceptar = () => cerrar(true);
-        // Cubre Cancelar, Escape y el clic en el fondo: todos cierran el <dialog>.
-        const alCerrar = () => cerrar(false);
+
+        const alAceptar = () => terminar(true);
+        // Cancelar necesita su propio manejador: un <button type="button"> no cierra un
+        // <dialog> por sí solo, eso solo pasa dentro de un <form method="dialog">.
+        const alCancelar = () => terminar(false);
+        const alCerrar = () => terminar(false);                       // Escape
+        // Clic fuera del panel: el evento llega al propio <dialog>, no a su contenido.
+        const alFondo = (ev) => { if (ev.target === d) terminar(false); };
 
         si.addEventListener('click', alAceptar);
+        no.addEventListener('click', alCancelar);
+        d.addEventListener('click', alFondo);
         d.addEventListener('close', alCerrar);
         d.showModal();
         si.focus();
