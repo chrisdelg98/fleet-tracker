@@ -39,7 +39,12 @@ final class InventarioService
                        c.nombre AS categoria, comb.nombre AS tipo_combustible,
                        cap.nombre AS capacidad, te.nombre AS tipo_equipo,
                        p.nombre AS piloto_asignado,
-                       e.codigo AS estacion_codigo, e.nombre AS estacion
+                       e.codigo AS estacion_codigo, e.nombre AS estacion,
+                       EXISTS (SELECT 1 FROM unidad_permisos up
+                                 JOIN permisos_especiales pe ON pe.id = up.permiso_especial_id
+                                WHERE up.unidad_id = u.id
+                                  AND pe.activo = 1
+                                  AND pe.habilita_internacional = 1) AS puede_internacional
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   JOIN estaciones e ON e.id = u.estacion_id

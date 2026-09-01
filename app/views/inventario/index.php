@@ -102,7 +102,14 @@ set_page_meta(
             <tbody>
             <?php foreach ($unidades as $u): $vacio = '<span class="muted">—</span>'; ?>
                 <tr class="fila-unidad" data-unidad="<?= (int) $u['id'] ?>" data-placa="<?= e($u['placa_unidad']) ?>" tabindex="0">
-                    <td class="col col--nombre"><strong><?= e($u['placa_unidad']) ?></strong></td>
+                    <td class="col col--nombre">
+                        <strong><?= e($u['placa_unidad']) ?></strong>
+                        <?php if ((int) $u['puede_internacional'] === 1): ?>
+                            <span class="alcance alcance--int" title="Tiene permiso vigente para cruzar frontera">INT</span>
+                        <?php else: ?>
+                            <span class="alcance alcance--nac" title="Sin permiso internacional: solo rutas dentro de su país">NAC</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= e($u['categoria']) ?></td>
                     <td><?= $u['marca'] ? e($u['marca']) : $vacio ?></td>
                     <td><?= $u['modelo'] ? e($u['modelo']) : $vacio ?></td>

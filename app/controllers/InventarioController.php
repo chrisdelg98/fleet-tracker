@@ -73,12 +73,21 @@ final class InventarioController
 
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
-        fputcsv($out, ['Placa', 'Categoría', 'Marca', 'Modelo', 'Estación', 'Flota operativa', 'Estado', 'Notas'], ',', '"', '');
+        // Las mismas columnas que la tabla, en el mismo orden: quien exporta espera
+        // llevarse lo que está viendo, no una versión recortada de hace tres cambios.
+        fputcsv($out, [
+            'Placa', 'Alcance', 'Categoría', 'Marca', 'Modelo', 'Año', 'Combustible',
+            'Capacidad', 'Estado', 'Notas', 'Flota operativa', 'Estación',
+        ], ',', '"', '');
         foreach ($unidades as $u) {
             fputcsv($out, [
-                $u['placa_unidad'], $u['categoria'], $u['marca'], $u['modelo'],
-                $u['estacion_codigo'], ((int) $u['en_disponibilidad'] === 1 ? 'Sí' : 'No'),
-                $u['estado_vehiculo'], $u['estado_notas'],
+                $u['placa_unidad'],
+                ((int) $u['puede_internacional'] === 1 ? 'Internacional' : 'Nacional'),
+                $u['categoria'], $u['marca'], $u['modelo'], $u['anio'],
+                $u['tipo_combustible'], $u['capacidad'],
+                EstadoVehiculo::label($u['estado_vehiculo']), $u['estado_notas'],
+                ((int) $u['en_disponibilidad'] === 1 ? 'Sí' : 'No'),
+                $u['estacion_codigo'],
             ], ',', '"', '');
         }
         fclose($out);
