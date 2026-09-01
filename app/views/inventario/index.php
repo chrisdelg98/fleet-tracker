@@ -88,17 +88,30 @@ set_page_meta(
             <div class="card__empty"><p>Sin unidades para estos filtros.</p></div>
         <?php else: ?>
         <table class="table">
-            <thead><tr><th>Placa</th><th>Categoría</th><th>Marca / Modelo</th><th>Estación</th><th>Clasificación</th><th>Estado</th></tr></thead>
+            <thead><tr>
+                <th class="col col--nombre">Placa</th>
+                <th>Categoría</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Año</th>
+                <th>Combustible</th>
+                <th>Capacidad</th>
+                <th>Estado</th>
+                <th>Estación</th>
+            </tr></thead>
             <tbody>
-            <?php foreach ($unidades as $u): ?>
-                <tr>
-                    <td><strong><?= e($u['placa_unidad']) ?></strong></td>
+            <?php foreach ($unidades as $u): $vacio = '<span class="muted">—</span>'; ?>
+                <tr class="fila-unidad" data-unidad="<?= (int) $u['id'] ?>" data-placa="<?= e($u['placa_unidad']) ?>" tabindex="0">
+                    <td class="col col--nombre"><strong><?= e($u['placa_unidad']) ?></strong></td>
                     <td><?= e($u['categoria']) ?></td>
-                    <td><?= e(trim(($u['marca'] ?? '') . ' ' . ($u['modelo'] ?? ''))) ?: '—' ?></td>
-                    <td><?= e($u['estacion_codigo']) ?></td>
-                    <td><?= (int) $u['en_disponibilidad'] === 1 ? '<span class="badge badge--ok">Operativa</span>' : '<span class="badge badge--muted">Inventario</span>' ?></td>
+                    <td><?= $u['marca'] ? e($u['marca']) : $vacio ?></td>
+                    <td><?= $u['modelo'] ? e($u['modelo']) : $vacio ?></td>
+                    <td><?= $u['anio'] ? (int) $u['anio'] : $vacio ?></td>
+                    <td><?= $u['tipo_combustible'] ? e($u['tipo_combustible']) : $vacio ?></td>
+                    <td><?= $u['capacidad'] ? e($u['capacidad']) : $vacio ?></td>
                     <td><?= e($labelEstado[$u['estado_vehiculo']] ?? $u['estado_vehiculo']) ?>
                         <?php if (!empty($u['estado_notas'])): ?><small class="muted block"><?= e($u['estado_notas']) ?></small><?php endif; ?></td>
+                    <td><?= e($u['estacion_codigo']) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -106,3 +119,18 @@ set_page_meta(
         <?php endif; ?>
     </div>
 </section>
+
+<dialog id="dlg-unidad-ficha" class="dialog dialog--full">
+    <div class="dialog__panel">
+        <div class="dialog__head">
+            <h2 id="ficha-titulo">Unidad</h2>
+            <p class="dialog__lede" id="ficha-lede">Datos de la unidad y cómo se ha comportado.</p>
+        </div>
+        <div class="dialog__body" id="ficha-cuerpo"></div>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--primary" data-ficha-close>Cerrar</button>
+        </div>
+    </div>
+</dialog>
+
+<script src="/assets/js/inventario.js" type="module"></script>

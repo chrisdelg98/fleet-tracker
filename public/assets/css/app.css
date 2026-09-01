@@ -1012,6 +1012,50 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .rend-ok { color: var(--estado-disponible); font-weight: 700; }
 .rend-alerta { color: var(--estado-reservada); font-weight: 700; }
 
+/* ── Ficha de unidad (inventario) ── */
+.fila-unidad { cursor: pointer; }
+.fila-unidad:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+/* La ficha (estable) a un lado; el comportamiento (lo que se viene a consultar) al otro. */
+.ficha { display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: var(--sp-6); align-items: start; }
+.ficha__lateral {
+    padding: var(--sp-4); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); background: var(--color-surface-soft);
+}
+.ficha__lateral .detalle-dl__row { grid-template-columns: 1fr; gap: 0; padding: 6px 0; }
+.ficha__lateral dt { font-size: var(--fs-xs); color: var(--color-ink-soft); }
+.ficha__lateral dd { margin: 0; font-size: var(--fs-sm); }
+.ficha__principal { min-width: 0; display: grid; gap: var(--sp-5); }
+
+.ficha-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sp-3); }
+.ficha-cifra {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: var(--sp-3); border: 1px solid var(--color-border); border-radius: var(--radius);
+    background: var(--color-surface);
+}
+.ficha-cifra__valor { font-size: var(--fs-xl); font-weight: 700; line-height: 1.1; color: var(--color-ink); }
+.ficha-cifra__etiqueta { font-size: var(--fs-sm); font-weight: 600; color: var(--color-ink); }
+.ficha-cifra__nota { font-size: var(--fs-xs); color: var(--color-ink-soft); }
+
+.ficha-dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-5); }
+.ficha-bloque { min-width: 0; }
+.ficha-bloque h3,
+.ficha__lateral h3 {
+    margin: 0 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em; color: var(--color-ink-soft);
+}
+.ficha-vacio {
+    padding: var(--sp-5); text-align: center;
+    border: 1px dashed var(--color-border); border-radius: var(--radius-lg);
+    background: var(--color-surface-soft);
+}
+.ficha-vacio p { margin: var(--sp-1) 0 0; font-size: var(--fs-sm); }
+
+/* En pantalla estrecha la ficha va arriba y el resto debajo. */
+@media (max-width: 860px) {
+    .ficha { grid-template-columns: 1fr; gap: var(--sp-4); }
+}
+
 /* ── Carga masiva de flota ── */
 .pasos { list-style: none; display: grid; gap: var(--sp-4); margin: 0; padding: 0; }
 .paso { display: flex; gap: var(--sp-3); align-items: flex-start; }

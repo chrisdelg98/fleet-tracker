@@ -58,7 +58,12 @@ set_page_meta(
                         <option value="">Todas</option>
                         <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (string) $filtros['categoria_id'] === (string) $c['id'] ? 'selected' : '' ?>><?= e($c['nombre']) ?></option><?php endforeach; ?>
                     </select></label>
-                <label class="field"><span class="field__label">Tipo de equipo</span>
+                <label class="field"><span class="field__label">Combustible</span>
+                <select name="tipo_combustible_id">
+                    <option value="">—</option>
+                    <?php foreach ($combustibles as $cb): ?><option value="<?= (int) $cb['id'] ?>"><?= e($cb['nombre']) ?></option><?php endforeach; ?>
+                </select></label>
+            <label class="field"><span class="field__label">Tipo de equipo</span>
                     <select name="tipo_equipo_id">
                         <option value="">Todos</option>
                         <?php foreach ($tiposEquipo as $t): ?><option value="<?= (int) $t['id'] ?>" <?= (string) $filtros['tipo_equipo_id'] === (string) $t['id'] ? 'selected' : '' ?>><?= e($t['nombre']) ?></option><?php endforeach; ?>

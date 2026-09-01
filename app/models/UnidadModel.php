@@ -10,7 +10,7 @@ final class UnidadModel
 {
     /** Columnas escribibles desde el formulario de alta/edición. */
     private const CAMPOS = [
-        'placa_unidad', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
+        'placa_unidad', 'marca', 'modelo', 'anio', 'tipo_combustible_id', 'categoria_vehiculo_id',
         'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id',
         'piloto_asignado_id', 'estado_vehiculo', 'estado_notas',
     ];
@@ -37,7 +37,7 @@ final class UnidadModel
     {
         // El override abierto (bloqueo manual o taller) se trae aquí para que la gestión de
         // flota vea por qué una unidad está fuera de operación, no solo el tablero.
-        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.es_motriz,
+        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.es_motriz, comb.nombre AS tipo_combustible,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
                        cap.nombre AS capacidad, p.nombre AS piloto_asignado,
                        o.tipo AS override_tipo, o.motivo AS override_motivo,
@@ -49,6 +49,7 @@ final class UnidadModel
                   JOIN estaciones e ON e.id = u.estacion_id
                   LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
                   LEFT JOIN capacidades cap ON cap.id = u.capacidad_id
+                  LEFT JOIN tipos_combustible comb ON comb.id = u.tipo_combustible_id
                   LEFT JOIN pilotos p ON p.id = u.piloto_asignado_id
                   LEFT JOIN overrides_unidad o ON o.id = (
                         SELECT o2.id FROM overrides_unidad o2

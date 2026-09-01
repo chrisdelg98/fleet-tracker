@@ -159,6 +159,7 @@ final class UnidadService
         $v->required('placa_unidad', 'La placa')->maxLen('placa_unidad', 30, 'La placa')
           ->maxLen('marca', 80, 'La marca')->maxLen('modelo', 80, 'El modelo')
           ->positiveInt('capacidad_id', 'La capacidad')
+          ->positiveInt('tipo_combustible_id', 'El tipo de combustible')
           ->required('categoria_vehiculo_id', 'La categoría')->positiveInt('categoria_vehiculo_id', 'La categoría')
           ->required('estacion_id', 'La estación')->positiveInt('estacion_id', 'La estación')
           ->positiveInt('tipo_equipo_id', 'El tipo de equipo')
@@ -214,6 +215,7 @@ final class UnidadService
             'marca'                 => $this->nullable($v->value('marca')),
             'modelo'                => $this->nullable($v->value('modelo')),
             'anio'                  => $anio,
+            'tipo_combustible_id'   => $v->value('tipo_combustible_id') ? (int) $v->value('tipo_combustible_id') : null,
             'categoria_vehiculo_id' => (int) $v->value('categoria_vehiculo_id'),
             'en_disponibilidad'     => $enDisponibilidad,
             'capacidad_id'          => $capacidadId,
@@ -244,7 +246,7 @@ final class UnidadService
     private function snapshot(array $row): array
     {
         return array_intersect_key($row, array_flip([
-            'placa_unidad', 'marca', 'modelo', 'anio', 'categoria_vehiculo_id',
+            'placa_unidad', 'marca', 'modelo', 'anio', 'tipo_combustible_id', 'categoria_vehiculo_id',
             'en_disponibilidad', 'capacidad_id', 'tipo_equipo_id', 'estacion_id', 'piloto_asignado_id',
         ]));
     }

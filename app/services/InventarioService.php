@@ -34,11 +34,19 @@ final class InventarioService
     public function listar(array $user, array $filtros): array
     {
         [$where, $params] = $this->where($user, $filtros);
-        $sql = 'SELECT u.id, u.placa_unidad, u.marca, u.modelo, u.en_disponibilidad,
-                       u.estado_vehiculo, u.estado_notas, c.nombre AS categoria, e.codigo AS estacion_codigo, e.nombre AS estacion
+        $sql = 'SELECT u.id, u.placa_unidad, u.marca, u.modelo, u.anio, u.en_disponibilidad,
+                       u.estado_vehiculo, u.estado_notas,
+                       c.nombre AS categoria, comb.nombre AS tipo_combustible,
+                       cap.nombre AS capacidad, te.nombre AS tipo_equipo,
+                       p.nombre AS piloto_asignado,
+                       e.codigo AS estacion_codigo, e.nombre AS estacion
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
-                  JOIN estaciones e ON e.id = u.estacion_id'
+                  JOIN estaciones e ON e.id = u.estacion_id
+                  LEFT JOIN tipos_combustible comb ON comb.id = u.tipo_combustible_id
+                  LEFT JOIN capacidades cap ON cap.id = u.capacidad_id
+                  LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
+                  LEFT JOIN pilotos p ON p.id = u.piloto_asignado_id'
              . $where . ' ORDER BY e.codigo, c.orden, u.placa_unidad';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

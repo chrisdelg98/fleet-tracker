@@ -42,6 +42,7 @@ final class UnidadController
             'categorias' => $this->catalogos->activos('categorias_vehiculo', 'orden'),
             'tiposEquipo' => $this->catalogos->activos('tipos_equipo', 'orden'),
             'capacidades' => $this->catalogos->activos('capacidades', 'orden'),
+            'combustibles' => $this->catalogos->activos('tipos_combustible', 'orden'),
             'permisos'   => $this->catalogos->activos('permisos_especiales'),
             'estaciones' => $this->catalogos->activos('estaciones'),
             'pilotos'    => $this->pilotosParaSelect($user),

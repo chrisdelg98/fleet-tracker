@@ -164,9 +164,14 @@ $router->post('/api/unidades/{id}/bloquear', fn($p) => $movimientoController->ap
 $router->post('/api/unidades/{id}/desbloquear', fn($p) => $movimientoController->apiDesbloquear($p));
 
 // ── Fase 3: Inventario (alcance por rol) ──
-$inventarioController = new InventarioController(new InventarioService($pdo), $catalogoModel);
+$inventarioController = new InventarioController(
+    new InventarioService($pdo),
+    $catalogoModel,
+    new UnidadEstadisticasService($pdo, $unidadModel)
+);
 $router->get('/inventario', fn() => $inventarioController->index());
 $router->get('/inventario/export.csv', fn() => $inventarioController->export());
+$router->get('/api/unidades/{id}/estadisticas', fn($p) => $inventarioController->apiEstadisticas($p));
 
 // ── Fase 3: Histórico ──
 $historicoController = new HistoricoController(new HistoricoService($pdo), $usuarioModel, $catalogoModel);

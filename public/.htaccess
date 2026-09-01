@@ -32,12 +32,13 @@ Options -Indexes
     </FilesMatch>
 </IfModule>
 
-# Estáticos con caché larga. Si cambias un asset y no se refleja, fuerza recarga (Ctrl+F5)
-# o renómbralo: no hay versionado de nombres todavía.
+# Caché de estáticos. El CSS y el JS van cortos a propósito: los nombres de archivo no
+# llevan versión, así que una caché larga hace que un cambio recién subido no se vea y
+# parezca que el despliegue falló. Las imágenes sí, que casi nunca cambian.
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType text/css "access plus 7 days"
-    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType text/css "access plus 1 hour"
+    ExpiresByType application/javascript "access plus 1 hour"
     ExpiresByType image/svg+xml "access plus 30 days"
     ExpiresByType image/png "access plus 30 days"
     ExpiresByType image/x-icon "access plus 30 days"

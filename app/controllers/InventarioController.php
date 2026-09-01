@@ -9,8 +9,11 @@ declare(strict_types=1);
 
 final class InventarioController
 {
-    public function __construct(private InventarioService $service, private CatalogoModel $catalogos)
-    {
+    public function __construct(
+        private InventarioService $service,
+        private CatalogoModel $catalogos,
+        private UnidadEstadisticasService $estadisticas
+    ) {
     }
 
     public function index(): void
@@ -35,6 +38,26 @@ final class InventarioController
     }
 
     /** GET /inventario/export.csv — descarga el inventario permitido con los filtros aplicados. */
+    /** GET /api/unidades/{id}/estadisticas — ficha completa para el panel del inventario. */
+    public function apiEstadisticas(array $params): void
+    {
+        $user = require_login_api();
+        if (!InventarioService::tieneAcceso($user)) {
+            json_error('No tienes acceso al inventario', 403);
+        }
+        $datos = $this->estadisticas->de((int) $params['id']);
+        if ($datos === null) {
+            json_error('Unidad no encontrada', 404);
+        }
+        // El mismo alcance que la lista: si el usuario está limitado a su estación, no puede
+        // pedir la ficha de una unidad ajena escribiendo el id a mano.
+        $alcance = $this->service->alcance($user);
+        if ($alcance !== null && $datos['unidad']['estacion_id'] !== $alcance) {
+            json_error('No autorizado sobre esta estación', 403);
+        }
+        json_ok($datos);
+    }
+
     public function export(): void
     {
         $user = require_login_web();
