@@ -456,8 +456,11 @@ function filtrosActivos() {
     const placa = document.getElementById('f-placa');
     if (placa.value.trim()) activos.push({ etiqueta: `Placa: ${placa.value.trim()}`, limpiar: () => { placa.value = ''; } });
 
+    // La categoría solo se repite como chip si NO tiene pastilla propia: si la tiene, ya se
+    // ve encendida arriba, y duplicarla abajo gasta una fila entera para decir lo mismo.
     const cat = document.getElementById('f-categoria');
-    if (cat.value) activos.push({ etiqueta: texto(cat), limpiar: () => { cat.value = ''; } });
+    const conPastilla = cat.value !== '' && document.querySelector(`[data-categoria="${cat.value}"]`) !== null;
+    if (cat.value && !conPastilla) activos.push({ etiqueta: texto(cat), limpiar: () => { cat.value = ''; } });
 
     const tipo = document.getElementById('f-tipo');
     if (tipo.value) activos.push({ etiqueta: texto(tipo), limpiar: () => { tipo.value = ''; } });
