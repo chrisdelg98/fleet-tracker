@@ -797,7 +797,8 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .filters-panel__bar,
 .filters-panel__always-row {
     display: flex;
-    align-items: end;
+    /* Centrado: con «end» el recuento quedaba caído respecto a los botones de fecha. */
+    align-items: center;
     justify-content: space-between;
     gap: var(--sp-4);
     flex-wrap: wrap;
@@ -1859,6 +1860,40 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 
 .chipbtn { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--color-border); background: #fff; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-sm); }
 .chipbtn.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+/* Atajo de categoría. Deliberadamente más discreto que los botones de fecha: acompaña, no
+   compite. Al activarse se tiñe en suave, no en naranja pleno, para que el rango de fechas
+   siga siendo lo primero que se lee de la barra. */
+/* Se separa del grupo de fechas con espacio, no con una raya: al envolverse a su propia
+   línea, una raya vertical al principio queda huérfana y parece un error de pintado. */
+.filtros__categorias {
+    display: flex;
+    gap: var(--sp-1);
+    align-items: center;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: var(--sp-2);
+}
+.catbtn {
+    padding: 3px 10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-ink-soft);
+    font: inherit;
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+}
+.catbtn:hover { background: var(--color-bg-strong); color: var(--color-ink); }
+.catbtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.catbtn.is-active {
+    background: var(--primary-soft);
+    border-color: var(--primary-border);
+    color: var(--color-primary-dark);
+    font-weight: 600;
+}
 /* Resumen del resultado, dentro de la misma barra de filtros (un solo bloque). */
 .dashboard__status {
     display: flex;
@@ -1869,19 +1904,6 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .dashboard__status strong { font-size: var(--fs-lg); white-space: nowrap; }
 .dashboard__status .muted { font-size: var(--fs-sm); white-space: nowrap; }
-.dashboard__date {
-    width: auto;
-    min-height: 34px;
-    padding: 0 var(--sp-2);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    background: var(--color-surface);
-    color: var(--color-ink);
-    font: inherit;
-    font-size: var(--fs-sm);
-}
-.dashboard__date:hover { border-color: var(--color-ink-mute); }
-.dashboard__date:focus-visible { outline: none; border-color: var(--primary-border); box-shadow: var(--focus-ring); }
 .dashboard__meta { display: flex; gap: var(--sp-3); align-items: center; margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
 .dashboard__table td { vertical-align: middle; }
 /* La placa de la unidad (1ª columna) siempre en una sola línea. */
@@ -2499,7 +2521,6 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .timeline-card { padding: var(--sp-3); }
 
     .dashboard__status { width: 100%; }
-    .dashboard__date { flex: 1 1 auto; }
 
     .filtros__estados {
         flex-wrap: wrap;

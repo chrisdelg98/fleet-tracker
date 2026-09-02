@@ -30,18 +30,32 @@ set_page_meta(
                         <button type="button" class="chipbtn" data-fecha="manana">Mañana</button>
                         <button type="button" class="chipbtn" data-fecha="semana">Esta semana</button>
                     </div>
-                    <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="dashboard-filters-more">
-                        <span data-filters-toggle-label data-open-label="Más filtros" data-close-label="Ocultar filtros">Más filtros</span>
-                        <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
-                    </button>
+
+                    <?php
+                    // Solo las categorías de flota operativa: el resto no llega al tablero, y
+                    // una pastilla que siempre devuelve cero estorba más de lo que ayuda.
+                    $categoriasRapidas = array_values(array_filter(
+                        $categorias,
+                        static fn(array $c): bool => (int) $c['es_flota_operativa'] === 1
+                    ));
+                    ?>
+                    <?php if ($categoriasRapidas): ?>
+                        <div class="filtros__categorias" role="group" aria-label="Filtrar por categoría">
+                            <?php foreach ($categoriasRapidas as $c): ?>
+                                <button type="button" class="catbtn" data-categoria="<?= (int) $c['id'] ?>" aria-pressed="false"><?= e($c['nombre']) ?></button>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="dashboard__status">
                     <strong id="dash-count">—</strong>
                     <span id="dash-rango" class="muted"></span>
                     <span id="dash-demora" class="dashboard__delay" hidden><span class="dashboard__delay-icon" aria-hidden="true">!</span><span id="dash-demora-text">0 con demora</span></span>
-                    <input type="date" id="f-fecha" class="dashboard__date" value="<?= e($fechaHoy) ?>" aria-label="Fecha específica" title="Fecha específica">
-                    <button type="button" class="iconbtn" data-action="refrescar" title="Actualizar" aria-label="Actualizar">
-                        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10 3.5a6.5 6.5 0 0 1 5.7 3.4V4.8a.85.85 0 1 1 1.7 0v4a.85.85 0 0 1-.85.85h-4a.85.85 0 0 1 0-1.7h2.2A4.8 4.8 0 1 0 14.8 12a.85.85 0 0 1 1.55.7A6.5 6.5 0 1 1 10 3.5Z" fill="currentColor"/></svg>
+                    <!-- Cierra la fila: lo que se usa de vez en cuando va al final, después
+                         de lo que se lee siempre (los atajos de fecha y el recuento). -->
+                    <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="dashboard-filters-more">
+                        <span data-filters-toggle-label data-open-label="Más filtros" data-close-label="Ocultar filtros">Más filtros</span>
+                        <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
                     </button>
                 </div>
             </div>
@@ -49,6 +63,8 @@ set_page_meta(
         </div>
         <div class="filters-panel__more" id="dashboard-filters-more" data-filters-more hidden>
         <div class="filters-grid filters-grid--dashboard">
+            <label class="field"><span class="field__label">Fecha específica</span>
+                <input type="date" id="f-fecha" value="<?= e($fechaHoy) ?>"></label>
             <label class="field"><span class="field__label">Retorno desde</span>
                 <?= render_paises_select('retorno_desde_sel', null, false, 'Cualquier país') ?></label>
             <label class="field"><span class="field__label">Retorno disponible</span>

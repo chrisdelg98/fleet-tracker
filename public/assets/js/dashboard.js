@@ -650,6 +650,30 @@ document.querySelectorAll('[data-fecha]').forEach((b) => b.addEventListener('cli
     fechaMode = b.dataset.fecha;
     load();
 }));
+/**
+ * Pastillas de categoría: son un atajo al mismo filtro que vive en "Más filtros", no un
+ * filtro paralelo. Se escribe en el <select> y se deja que él avise, así el desplegable, el
+ * chip de filtro activo y la consulta siguen contando lo mismo.
+ */
+const selCategoria = document.getElementById('f-categoria');
+
+document.querySelectorAll('[data-categoria]').forEach((b) => b.addEventListener('click', () => {
+    const yaEstaba = selCategoria.value === b.dataset.categoria;
+    selCategoria.value = yaEstaba ? '' : b.dataset.categoria;   // volver a pulsar la quita
+    selCategoria.dispatchEvent(new Event('change', { bubbles: true }));
+}));
+
+/** El estado visual sale del <select>, no del clic: así no se separan nunca. */
+function syncCategorias() {
+    document.querySelectorAll('[data-categoria]').forEach((b) => {
+        const activa = selCategoria.value === b.dataset.categoria;
+        b.classList.toggle('is-active', activa);
+        b.setAttribute('aria-pressed', activa ? 'true' : 'false');
+    });
+}
+selCategoria.addEventListener('change', syncCategorias);
+syncCategorias();
+
 document.getElementById('f-fecha').addEventListener('change', () => {
     document.querySelectorAll('[data-fecha]').forEach((x) => x.classList.remove('is-active'));
     fechaMode = 'fecha';
@@ -664,7 +688,6 @@ const rdSel = document.querySelector('[name="retorno_desde_sel"]');
 if (rdSel) rdSel.addEventListener('change', load);
 let placaTimer;
 document.getElementById('f-placa').addEventListener('input', () => { clearTimeout(placaTimer); placaTimer = setTimeout(load, 300); });
-document.querySelector('[data-action="refrescar"]').addEventListener('click', load);
 
 stateSelectToggle.addEventListener('click', () => {
     if (stateSelectMenu.hidden) openStateMenu();
