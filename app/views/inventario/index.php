@@ -34,7 +34,7 @@ $porcentaje = static fn(int $n): float => round($n / $total * 100, 1);
 set_page_meta(
     'Inventario vehicular',
     'Visualiza la composición de la flota e inventario por categoría, estado y estación con filtros de solo lectura.',
-    ['accion' => '<a class="btn btn--primary" href="/inventario/export.csv' . ($qs ? '?' . e($qs) : '') . '">⬇ Exportar CSV</a>']
+    ['accion' => '<a class="btn btn--primary" href="/inventario/export.xlsx' . ($qs ? '?' . e($qs) : '') . '">⬇ Exportar Excel</a>']
 );
 ?>
 <section class="module">

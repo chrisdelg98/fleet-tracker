@@ -48,7 +48,12 @@ final class InventarioService
                        cap.nombre AS capacidad, te.nombre AS tipo_equipo,
                        p.nombre AS piloto_asignado,
                        e.codigo AS estacion_codigo, e.nombre AS estacion,
-                       ' . self::TIENE_PERMISO_INTERNACIONAL . ' AS puede_internacional
+                       ' . self::TIENE_PERMISO_INTERNACIONAL . ' AS puede_internacional,
+                       u.created_at,
+                       (SELECT GROUP_CONCAT(pe.nombre ORDER BY pe.nombre SEPARATOR ", ")
+                          FROM unidad_permisos up2
+                          JOIN permisos_especiales pe ON pe.id = up2.permiso_especial_id
+                         WHERE up2.unidad_id = u.id AND pe.activo = 1) AS permisos
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   JOIN estaciones e ON e.id = u.estacion_id

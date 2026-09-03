@@ -1,8 +1,7 @@
 <?php
 /**
  * Inventario vehicular (plan §7.6). Solo lectura, con alcance por rol aplicado en la
- * consulta (InventarioService). Página con conteos + tabla filtrable y export CSV
- * (UTF-8 con BOM para que Excel muestre tildes y ñ correctamente).
+ * consulta (InventarioService). Página con conteos + tabla filtrable y descarga en Excel.
  */
 
 declare(strict_types=1);
@@ -37,7 +36,6 @@ final class InventarioController
         ], 'Inventario · Disponibilidad de Flota');
     }
 
-    /** GET /inventario/export.csv — descarga el inventario permitido con los filtros aplicados. */
     /** GET /api/unidades/{id}/estadisticas — ficha completa para el panel del inventario. */
     public function apiEstadisticas(array $params): void
     {
@@ -58,7 +56,14 @@ final class InventarioController
         json_ok($datos);
     }
 
-    public function export(): void
+    /**
+     * GET /inventario/export.xlsx — el inventario completo en Excel de verdad.
+     *
+     * Frente al CSV: sin líos de separador ni de codificación (Excel en español abre el CSV
+     * con punto y coma y a veces parte las tildes), y con encabezado fijo y anchos, que en
+     * una tabla de 15 columnas es la diferencia entre consultarla y pelearse con ella.
+     */
+    public function exportExcel(): void
     {
         $user = require_login_web();
         if (!InventarioService::tieneAcceso($user)) {
@@ -66,31 +71,42 @@ final class InventarioController
             echo 'No tienes acceso al inventario.';
             return;
         }
-        $unidades = $this->service->listar($user, $this->filtros($_GET));
 
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="inventario-' . date('Ymd-His') . '.csv"');
+        // Las mismas columnas que la pantalla, más lo que ahí no cabe pero sí interesa
+        // llevarse: tipo de equipo, piloto, permisos y desde cuándo está registrada.
+        $columnas = [
+            ['Placa', 16], ['Alcance', 14], ['Categoría', 16], ['Marca', 16], ['Modelo', 16],
+            ['Año', 8], ['Combustible', 14], ['Capacidad', 12], ['Tipo de equipo', 16],
+            ['Estado', 18], ['Comentario del estado', 34], ['Flota operativa', 15],
+            ['Piloto asignado', 26], ['Permisos especiales', 40],
+            ['Estación', 10], ['Nombre de la estación', 26], ['Registrada el', 20],
+        ];
 
-        $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
-        // Las mismas columnas que la tabla, en el mismo orden: quien exporta espera
-        // llevarse lo que está viendo, no una versión recortada de hace tres cambios.
-        fputcsv($out, [
-            'Placa', 'Alcance', 'Categoría', 'Marca', 'Modelo', 'Año', 'Combustible',
-            'Capacidad', 'Estado', 'Notas', 'Flota operativa', 'Estación',
-        ], ',', '"', '');
-        foreach ($unidades as $u) {
-            fputcsv($out, [
+        $filas = [array_column($columnas, 0)];
+        foreach ($this->service->listar($user, $this->filtros($_GET)) as $u) {
+            $filas[] = [
                 $u['placa_unidad'],
-                ((int) $u['puede_internacional'] === 1 ? 'Internacional' : 'Nacional'),
-                $u['categoria'], $u['marca'], $u['modelo'], $u['anio'],
-                $u['tipo_combustible'], $u['capacidad'],
+                (int) $u['puede_internacional'] === 1 ? 'Internacional' : 'Nacional',
+                $u['categoria'], $u['marca'], $u['modelo'],
+                $u['anio'] !== null ? (int) $u['anio'] : '',
+                $u['tipo_combustible'], $u['capacidad'], $u['tipo_equipo'],
                 EstadoVehiculo::label($u['estado_vehiculo']), $u['estado_notas'],
-                ((int) $u['en_disponibilidad'] === 1 ? 'Sí' : 'No'),
-                $u['estacion_codigo'],
-            ], ',', '"', '');
+                (int) $u['en_disponibilidad'] === 1 ? 'Sí' : 'No',
+                $u['piloto_asignado'], $u['permisos'],
+                $u['estacion_codigo'], $u['estacion'],
+                substr((string) $u['created_at'], 0, 10),
+            ];
         }
-        fclose($out);
+
+        $bytes = (new XlsxWriter())
+            ->hoja('Inventario', $filas, ['anchos' => array_column($columnas, 1), 'congelar' => true])
+            ->generar();
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="inventario-' . date('Ymd-His') . '.xlsx"');
+        header('Content-Length: ' . strlen($bytes));
+        header('Cache-Control: no-store');
+        echo $bytes;
     }
 
     private function filtros(array $q): array

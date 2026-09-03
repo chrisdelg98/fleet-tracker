@@ -170,7 +170,7 @@ $inventarioController = new InventarioController(
     new UnidadEstadisticasService($pdo, $unidadModel)
 );
 $router->get('/inventario', fn() => $inventarioController->index());
-$router->get('/inventario/export.csv', fn() => $inventarioController->export());
+$router->get('/inventario/export.xlsx', fn() => $inventarioController->exportExcel());
 $router->get('/api/unidades/{id}/estadisticas', fn($p) => $inventarioController->apiEstadisticas($p));
 
 // ── Fase 3: Histórico ──
