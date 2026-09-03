@@ -15,6 +15,14 @@ final class InventarioService
 {
     private const ALCANCE_TOTAL = [Rol::ADMIN_GLOBAL, Rol::CONSULTA_REGIONAL];
 
+    /**
+     * Puede cruzar frontera. Se deriva de los permisos y no de un campo propio, así que la
+     * condición se escribe una vez y la comparten el listado, el filtro y el resumen.
+     */
+    private const TIENE_PERMISO_INTERNACIONAL = 'EXISTS (SELECT 1 FROM unidad_permisos up
+                    JOIN permisos_especiales pe ON pe.id = up.permiso_especial_id
+                   WHERE up.unidad_id = u.id AND pe.activo = 1 AND pe.habilita_internacional = 1)';
+
     public function __construct(private PDO $pdo)
     {
     }
@@ -40,11 +48,7 @@ final class InventarioService
                        cap.nombre AS capacidad, te.nombre AS tipo_equipo,
                        p.nombre AS piloto_asignado,
                        e.codigo AS estacion_codigo, e.nombre AS estacion,
-                       EXISTS (SELECT 1 FROM unidad_permisos up
-                                 JOIN permisos_especiales pe ON pe.id = up.permiso_especial_id
-                                WHERE up.unidad_id = u.id
-                                  AND pe.activo = 1
-                                  AND pe.habilita_internacional = 1) AS puede_internacional
+                       ' . self::TIENE_PERMISO_INTERNACIONAL . ' AS puede_internacional
                   FROM unidades u
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   JOIN estaciones e ON e.id = u.estacion_id
@@ -61,34 +65,54 @@ final class InventarioService
     /** Conteos por categoría y por estado del vehículo, dentro del alcance + filtros. */
     public function conteos(array $user, array $filtros): array
     {
-        [$where, $params] = $this->where($user, $filtros);
-
+        [$sinCategoria, $paramsCat] = $this->where($user, $filtros, 'categoria_id');
         $porCategoria = $this->pdo->prepare(
-            'SELECT c.nombre, COUNT(*) AS n FROM unidades u
+            'SELECT c.id, c.nombre, COUNT(*) AS n FROM unidades u
                JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                JOIN estaciones e ON e.id = u.estacion_id'
-            . $where . ' GROUP BY c.id ORDER BY c.orden'
+            . $sinCategoria . ' GROUP BY c.id, c.nombre ORDER BY c.orden'
         );
-        $porCategoria->execute($params);
+        $porCategoria->execute($paramsCat);
         $categorias = $porCategoria->fetchAll();
 
+        [$sinEstado, $paramsEstado] = $this->where($user, $filtros, 'estado_vehiculo');
         $porEstado = $this->pdo->prepare(
             'SELECT u.estado_vehiculo AS nombre, COUNT(*) AS n FROM unidades u
                JOIN estaciones e ON e.id = u.estacion_id'
-            . $where . ' GROUP BY u.estado_vehiculo'
+            . $sinEstado . ' GROUP BY u.estado_vehiculo'
         );
-        $porEstado->execute($params);
+        $porEstado->execute($paramsEstado);
+
+        // Cuántas pueden cruzar frontera: el inventario ya marca INT/NAC fila a fila, pero
+        // el total es lo que dice si se puede comprometer un viaje internacional.
+        [$sinAlcance, $paramsAlcance] = $this->where($user, $filtros, 'internacional');
+        $porAlcance = $this->pdo->prepare(
+            'SELECT ' . self::TIENE_PERMISO_INTERNACIONAL . ' AS internacional, COUNT(*) AS n
+               FROM unidades u
+               JOIN estaciones e ON e.id = u.estacion_id'
+            . $sinAlcance . ' GROUP BY internacional ORDER BY internacional DESC'
+        );
+        $porAlcance->execute($paramsAlcance);
 
         return [
             'por_categoria' => $categorias,
             'por_estado'    => $porEstado->fetchAll(),
+            'por_alcance'   => $porAlcance->fetchAll(),
             'total'         => array_sum(array_map(static fn($r) => (int) $r['n'], $categorias)),
         ];
     }
 
     /** Construye el WHERE con el alcance de rol y los filtros. Devuelve [sql, params]. */
-    private function where(array $user, array $filtros): array
+    /**
+     * @param string $omitir filtro que NO se aplica, para los resúmenes por faceta: la lista
+     *                       de categorías se cuenta sin el filtro de categoría, o al elegir
+     *                       una desaparecerían las demás y no se podría saltar a otra.
+     */
+    private function where(array $user, array $filtros, string $omitir = ''): array
     {
+        if ($omitir !== '') {
+            $filtros[$omitir] = null;
+        }
         $where = ' WHERE u.activo = 1';
         $params = [];
 
@@ -111,6 +135,9 @@ final class InventarioService
         if (isset($filtros['en_disponibilidad']) && $filtros['en_disponibilidad'] !== '') {
             $where .= ' AND u.en_disponibilidad = :ed';
             $params[':ed'] = (int) (bool) $filtros['en_disponibilidad'];
+        }
+        if (isset($filtros['internacional']) && $filtros['internacional'] !== null && $filtros['internacional'] !== '') {
+            $where .= ((int) $filtros['internacional'] === 1 ? ' AND ' : ' AND NOT ') . self::TIENE_PERMISO_INTERNACIONAL;
         }
         return [$where, $params];
     }

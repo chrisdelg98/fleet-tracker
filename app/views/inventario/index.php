@@ -12,6 +12,25 @@
  */
 $labelEstado = EstadoVehiculo::labels();
 $qs = http_build_query(array_filter($filtros, static fn($v) => $v !== null && $v !== ''));
+
+/**
+ * Enlace que aplica (o quita) un filtro conservando los demás. El resumen deja de ser un
+ * cartel y pasa a ser el atajo: se ve "Cabezal 14" y se hace clic para verlos.
+ */
+$enlaceFiltro = static function (string $campo, $valor) use ($filtros): string {
+    $activo = (string) ($filtros[$campo] ?? '') === (string) $valor;
+    $nuevos = array_filter(
+        [$campo => $activo ? null : $valor] + $filtros,          // volver a pulsar lo quita
+        static fn($v) => $v !== null && $v !== ''
+    );
+    $query = http_build_query($nuevos);
+    return '/inventario' . ($query ? '?' . $query : '');
+};
+$filtroActivo = static fn(string $campo, $valor): bool => (string) ($filtros[$campo] ?? '') === (string) $valor;
+
+/** Proporción sobre el total, para leer el reparto sin comparar números a ojo. */
+$total = max(1, (int) $conteos['total']);
+$porcentaje = static fn(int $n): float => round($n / $total * 100, 1);
 set_page_meta(
     'Inventario vehicular',
     'Visualiza la composición de la flota e inventario por categoría, estado y estación con filtros de solo lectura.',
@@ -63,23 +82,54 @@ set_page_meta(
         </div>
     </form>
 
+    <?php
+    /** Una fila del resumen: enlace que filtra, con su barra de proporción de fondo. */
+    $filaResumen = static function (string $etiqueta, int $n, string $href, bool $activo) use ($porcentaje): void {
+        ?>
+        <li>
+            <a class="inv-fila<?= $activo ? ' is-activo' : '' ?>" href="<?= e($href) ?>"
+               aria-pressed="<?= $activo ? 'true' : 'false' ?>">
+                <span class="inv-fila__barra" style="width: <?= $porcentaje($n) ?>%" aria-hidden="true"></span>
+                <span class="inv-fila__texto"><?= e($etiqueta) ?></span>
+                <strong class="inv-fila__n"><?= $n ?></strong>
+            </a>
+        </li>
+        <?php
+    };
+    ?>
     <div class="inv-cards">
         <div class="card inv-card">
             <h2>Por categoría</h2>
             <ul class="inv-list">
                 <?php foreach ($conteos['por_categoria'] as $c): ?>
-                    <li><span><?= e($c['nombre']) ?></span><strong><?= (int) $c['n'] ?></strong></li>
+                    <?php $filaResumen($c['nombre'], (int) $c['n'], $enlaceFiltro('categoria_id', $c['id']), $filtroActivo('categoria_id', $c['id'])); ?>
                 <?php endforeach; ?>
                 <li class="inv-list__total"><span>Total</span><strong><?= (int) $conteos['total'] ?></strong></li>
             </ul>
         </div>
-        <div class="card inv-card">
-            <h2>Por estado del vehículo</h2>
-            <ul class="inv-list">
-                <?php foreach ($conteos['por_estado'] as $c): ?>
-                    <li><span><?= e($labelEstado[$c['nombre']] ?? $c['nombre']) ?></span><strong><?= (int) $c['n'] ?></strong></li>
-                <?php endforeach; ?>
-            </ul>
+
+        <div class="inv-cards__col">
+            <div class="card inv-card">
+                <h2>Por estado del vehículo</h2>
+                <ul class="inv-list">
+                    <?php foreach ($conteos['por_estado'] as $c): ?>
+                        <?php $filaResumen($labelEstado[$c['nombre']] ?? $c['nombre'], (int) $c['n'], $enlaceFiltro('estado_vehiculo', $c['nombre']), $filtroActivo('estado_vehiculo', $c['nombre'])); ?>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <div class="card inv-card">
+                <h2>Por alcance</h2>
+                <ul class="inv-list">
+                    <?php foreach ($conteos['por_alcance'] as $c): $intl = (int) $c['internacional'] === 1; ?>
+                        <?php $filaResumen(
+                            $intl ? 'Puede cruzar frontera' : 'Solo rutas nacionales',
+                            (int) $c['n'],
+                            $enlaceFiltro('internacional', $intl ? '1' : '0'),
+                            $filtroActivo('internacional', $intl ? '1' : '0')
+                        ); ?>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
         </div>
     </div>
 

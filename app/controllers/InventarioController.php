@@ -100,6 +100,7 @@ final class InventarioController
             'categoria_id'      => $q['categoria_id'] ?? null,
             'estado_vehiculo'   => $q['estado_vehiculo'] ?? null,
             'en_disponibilidad' => $q['en_disponibilidad'] ?? '',
+            'internacional'     => isset($q['internacional']) && $q['internacional'] !== '' ? (int) $q['internacional'] : null,
         ];
     }
 }
