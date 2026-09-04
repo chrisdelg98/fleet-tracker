@@ -98,7 +98,7 @@ set_page_meta(
         <div class="dialog__body">
             <div class="grid-2">
                 <label class="field"><span class="field__label">Nombre *</span>
-                    <input type="text" name="nombre" maxlength="100" required placeholder="Ej.: Cliente Textil"></label>
+                    <input type="text" name="nombre" maxlength="100" required placeholder="Ej.: SV TEAM"></label>
                 <?php if ($esAdmin): ?>
                     <label class="field"><span class="field__label">Estación</span>
                         <select name="estacion_id">

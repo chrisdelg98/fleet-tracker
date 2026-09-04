@@ -3,7 +3,7 @@
  * Listas de notificación: destinatarios con nombre que se eligen al reservar.
  *
  * Cada estación gestiona las suyas; estacion_id NULL es una lista corporativa, visible desde
- * cualquier estación. El nombre solo es único dentro de su estación: "Cliente Textil" puede
+ * cualquier estación. El nombre solo es único dentro de su estación: "SV TEAM" puede
  * existir en SV y en GT y ser gente distinta.
  */
 

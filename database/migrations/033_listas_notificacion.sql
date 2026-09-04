@@ -6,7 +6,7 @@
 -- una lista global obligaría a que un administrador central mantuviera los contactos de todos.
 -- estacion_id NULL = lista corporativa, visible desde cualquier estación.
 --
--- El nombre es único DENTRO de la estación, no en toda la red: "Cliente Textil" puede existir
+-- El nombre es único DENTRO de la estación, no en toda la red: "SV TEAM" puede existir
 -- a la vez en SV y en GT y ser gente distinta. Un único global lo habría impedido.
 --
 -- Los correos van en un solo campo separados por coma, no en una tabla aparte: una lista es
