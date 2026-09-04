@@ -106,7 +106,9 @@ final class ListaNotificacionService
             $estacionId = $pedida !== '' ? (int) $pedida : null;
         }
 
-        $nombre = (string) $v->value('nombre');
+        // En mayúsculas, como las placas y los nombres de piloto: el nombre de la lista se
+        // lee en un desplegable junto a los demás y "SV Team" al lado de "SV TEAM" parecen dos.
+        $nombre = mb_strtoupper(trim((string) $v->value('nombre')), 'UTF-8');
         if ($errores === [] && $this->listas->nombreRepetido($estacionId, $nombre, $exceptId)) {
             $errores['nombre'] = 'Ya existe una lista con ese nombre en esta estación.';
         }

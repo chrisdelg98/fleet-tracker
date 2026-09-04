@@ -141,7 +141,7 @@ set_page_meta(
         <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Nombre *</span>
-                <input type="text" name="nombre" maxlength="150" required></label>
+                <input type="text" name="nombre" maxlength="150" required data-mayusculas></label>
             <label class="field"><span class="field__label">Documento de identificación</span>
                 <input type="text" name="documento_identidad" maxlength="40" placeholder="DUI, cédula, pasaporte…"></label>
             <label class="field"><span class="field__label">Tipo de licencia *</span>

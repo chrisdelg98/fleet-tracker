@@ -166,7 +166,7 @@ set_page_meta(
         <div class="dialog__body">
         <div class="grid-2">
             <label class="field"><span class="field__label">Placa de unidad *</span>
-                <input type="text" name="placa_unidad" maxlength="30" required></label>
+                <input type="text" name="placa_unidad" maxlength="30" required data-mayusculas></label>
             <label class="field"><span class="field__label">Categoría *</span>
                 <select name="categoria_vehiculo_id" required>
                     <option value="">Selecciona…</option>

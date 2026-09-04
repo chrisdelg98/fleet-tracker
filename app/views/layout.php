@@ -180,5 +180,6 @@
     <script src="/assets/js/rowmenu.js" type="module"></script>
     <script src="/assets/js/infotip.js" type="module"></script>
     <script src="/assets/js/responsive-table.js" type="module"></script>
+    <script src="/assets/js/mayusculas.js" type="module"></script>
 </body>
 </html>
