@@ -216,7 +216,7 @@ set_page_meta(
             <!-- Avisar al guardar. La lista es un atajo que rellena el campo; lo que se
                  envía es siempre lo que quede escrito, así se puede añadir o quitar a mano. -->
             <label class="field"><span class="field__label">Lista de contactos</span>
-                <select id="lista-correo" data-no-search>
+                <select id="lista-correo">
                     <option value="">Escribir a mano…</option>
                     <?php
                     // Quien ve varias estaciones puede tener dos listas con el mismo nombre
