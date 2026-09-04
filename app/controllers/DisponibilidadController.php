@@ -14,7 +14,8 @@ final class DisponibilidadController
         private CatalogoModel $catalogos,
         private UnidadModel $unidades,
         private RutaModel $rutas,
-        private PilotoModel $pilotos
+        private PilotoModel $pilotos,
+        private ListaNotificacionService $listasNotificacion
     ) {
     }
 
@@ -39,6 +40,7 @@ final class DisponibilidadController
             'tiposEquipo' => $this->catalogos->activos('tipos_equipo', 'orden'),
             'reservables' => $reservables,
             'rutas'       => $this->rutas->listar(),
+            'listasCorreo' => $this->listasNotificacion->listar($user),
             'pilotos'     => $this->pilotos->listar($estacionGestion),
             'fechaHoy'    => (new DateTimeImmutable('now'))->format('Y-m-d'),
         ], 'Dashboard · Disponibilidad de Flota');

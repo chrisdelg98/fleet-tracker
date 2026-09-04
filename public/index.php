@@ -78,6 +78,18 @@ $pilotoImportController = new ImportController(
     'pilotos'
 );
 
+$listaNotificacionModel = new ListaNotificacionModel($pdo);
+$contactoController = new ListaNotificacionController(
+    new ListaNotificacionService($pdo, $listaNotificacionModel),
+    $listaNotificacionModel,
+    $catalogoModel
+);
+$router->get('/contactos', fn() => $contactoController->index());
+$router->get('/api/contactos/{id}', fn($p) => $contactoController->apiShow($p));
+$router->post('/api/contactos', fn() => $contactoController->apiCreate());
+$router->put('/api/contactos/{id}', fn($p) => $contactoController->apiUpdate($p));
+$router->delete('/api/contactos/{id}', fn($p) => $contactoController->apiDelete($p));
+
 $router->get('/pilotos', fn() => $pilotoController->index());
 $router->get('/pilotos/plantilla.xlsx', fn() => $pilotoImportController->plantilla());
 $router->post('/api/pilotos/importar', fn() => $pilotoImportController->importar());
@@ -137,7 +149,8 @@ $disponibilidadController = new DisponibilidadController(
     $catalogoModel,
     $unidadModel,
     $rutaModel,
-    $pilotoModel
+    $pilotoModel,
+    new ListaNotificacionService($pdo, new ListaNotificacionModel($pdo))
 );
 
 // Dashboard (visible para todos los roles) + endpoint de disponibilidad

@@ -555,6 +555,8 @@ fieldset.field legend {
 /* Nota bajo un campo: el hueco existe siempre, así el formulario no se reacomoda
    cuando aparece o desaparece el texto. */
 .field__note {
+/* Aclaración corta dentro de la propia etiqueta: no gasta una línea debajo del campo. */
+.field__label-nota { font-weight: normal; color: var(--color-ink-soft); font-size: var(--fs-xs); }
     display: block;
     min-height: 16px;
     margin-top: 4px;

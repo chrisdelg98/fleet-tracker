@@ -25,6 +25,7 @@ function menu_usuario(array $u): array
         $grupos['Operación']['/flota'] = 'Flota';
         $grupos['Operación']['/pilotos'] = 'Pilotos';
         $grupos['Operación']['/rutas'] = 'Rutas';
+        $grupos['Operación']['/contactos'] = 'Contactos';
     }
     if ($u['rol'] !== Rol::CONSULTA_BASICO) {
         $grupos['Consulta']['/inventario'] = 'Inventario';

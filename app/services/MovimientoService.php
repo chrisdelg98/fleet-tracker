@@ -63,6 +63,10 @@ final class MovimientoService
         if ((int) $data['retorno_disponible'] === 1) {
             $this->notificaciones?->notificarRetornoDisponible($id);
         }
+        // Fuera de la transacción y a prueba de fallos: la reserva ya es válida y está
+        // guardada. Que el servidor de correo esté caído no puede deshacerla.
+        $this->notificaciones?->notificarReservaCreada($id, $data['notificar_a']);
+
         return $id;
     }
 
@@ -406,7 +410,12 @@ final class MovimientoService
         $v->required('fecha_salida', 'La fecha de salida')
           ->required('fecha_fin_estimada', 'La fecha de liberación')
           ->maxLen('referencia_cw', 120, 'La referencia CW')
-          ->maxLen('reservado_para', 150, 'El campo reservado para');
+          ->maxLen('reservado_para', 150, 'El campo reservado para')
+          ->maxLen('notificar_a', 500, 'Los correos a notificar');
+        $malos = CatalogoAdminService::correosInvalidos((string) ($input['notificar_a'] ?? ''));
+        if ($malos !== []) {
+            $v->addError('notificar_a', 'No parecen correos válidos: ' . implode(', ', $malos) . '.');
+        }
         $v->validateOrFail();
 
         $salidaUtc = $this->aUtc($v->value('fecha_salida'), $tz, 'fecha_salida');
@@ -449,6 +458,7 @@ final class MovimientoService
             'retorno_disponible'  => array_key_exists('retorno_disponible', $input) ? (int) (bool) $input['retorno_disponible'] : 0,
             'queda_con_cliente'   => array_key_exists('queda_con_cliente', $input) ? (int) (bool) $input['queda_con_cliente'] : 0,
             'reservado_para'      => $this->nullable($v->value('reservado_para')),
+            'notificar_a'         => implode(', ', CatalogoAdminService::correos((string) ($input['notificar_a'] ?? ''))) ?: null,
             'notas'               => $this->nullable($v->value('notas')),
         ];
     }
@@ -641,7 +651,7 @@ final class MovimientoService
     {
         return array_intersect_key($mov, array_flip([
             'ruta_id', 'pais_origen_id', 'pais_destino_id', 'tipo_ruta',
-            'fecha_salida', 'fecha_fin_estimada', 'referencia_cw', 'retorno_disponible', 'reservado_para',
+            'fecha_salida', 'fecha_fin_estimada', 'referencia_cw', 'retorno_disponible', 'reservado_para', 'notificar_a',
         ]));
     }
 

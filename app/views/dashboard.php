@@ -213,6 +213,24 @@ set_page_meta(
             <label class="field"><span class="field__label">Referencia CW</span>
                 <input type="text" name="referencia_cw" maxlength="120"></label>
 
+            <!-- Avisar al guardar. La lista es un atajo que rellena el campo; lo que se
+                 envía es siempre lo que quede escrito, así se puede añadir o quitar a mano. -->
+            <label class="field"><span class="field__label">Lista de contactos</span>
+                <select id="lista-correo" data-no-search>
+                    <option value="">Escribir a mano…</option>
+                    <?php
+                    // Quien ve varias estaciones puede tener dos listas con el mismo nombre
+                    // (una por país): sin el código no se distinguen en el desplegable.
+                    $codigos = array_filter(array_column($listasCorreo, 'estacion_codigo'));
+                    $variasEstaciones = count(array_unique($codigos)) > 1;
+                    foreach ($listasCorreo as $l):
+                        $sufijo = $variasEstaciones && !empty($l['estacion_codigo']) ? ' · ' . $l['estacion_codigo'] : '';
+                    ?><option value="<?= e($l['correos']) ?>"><?= e($l['nombre'] . $sufijo) ?></option><?php endforeach; ?>
+                </select></label>
+            <label class="field grid-4__3">
+                <span class="field__label">Notificar a <span class="field__label-nota">(vacío: no se envía notificación)</span></span>
+                <input type="text" name="notificar_a" maxlength="500" placeholder="correo@empresa.com, otro@empresa.com"></label>
+
             <label class="check check--box grid-4__2"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label>
             <label class="check check--box grid-4__2"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente</span></label>
         </div>

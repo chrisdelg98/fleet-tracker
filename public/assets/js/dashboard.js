@@ -438,6 +438,18 @@ if (formMotivo) {
 // ── Filtros aplicados ──
 // Con parte de los filtros escondidos tras "Más filtros", lo aplicado tiene que verse
 // siempre: si no, el tablero muestra una flota parcial y nadie recuerda por qué.
+/**
+ * Elegir una lista de contactos rellena el campo de correos. No lo bloquea: lo normal es
+ * partir de la lista y añadir a alguien puntual para ese viaje.
+ */
+const selLista = document.getElementById('lista-correo');
+const inputNotificar = document.querySelector('[name="notificar_a"]');
+if (selLista && inputNotificar) {
+    selLista.addEventListener('change', () => {
+        if (selLista.value !== '') inputNotificar.value = selLista.value;
+    });
+}
+
 const chipsEl = document.getElementById('dash-chips');
 
 function filtrosActivos() {

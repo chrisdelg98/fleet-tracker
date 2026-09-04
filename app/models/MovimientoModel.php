@@ -12,7 +12,8 @@ final class MovimientoModel
     private const CAMPOS = [
         'unidad_id', 'piloto_id', 'ruta_id', 'ruta_custom_origen', 'ruta_custom_destino',
         'pais_origen_id', 'pais_destino_id', 'tipo_ruta', 'fecha_salida', 'fecha_fin_estimada',
-        'referencia_cw', 'retorno_disponible', 'queda_con_cliente', 'reservado_para', 'notas', 'estado',
+        'referencia_cw', 'retorno_disponible', 'queda_con_cliente', 'reservado_para',
+        'notificar_a', 'notas', 'estado',
     ];
 
     public function __construct(private PDO $pdo)

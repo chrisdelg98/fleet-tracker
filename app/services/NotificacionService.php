@@ -77,6 +77,80 @@ final class NotificacionService
         });
     }
 
+    /**
+     * Confirmación de reserva a los contactos que se indicaron al crearla.
+     *
+     * A diferencia del resto de avisos, los destinatarios no vienen de las suscripciones sino
+     * del propio movimiento: quien reserva decide a quién avisar de ESE viaje, que puede ser
+     * un cliente externo sin usuario en el sistema.
+     */
+    public function notificarReservaCreada(int $movimientoId, ?string $destinatarios): void
+    {
+        $correos = CatalogoAdminService::correos((string) $destinatarios);
+        if ($correos === []) {
+            return;
+        }
+
+        $this->safe(function () use ($movimientoId, $correos): void {
+            $stmt = $this->pdo->prepare(
+                'SELECT m.id, m.estado, m.fecha_salida, m.fecha_fin_estimada, m.reservado_para,
+                        m.referencia_cw,
+                        u.placa_unidad, e.timezone, e.codigo AS estacion_codigo,
+                        p.nombre AS piloto,
+                        po.codigo_iso AS origen, pd.codigo_iso AS destino
+                   FROM movimientos m
+                   JOIN unidades u ON u.id = m.unidad_id
+                   JOIN estaciones e ON e.id = u.estacion_id
+                   LEFT JOIN pilotos p ON p.id = m.piloto_id
+                   LEFT JOIN paises po ON po.id = m.pais_origen_id
+                   LEFT JOIN paises pd ON pd.id = m.pais_destino_id
+                  WHERE m.id = :id'
+            );
+            $stmt->execute([':id' => $movimientoId]);
+            $m = $stmt->fetch();
+            if ($m === false) {
+                return;
+            }
+
+            // En la hora de la estación: quien recibe el aviso trabaja en ese huso, no en UTC.
+            $salida = format_local($m['fecha_salida'], $m['timezone'], 'd/m/Y H:i');
+            $fin    = format_local($m['fecha_fin_estimada'], $m['timezone'], 'd/m/Y H:i');
+            $ruta   = ($m['origen'] ?? '?') . ' → ' . ($m['destino'] ?? '?');
+
+            $filas = [
+                'Unidad'        => $m['placa_unidad'],
+                'Ruta'          => $ruta,
+                'Salida'        => $salida,
+                'Entrega estimada' => $fin,
+                'Piloto'        => $m['piloto'] ?: 'Por asignar',
+                'Reservado para' => $m['reservado_para'] ?: '—',
+                'Referencia CW' => $m['referencia_cw'] ?: '—',
+            ];
+            $detalle = '<table style="border-collapse:collapse">';
+            foreach ($filas as $k => $v) {
+                $detalle .= '<tr><td style="padding:4px 12px 4px 0;color:#5b6470">' . e($k) . '</td>'
+                    . '<td style="padding:4px 0"><strong>' . e((string) $v) . '</strong></td></tr>';
+            }
+            $detalle .= '</table>';
+
+            $subject = 'Reserva confirmada · ' . $m['placa_unidad'] . ' · ' . $ruta;
+            $html = $this->emailTemplate(
+                'Reserva confirmada',
+                '<p>Se programó el siguiente movimiento.</p>' . $detalle,
+                rtrim($this->appUrl, '/') . '/timeline',
+                'Ver el timeline'
+            );
+            $text = "Reserva confirmada
+"
+                . implode("
+", array_map(static fn($k, $v): string => "{$k}: {$v}", array_keys($filas), $filas));
+
+            foreach ($correos as $correo) {
+                $this->correo->send($correo, $subject, $html, $text);
+            }
+        });
+    }
+
     public function enviarPrueba(array $suscripcion, array $user): void
     {
         $to = trim((string) ($user['email'] ?? ''));

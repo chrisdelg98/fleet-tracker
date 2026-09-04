@@ -30,12 +30,35 @@ final class CatalogoAdminService
         'descripcion' => 'Descripción',
         'pais_id' => 'Alcance',
         'habilita_internacional' => 'Cruza frontera',
+        'correos' => 'Correos',
         'codigo_iso' => 'Código ISO',
         'es_flota_operativa' => 'Flota operativa',
         'es_motriz' => 'Se mueve sola',
         'orden' => 'Orden',
         'region' => 'Región',
     ];
+
+    /**
+     * Correos de un campo de texto libre, limpios y sin repetir. Se acepta coma, punto y coma
+     * o salto de línea porque es como llegan pegados desde un correo o una hoja.
+     *
+     * @return string[]
+     */
+    public static function correos(string $texto): array
+    {
+        $partes = preg_split('/[,;\s]+/u', trim($texto)) ?: [];
+        $limpios = array_filter(array_map('trim', $partes), static fn(string $c): bool => $c !== '');
+        return array_values(array_unique($limpios));
+    }
+
+    /** @return string[] los que no tienen forma de correo */
+    public static function correosInvalidos(string $texto): array
+    {
+        return array_values(array_filter(
+            self::correos($texto),
+            static fn(string $c): bool => filter_var($c, FILTER_VALIDATE_EMAIL) === false
+        ));
+    }
 
     public static function etiqueta(string $campo): string
     {
@@ -153,6 +176,15 @@ final class CatalogoAdminService
                 case 'region':
                     $v->required($campo, $label)->inEnum($campo, RegionPais::values(), $label);
                     break;
+                case 'correos': // uno o varios, separados por coma
+                    $v->required($campo, $label)->maxLen($campo, 500, $label);
+                    $malos = self::correosInvalidos((string) ($input[$campo] ?? ''));
+                    if ($malos !== []) {
+                        // Se citan los que fallan, no un "revisa el formato": con ocho
+                        // direcciones en una celda, encontrar la mala a ojo es el problema.
+                        $v->addError($campo, 'No parecen correos válidos: ' . implode(', ', $malos) . '.');
+                    }
+                    break;
             }
         }
         $v->validateOrFail();
@@ -160,6 +192,7 @@ final class CatalogoAdminService
         foreach ($fields as $campo => $tipo) {
             $val = $v->value($campo);
             $out[$campo] = match ($tipo) {
+                'correos' => implode(', ', self::correos((string) $val)),
                 'bool'   => array_key_exists($campo, $input) ? (int) (bool) $input[$campo] : 0,
                 'int'    => $val !== null && $val !== '' ? (int) $val : 0,
                 'iso2'   => strtoupper((string) $val),
