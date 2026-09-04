@@ -28,6 +28,7 @@
     --estado-reservada: #c77700;
     --estado-transito: #1a73c7;
     --estado-taller: #6b7280;
+    --estado-cliente: #8a5cd1;
 
     --color-error: #d93025;
     --color-error-bg: #fdecea;
@@ -780,7 +781,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .chip--reservada  { --estado: var(--estado-reservada); }
 .chip--transito   { --estado: var(--estado-transito); }
 .chip--taller     { --estado: var(--estado-taller); }
-.chip--cliente    { --estado: #8a5cd1; }   /* con el cliente: ocupado, pero no viajando */
+.chip--cliente    { --estado: var(--estado-cliente); }   /* ocupado, pero no viajando */
 
 .filters-panel {
     display: grid;
@@ -1498,8 +1499,17 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .btn--ghost-dark:hover { background: var(--color-surface-soft); border-color: var(--primary-border); color: var(--primary); }
 
 /* ── Timeline / Gantt ── */
-.tl { min-width: 720px; }
+/* Ancho por día: con ventanas largas la tabla se desplaza en vez de estrujar las columnas
+   hasta que dejan de leerse. */
+.tl { min-width: max(720px, calc(120px + var(--tl-dias) * 44px)); }
 .tl__head, .tl__row { display: grid; grid-template-columns: 120px 1fr; align-items: stretch; }
+.tl__head {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--color-surface);
+    box-shadow: 0 1px 0 var(--color-border);
+}
 .tl__unidad {
     position: sticky;
     left: 0;
@@ -1512,7 +1522,9 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     align-items: center;
     border-right: 1px solid var(--color-border);
 }
-.tl__corner { z-index: 3; color: var(--color-ink-soft); }
+.tl__corner { z-index: 5; color: var(--color-ink-soft); }
+/* Fin de semana: referencia visual para no perderse en una ventana de 60 días. */
+.tl__dia--finde { background: var(--color-bg); }
 .tl__dias { display: grid; grid-template-columns: repeat(var(--tl-dias), 1fr); }
 .tl__dia { text-align: center; padding: var(--sp-1) 0; border-left: 1px solid var(--color-border); font-size: 0.7rem; line-height: 1.1; }
 .tl__dia small { display: block; color: var(--color-ink-soft); text-transform: uppercase; }
@@ -1550,6 +1562,9 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 }
 .tl--reservada { background: var(--estado-reservada); }
 .tl--transito { background: var(--estado-transito); }
+/* Con el cliente: ocupada pero detenida. Sin esto se pintaba como en tránsito, que dice
+   justo lo contrario de lo que pasa. */
+.tl--cliente { background: var(--estado-cliente); }
 .tl__bloque { cursor: pointer; transition: box-shadow var(--transition), filter var(--transition); }
 .tl__bloque:hover,
 .tl__bloque:focus-visible { outline: none; filter: brightness(1.06); box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px currentColor; }
@@ -1849,7 +1864,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .estado-chip__dot--reservada { background: var(--estado-reservada); }
 .estado-chip__dot--transito { background: var(--estado-transito); }
 .estado-chip__dot--taller { background: var(--estado-taller); }
-.estado-chip__dot--cliente { background: #8a5cd1; }
+.estado-chip__dot--cliente { background: var(--estado-cliente); }
 /* Botón de solo ícono, reutilizable en barras compactas. */
 .iconbtn {
     display: inline-flex;
@@ -1902,6 +1917,11 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
    siga siendo lo primero que se lee de la barra. */
 /* Se separa del grupo de fechas con espacio, no con una raya: al envolverse a su propia
    línea, una raya vertical al principio queda huérfana y parece un error de pintado. */
+/* Rangos del timeline: mismos botones que los atajos de fecha del tablero. */
+.tl-rangos { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.tl-rangos .chipbtn { text-decoration: none; color: inherit; }
+.tl-rangos .chipbtn.is-active { color: #fff; }
+
 .filtros__categorias {
     display: flex;
     gap: var(--sp-1);
@@ -2289,9 +2309,15 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 .int-actions { justify-content: flex-start; margin-top: 0; }
 
 /* ── Timeline / Histórico ── */
+/* El timeline desplaza dentro de su propia caja, no con la página.
+   Es la única forma de que la barra de días se quede fija arriba: `position: sticky` se
+   ancla al contenedor que desplaza, y con overflow-x el navegador ya convierte esta caja en
+   contenedor de scroll en los dos ejes. Acotarla en alto además evita que 47 filas empujen
+   el pie de página a kilómetros. */
 .timeline-card__wrap {
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
+    overflow: auto;
+    max-height: min(72vh, 660px);
+    overscroll-behavior: contain;
     padding-bottom: var(--sp-2);
 }
 .timeline-card {
