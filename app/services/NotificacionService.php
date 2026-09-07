@@ -84,23 +84,31 @@ final class NotificacionService
      * del propio movimiento: quien reserva decide a quién avisar de ESE viaje, que puede ser
      * un cliente externo sin usuario en el sistema.
      */
-    public function notificarReservaCreada(int $movimientoId, ?string $destinatarios): void
+    /** @return string|null null si se envió (o no había a quién); el motivo del fallo si no. */
+    public function notificarReservaCreada(int $movimientoId, ?string $destinatarios): ?string
     {
         $correos = CatalogoAdminService::correos((string) $destinatarios);
         if ($correos === []) {
-            return;
+            return null;
         }
 
-        $this->safe(function () use ($movimientoId, $correos): void {
+        return $this->safe(function () use ($movimientoId, $correos): void {
+            // El aviso lo lee quien recibe la unidad: necesita saber qué llega y quién la trae,
+            // con los datos con que se identifica al motorista en la frontera y en la báscula.
             $stmt = $this->pdo->prepare(
                 'SELECT m.id, m.estado, m.fecha_salida, m.fecha_fin_estimada, m.reservado_para,
                         m.referencia_cw,
-                        u.placa_unidad, e.timezone, e.codigo AS estacion_codigo,
-                        p.nombre AS piloto,
+                        u.placa_unidad, cu.es_motriz AS unidad_es_motriz,
+                        e.timezone, e.codigo AS estacion_codigo,
+                        p.nombre AS piloto, p.no_licencia, p.documento_identidad, p.telefonos,
+                        p.codigo_nacional, p.codigo_internacional,
+                        pais_e.etiqueta_codigo_nacional, pais_e.etiqueta_codigo_internacional,
                         po.codigo_iso AS origen, pd.codigo_iso AS destino
                    FROM movimientos m
                    JOIN unidades u ON u.id = m.unidad_id
+                   JOIN categorias_vehiculo cu ON cu.id = u.categoria_vehiculo_id
                    JOIN estaciones e ON e.id = u.estacion_id
+                   JOIN paises pais_e ON pais_e.id = e.pais_id
                    LEFT JOIN pilotos p ON p.id = m.piloto_id
                    LEFT JOIN paises po ON po.id = m.pais_origen_id
                    LEFT JOIN paises pd ON pd.id = m.pais_destino_id
@@ -117,15 +125,26 @@ final class NotificacionService
             $fin    = format_local($m['fecha_fin_estimada'], $m['timezone'], 'd/m/Y H:i');
             $ruta   = ($m['origen'] ?? '?') . ' → ' . ($m['destino'] ?? '?');
 
-            $filas = [
-                'Unidad'        => $m['placa_unidad'],
+            // Cabezal y furgón salen de los papeles del viaje: la unidad reservada es uno de los
+            // dos según su categoría, y el acompañante es el otro.
+            [$cabezal, $furgon] = $this->placasDelViaje($movimientoId, $m);
+
+            $filas = array_filter([
+                'Placa cabezal' => $cabezal,
+                'Placa furgón'  => $furgon,
+                'Motorista'     => $m['piloto'] ?: 'Por asignar',
+                // Cada país llama distinto a sus dos códigos de transporte.
+                ($m['etiqueta_codigo_nacional'] ?: 'Código nacional')           => $m['codigo_nacional'],
+                ($m['etiqueta_codigo_internacional'] ?: 'Código internacional') => $m['codigo_internacional'],
+                'Licencia'      => $m['no_licencia'],
+                'Documento'     => $m['documento_identidad'],
+                'Teléfono'      => $m['telefonos'],
                 'Ruta'          => $ruta,
                 'Salida'        => $salida,
                 'Entrega estimada' => $fin,
-                'Piloto'        => $m['piloto'] ?: 'Por asignar',
-                'Reservado para' => $m['reservado_para'] ?: '—',
-                'Referencia CW' => $m['referencia_cw'] ?: '—',
-            ];
+                'Reservado para' => $m['reservado_para'],
+                'Referencia CW' => $m['referencia_cw'],
+            ], static fn($v): bool => trim((string) $v) !== '');
             $detalle = '<table style="border-collapse:collapse">';
             foreach ($filas as $k => $v) {
                 $detalle .= '<tr><td style="padding:4px 12px 4px 0;color:#5b6470">' . e($k) . '</td>'
@@ -257,12 +276,50 @@ final class NotificacionService
             . '</div></body></html>';
     }
 
-    private function safe(callable $callback): void
+    /**
+     * Placas de cabezal y furgón de un movimiento.
+     *
+     * La unidad reservada puede ser cualquiera de las dos —se reserva el cabezal o se reserva
+     * el furgón—, así que se decide por su categoría y el activo de apoyo ocupa el otro lugar.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function placasDelViaje(int $movimientoId, array $m): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT mu.rol, u.placa_unidad
+               FROM movimiento_unidades mu
+               JOIN unidades u ON u.id = mu.unidad_id
+              WHERE mu.movimiento_id = :id AND mu.liberado_en IS NULL'
+        );
+        $stmt->execute([':id' => $movimientoId]);
+        $apoyos = [];
+        foreach ($stmt->fetchAll() as $fila) {
+            $apoyos[$fila['rol']] = (string) $fila['placa_unidad'];
+        }
+
+        $esMotriz = (int) $m['unidad_es_motriz'] === 1;
+        $cabezal = $esMotriz ? (string) $m['placa_unidad'] : ($apoyos[RolUnidadMovimiento::MOTRIZ] ?? '');
+        $furgon  = $esMotriz ? ($apoyos[RolUnidadMovimiento::ARRASTRE] ?? '') : (string) $m['placa_unidad'];
+
+        return [$cabezal, $furgon];
+    }
+
+    /**
+     * Un aviso que falla no puede tumbar la operación que lo disparó: la reserva ya se guardó.
+     * Pero tampoco puede desaparecer —un SMTP mal configurado se veía igual que un envío
+     * correcto—, así que devuelve el motivo para que quien llame decida si mostrarlo.
+     *
+     * @return string|null null si salió bien; el motivo del fallo si no.
+     */
+    private function safe(callable $callback): ?string
     {
         try {
             $callback();
+            return null;
         } catch (Throwable $e) {
             error_log('Notificación Fase 4: ' . $e->getMessage());
+            return $e->getMessage();
         }
     }
 }

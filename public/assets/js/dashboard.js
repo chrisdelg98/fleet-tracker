@@ -493,7 +493,11 @@ if (formReserva) {
             if (el.value !== '') p[el.name] = el.value;
         }
         const r = await api('POST', '/api/movimientos', p);
-        if (r.ok) { dlgReserva.close(); load(); } else showError(errReserva, r);
+        if (!r.ok) { showError(errReserva, r); return; }
+        dlgReserva.close();
+        load();
+        // La reserva quedó guardada; si el correo no salió hay que decirlo, no esconderlo.
+        if (r.data?.aviso) alert(r.message);
     });
 }
 

@@ -34,7 +34,14 @@ final class MovimientoController
     {
         $user = require_role_api(self::ESCRITURA);
         $id = $this->service->crear(request_body(), $user);
-        json_ok(['id' => $id], 'Movimiento creado.', 201);
+        // El movimiento se creó igual; el aviso viaja aparte para que un correo caído se vea
+        // en pantalla en vez de quedar solo en el log del servidor.
+        $aviso = $this->service->avisoFallido();
+        json_ok(
+            ['id' => $id, 'aviso' => $aviso],
+            $aviso === null ? 'Movimiento creado.' : 'Movimiento creado, pero el aviso por correo no salió: ' . $aviso,
+            201
+        );
     }
 
     /** GET /api/movimientos/conflictos — aviso en vivo de traslape para el formulario. */
