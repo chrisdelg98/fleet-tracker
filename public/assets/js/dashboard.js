@@ -224,6 +224,9 @@ function accionesHtml(u) {
     if (m && m.retorno_disponible && !m.regreso_id) {
         acc.push(item('apartar-retorno', 'Apartar retorno'));
     }
+    if (m && m.contactos_aviso > 0) {
+        acc.push(item('reenviar-aviso', 'Reenviar aviso por correo'));
+    }
     if (cancelar) acc.push(cancelar);
     if (!acc.length) return '<span class="muted">—</span>';
     return `<div class="rowmenu" data-rowmenu>
@@ -263,6 +266,21 @@ if (cfg.puedeReservar) {
         if (mov === 'desbloquear') return postAccion(`/api/unidades/${unidad}/desbloquear`);
         if (mov === 'confirmar') return postAccion(`/api/movimientos/${id}/confirmar`);
         if (mov === 'llegada') return postAccion(`/api/movimientos/${id}/llegada`);
+        if (mov === 'reenviar-aviso') {
+            const u2 = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
+            const cuantos = u2?.movimiento?.contactos_aviso || 0;
+            // Son correos de clientes reales: hay que decir a cuántos alcanza antes de mandarlo.
+            const ok = await confirmar({
+                titulo: 'Reenviar aviso',
+                mensaje: `Se volverá a enviar el correo de esta reserva a ${cuantos} ${cuantos === 1 ? 'contacto' : 'contactos'}.`,
+                aceptar: 'Reenviar',
+            });
+            if (!ok) return;
+            const r = await api('POST', `/api/movimientos/${id}/reenviar-aviso`, {});
+            if (r.ok) avisarCorreo(r.data?.aviso);
+            else toast(mensajeError(r, 'No se pudo reenviar el aviso.'), { tono: 'error' });
+            return;
+        }
         if (mov === 'salida') {
             const r = await api('POST', `/api/movimientos/${id}/salida`, {});
             if (r.ok) load(); else alert(mensajeError(r, 'No se pudo marcar la salida.'));

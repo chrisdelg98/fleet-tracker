@@ -48,11 +48,13 @@ $correoService = new CorreoService([
     'from_name' => $primero($env, 'MAIL_FROM_NAME', 'APP_NAME') ?: 'Disponibilidad de Flota',
     'encryption' => $env['MAIL_ENCRYPTION'] ?? '',
 ]);
+$correoLogService = new CorreoLogService();
 $notificacionService = new NotificacionService(
     $pdo,
     $suscripcionCorreoModel,
     $correoService,
-    (string) ($env['APP_URL'] ?? 'http://localhost:8000')
+    (string) ($env['APP_URL'] ?? 'http://localhost:8000'),
+    $correoLogService
 );
 $unidadService = new UnidadService($pdo, $unidadModel, $overrideModel, $catalogoModel, $notificacionService);
 $unidadController = new UnidadController($pdo, $unidadService, $unidadModel, $catalogoModel);
@@ -126,12 +128,14 @@ $adminController = new AdminController(
     new UsuarioService($pdo, $usuarioModel, $estacionModel),
     $usuarioModel,
     new CatalogoAdminService($pdo),
-    $catalogoModel
+    $catalogoModel,
+    $correoLogService
 );
 $router->get('/admin', fn() => $adminController->index());
 $router->get('/admin/estaciones', fn() => $adminController->estacionesPage());
 $router->get('/admin/usuarios', fn() => $adminController->usuariosPage());
 $router->get('/admin/catalogos', fn() => $adminController->catalogosPage());
+$router->get('/admin/correos', fn() => $adminController->correosPage());
 
 $router->post('/api/estaciones', fn() => $adminController->estacionCreate());
 $router->get('/api/estaciones/{id}', fn($p) => $adminController->estacionShow($p));
@@ -180,6 +184,7 @@ $router->post('/api/movimientos/{id}/cancelar', fn($p) => $movimientoController-
 $router->post('/api/movimientos/{id}/reprogramar-fin', fn($p) => $movimientoController->apiReprogramarFin($p));
 $router->post('/api/movimientos/{id}/liberar/{unidad}', fn($p) => $movimientoController->apiLiberarApoyo($p));
 $router->post('/api/movimientos/{id}/apartar-retorno', fn($p) => $movimientoController->apiApartarRetorno($p));
+$router->post('/api/movimientos/{id}/reenviar-aviso', fn($p) => $movimientoController->apiReenviarAviso($p));
 $router->get('/api/unidades/{id}/movimientos', fn($p) => $movimientoController->apiPorUnidad($p));
 
 // Overrides manuales (bloquear/desbloquear)

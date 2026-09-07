@@ -27,6 +27,14 @@ $secciones = [
         'cta' => 'Revisar catálogos',
         'icono' => 'M12 2.4 22.2 8 12 13.6 1.8 8 12 2.4Zm7.9 8.2 2.3 1.3L12 17.5 1.8 11.9l2.3-1.3L12 14.9l7.9-4.3Zm0 4.6 2.3 1.3L12 22.1 1.8 16.5l2.3-1.3L12 19.5l7.9-4.3Z',
     ],
+    [
+        'href' => '/admin/correos',
+        'kicker' => 'Diagnóstico',
+        'titulo' => 'Correos enviados',
+        'copy' => 'Qué avisos salieron, cuándo y si el servidor de correo pudo entregarlos.',
+        'cta' => 'Ver la bitácora',
+        'icono' => 'M3 5.5h18a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1Zm1.6 2L12 12.4l7.4-4.9H4.6Z',
+    ],
 ];
 ?>
 <section class="module">

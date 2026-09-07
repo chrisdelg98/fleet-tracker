@@ -56,6 +56,7 @@ function accesos_usuario(array $u): array
                 $lista[] = ['href' => '/admin/estaciones', 'label' => 'Estaciones', 'grupo' => $grupo];
                 $lista[] = ['href' => '/admin/usuarios', 'label' => 'Usuarios', 'grupo' => $grupo];
                 $lista[] = ['href' => '/admin/catalogos', 'label' => 'Catálogos', 'grupo' => $grupo];
+                $lista[] = ['href' => '/admin/correos', 'label' => 'Correos enviados', 'grupo' => $grupo];
                 continue;
             }
             $lista[] = ['href' => $href, 'label' => $label, 'grupo' => $grupo];

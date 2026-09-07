@@ -12,13 +12,35 @@ final class NotificacionService
         private PDO $pdo,
         private SuscripcionCorreoModel $suscripciones,
         private CorreoService $correo,
-        private string $appUrl
+        private string $appUrl,
+        private ?CorreoLogService $bitacora = null
     ) {
+    }
+
+    /**
+     * Deja constancia del intento. Opcional para no obligar a quien solo instancia el
+     * servicio en una prueba, y sin direcciones: solo cuántas eran y si el servidor pudo.
+     */
+    private function anotar(string $evento, string $referencia, int $enviados, ?string $error, ?string $usuario = null): void
+    {
+        // Sin envíos y sin error no hubo intento: casi todos los avisos automáticos terminan
+        // así por falta de suscriptores, y anotarlos ahogaría lo que sí importa.
+        if ($enviados === 0 && $error === null) {
+            return;
+        }
+        $this->bitacora?->registrar([
+            'evento'        => $evento,
+            'referencia'    => $referencia,
+            'destinatarios' => $enviados,
+            'error'         => $error,
+            'usuario'       => $usuario,
+        ]);
     }
 
     public function notificarUnidadLiberadaPorUnidad(int $unidadId): void
     {
-        $this->safe(function () use ($unidadId): void {
+        $enviados = 0;
+        $error = $this->safe(function () use ($unidadId, &$enviados): void {
             $unidad = $this->unidadDisponible($unidadId);
             if ($unidad === null) {
                 return;
@@ -42,13 +64,16 @@ final class NotificacionService
 
             foreach ($destinatarios as $dest) {
                 $this->correo->send((string) $dest['email'], $subject, $html, $text);
+                $enviados++;
             }
         });
+        $this->anotar('unidad.liberada', 'Unidad #' . $unidadId, $enviados, $error);
     }
 
     public function notificarRetornoDisponible(int $movimientoId): void
     {
-        $this->safe(function () use ($movimientoId): void {
+        $enviados = 0;
+        $error = $this->safe(function () use ($movimientoId, &$enviados): void {
             $mov = $this->movimientoRetorno($movimientoId);
             if ($mov === null) {
                 return;
@@ -73,8 +98,10 @@ final class NotificacionService
 
             foreach ($destinatarios as $dest) {
                 $this->correo->send((string) $dest['email'], $subject, $html, $text);
+                $enviados++;
             }
         });
+        $this->anotar('retorno.disponible', 'Movimiento #' . $movimientoId, $enviados, $error);
     }
 
     /**
@@ -89,10 +116,15 @@ final class NotificacionService
      *
      * @return array{enviados: int, error: string|null}
      */
-    public function notificarReservaCreada(int $movimientoId, ?string $destinatarios): array
-    {
+    public function notificarReservaCreada(
+        int $movimientoId,
+        ?string $destinatarios,
+        string $evento = 'reserva.creada',
+        ?string $usuario = null
+    ): array {
         $correos = CatalogoAdminService::correos((string) $destinatarios);
         if ($correos === []) {
+            // Sin destinatarios no hubo intento: anotarlo llenaría la bitácora de silencios.
             return ['enviados' => 0, 'error' => null];
         }
 
@@ -168,6 +200,8 @@ final class NotificacionService
                 $enviados++;
             }
         });
+
+        $this->anotar($evento, 'Movimiento #' . $movimientoId, $enviados, $error, $usuario);
 
         return ['enviados' => $enviados, 'error' => $error];
     }

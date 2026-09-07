@@ -35,7 +35,8 @@ final class DisponibilidadService
                     cat.nombre AS categoria, cat.es_motriz,
                     ap.nombre AS piloto_asignado,
                     m.id AS mov_id, m.unidad_id AS mov_unidad_id, m.estado AS mov_estado, m.fecha_salida, m.fecha_fin_estimada,
-                    m.retorno_disponible, m.pais_solicita_retorno_id, m.reservado_para, m.pais_origen_id,
+                    m.retorno_disponible, m.pais_solicita_retorno_id, m.reservado_para, m.notificar_a,
+                    m.pais_origen_id,
                     m.pais_destino_id AS mov_pais_destino_id,
                     mo.codigo_iso AS mov_origen, md.codigo_iso AS mov_destino,
                     mr.codigo_iso AS retorno_iso, mp.nombre AS mov_piloto,
@@ -197,6 +198,9 @@ final class DisponibilidadService
                     'regreso_salida'          => $r['regreso_salida'],
                     'regreso_fin'             => $r['regreso_fin'],
                     'reservado_para'          => $r['reservado_para'],
+                    // Cuántos contactos tiene el aviso, no quiénes: el tablero solo necesita
+                    // saber si hay a quién reenviárselo, y lo ve cualquier rol de consulta.
+                    'contactos_aviso'         => count(CatalogoAdminService::correos((string) $r['notificar_a'])),
                     'queda_con_cliente'       => (int) ($r['queda_con_cliente'] ?? 0) === 1,
                     'acompanantes'            => $this->acompanantes($r),
                 ] : null,

@@ -40,6 +40,14 @@ final class MovimientoController
         json_ok(['id' => $id, 'aviso' => $aviso], 'Movimiento creado.', 201);
     }
 
+    /** POST /api/movimientos/{id}/reenviar-aviso — repite el correo de una reserva existente. */
+    public function apiReenviarAviso(array $p): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $r = $this->service->reenviarAviso((int) $p['id'], $user);
+        json_ok(['aviso' => $r], 'Aviso reenviado.');
+    }
+
     /** GET /api/movimientos/conflictos — aviso en vivo de traslape para el formulario. */
     public function apiConflictos(): void
     {

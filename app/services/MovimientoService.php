@@ -139,6 +139,38 @@ final class MovimientoService
         ];
     }
 
+    /**
+     * Vuelve a mandar el aviso de una reserva ya existente.
+     *
+     * Existe para poder comprobar el correo sin inventar reservas de prueba, que ocupan
+     * unidades y ensucian el histórico. Va a los contactos guardados en el movimiento: son
+     * personas reales, así que quien lo dispara tiene que saber a cuántas alcanza.
+     *
+     * @return array{enviados: int, error: string|null, destinatarios: int}
+     */
+    public function reenviarAviso(int $id, array $user): array
+    {
+        $mov = $this->movimientos->find($id);
+        if ($mov === null) {
+            json_error('Movimiento no encontrado', 404);
+        }
+        $this->assertPuedeEscribir($user, $this->unidadEstacion((int) $mov['unidad_id']));
+
+        $contactos = CatalogoAdminService::correos((string) ($mov['notificar_a'] ?? ''));
+        if ($contactos === []) {
+            json_unprocessable(['notificar_a' => 'Esa reserva no tiene contactos a quienes avisar.']);
+        }
+
+        $r = $this->notificaciones?->notificarReservaCreada(
+            $id,
+            $mov['notificar_a'],
+            'reserva.reenviada',
+            (string) ($user['nombre'] ?? $user['email'] ?? $user['id'])
+        ) ?? ['enviados' => 0, 'error' => 'No hay servicio de correo configurado.'];
+
+        return $r + ['destinatarios' => count($contactos)];
+    }
+
     /** Edita el plan (ruta/fechas/flags) de un movimiento aún activo; re-valida no-traslape. */
     public function editar(int $id, array $input, array $user): void
     {

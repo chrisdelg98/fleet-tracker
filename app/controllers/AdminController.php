@@ -14,7 +14,8 @@ final class AdminController
         private UsuarioService $usuarioService,
         private UsuarioModel $usuarios,
         private CatalogoAdminService $catalogoService,
-        private CatalogoModel $catalogos
+        private CatalogoModel $catalogos,
+        private CorreoLogService $correoLog
     ) {
     }
 
@@ -58,6 +59,27 @@ final class AdminController
             ];
         }
         render('admin/catalogos', ['usuario' => $user, 'catalogos' => $datos], 'Catálogos · Administración');
+    }
+
+    /**
+     * GET /admin/correos — qué avisos salió a enviar el sistema y si el servidor pudo.
+     *
+     * Lo importante suele ser lo que falló, así que el filtro de fallos va aparte de la
+     * búsqueda: no hay que adivinar qué texto buscar para encontrar los problemas.
+     */
+    public function correosPage(): void
+    {
+        $user = require_admin_web();
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $soloFallidos = ($_GET['fallidos'] ?? '') === '1';
+
+        render('admin/correos', [
+            'usuario'      => $user,
+            'registro'     => $this->correoLog->leer((int) ($_GET['pagina'] ?? 1), 100, $q, $soloFallidos),
+            'q'            => $q,
+            'soloFallidos' => $soloFallidos,
+            'fallos'       => $this->correoLog->fallosRecientes(100),
+        ], 'Correos enviados · Administración');
     }
 
     // ── API Estaciones ──
