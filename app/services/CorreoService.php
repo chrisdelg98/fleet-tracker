@@ -14,14 +14,34 @@ final class CorreoService
 
     public function configured(): bool
     {
-        return trim((string) ($this->config['host'] ?? '')) !== ''
-            && trim((string) ($this->config['from'] ?? '')) !== '';
+        return $this->faltantes() === [];
+    }
+
+    /**
+     * Claves de configuración sin las que no se puede enviar.
+     *
+     * Se devuelven por nombre porque el mensaje viejo nombraba las dos siempre, y con eso
+     * no había forma de saber cuál de las dos era la que faltaba.
+     *
+     * @return list<string>
+     */
+    private function faltantes(): array
+    {
+        $faltan = [];
+        if (trim((string) ($this->config['host'] ?? '')) === '') {
+            $faltan[] = 'MAIL_HOST';
+        }
+        if (trim((string) ($this->config['from'] ?? '')) === '') {
+            $faltan[] = 'MAIL_FROM (o MAIL_FROM_ADDRESS)';
+        }
+        return $faltan;
     }
 
     public function send(string $to, string $subject, string $html, string $text = ''): void
     {
-        if (!$this->configured()) {
-            throw new RuntimeException('Configura MAIL_HOST y MAIL_FROM para enviar correos.');
+        $faltan = $this->faltantes();
+        if ($faltan !== []) {
+            throw new RuntimeException('Falta configurar ' . implode(' y ', $faltan) . ' en el .env.');
         }
 
         $from = trim((string) $this->config['from']);

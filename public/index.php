@@ -29,13 +29,23 @@ $unidadModel = new UnidadModel($pdo);
 $catalogoModel = new CatalogoModel($pdo);
 $overrideModel = new OverrideModel($pdo);
 $suscripcionCorreoModel = new SuscripcionCorreoModel($pdo);
+// El remitente admite los dos nombres: MAIL_FROM es el del proyecto, MAIL_FROM_ADDRESS el que
+// usa medio mundo por Laravel. Quien copia un .env de otro sitio escribe el segundo, y el
+// correo se caía sin decir cuál faltaba. Primero el propio; el alias cubre el resto.
+$primero = static fn(array $env, string ...$claves): string => (string) array_reduce(
+    $claves,
+    static fn(?string $llevado, string $clave): ?string => $llevado !== null && $llevado !== ''
+        ? $llevado
+        : trim((string) ($env[$clave] ?? '')),
+    null
+);
 $correoService = new CorreoService([
     'host' => $env['MAIL_HOST'] ?? '',
     'port' => $env['MAIL_PORT'] ?? 25,
     'username' => $env['MAIL_USERNAME'] ?? '',
     'password' => $env['MAIL_PASSWORD'] ?? '',
-    'from' => $env['MAIL_FROM'] ?? '',
-    'from_name' => $env['APP_NAME'] ?? 'Disponibilidad de Flota',
+    'from' => $primero($env, 'MAIL_FROM', 'MAIL_FROM_ADDRESS'),
+    'from_name' => $primero($env, 'MAIL_FROM_NAME', 'APP_NAME') ?: 'Disponibilidad de Flota',
     'encryption' => $env['MAIL_ENCRYPTION'] ?? '',
 ]);
 $notificacionService = new NotificacionService(
