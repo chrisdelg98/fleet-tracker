@@ -125,6 +125,13 @@ class SearchableSelect {
     }
 
     close() {
+        // Ya cerrado: no hay nada que deshacer y hay que salir antes de sincronizar.
+        // syncFromNative() cierra cuando el select está deshabilitado y close() sincroniza,
+        // así que sin esta salida las dos se llaman en círculo hasta desbordar la pila.
+        if (this.list.hidden) {
+            if (abierto === this) abierto = null;
+            return;
+        }
         this.list.hidden = true;
         this.wrap.classList.remove('is-open');
         this.list.classList.remove('is-open');
