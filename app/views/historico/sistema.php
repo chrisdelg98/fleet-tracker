@@ -2,6 +2,7 @@
 /**
  * Histórico de actividad (plan §7.7).
  *
+ * @var array $usuario
  * @var array $resultado
  * @var array $filtros
  * @var array $usuarios

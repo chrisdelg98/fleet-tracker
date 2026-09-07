@@ -332,6 +332,18 @@ function aplicarPilotoAsignado() {
 }
 
 /**
+ * La unidad elegida no está operativa. No bloquea: el taller no tiene fecha de salida, así
+ * que apartar para el jueves algo que hoy está adentro es planificar, no equivocarse.
+ */
+function syncAvisoUnidad() {
+    const aviso = document.getElementById('unidad-warn');
+    if (!aviso) return;
+    const estado = formReserva.elements['unidad_id'].selectedOptions[0]?.dataset.estado || '';
+    aviso.textContent = estado;
+    aviso.hidden = estado === '';
+}
+
+/**
  * Los apoyos dependen de la categoría de la unidad: un camión anda solo y no engancha nada,
  * un cabezal jala pero no necesita otro cabezal. Se bloquean en vez de ocultarse para que la
  * grilla de cuatro columnas no se reacomode cada vez que se cambia de unidad.
@@ -371,6 +383,7 @@ function abrirReserva(unidadId) {
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     aplicarPilotoAsignado();
     sincronizarApoyos();
+    syncAvisoUnidad();
     tipoTocadoManual = false;
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
@@ -407,6 +420,7 @@ if (formReserva) {
     formReserva.elements['ruta_id'].addEventListener('change', toggleRutaCustom);
     formReserva.elements['unidad_id'].addEventListener('change', aplicarPilotoAsignado);
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarApoyos);
+    formReserva.elements['unidad_id'].addEventListener('change', syncAvisoUnidad);
     formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
 

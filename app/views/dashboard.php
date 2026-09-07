@@ -11,6 +11,7 @@
  * @var array $tiposEquipo
  * @var array $reservables
  * @var array $rutas
+ * @var array $listasCorreo
  * @var array $pilotos
  * @var string $fechaHoy
  */
@@ -147,12 +148,45 @@ set_page_meta(
         <!-- Cuatro columnas y sin secciones: el formulario se lee de un barrido y ninguna
              fila queda a medias (los tramos completan lo que sobra). -->
         <div class="grid-4">
-            <label class="field"><span class="field__label">Unidad *</span>
+            <?php
+            // Una unidad en taller no se esconde de la lista: desaparecer no explica por qué,
+            // y el encargado la busca justo cuando alguien preguntó por ella. Va agrupada al
+            // final, rotulada, para que el camino normal siga limpio y elegirla sea deliberado.
+            $unidadesOperativas = $unidadesFueraDeServicio = [];
+            foreach ($reservables as $u) {
+                if ($u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO) {
+                    $unidadesOperativas[] = $u;
+                } else {
+                    $unidadesFueraDeServicio[] = $u;
+                }
+            }
+            // data-estado viaja vacío en las operativas: el aviso del formulario se enciende
+            // justo cuando trae texto, sin repetir aquí la regla de qué estado es normal.
+            $opcionUnidad = static function (array $u): string {
+                $etiqueta = $u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO
+                    ? '' : EstadoVehiculo::label($u['estado_vehiculo']);
+                return sprintf(
+                    '<option value="%d" data-piloto="%d" data-motriz="%d" data-arrastre="%d" data-estado="%s">%s · %s%s</option>',
+                    (int) $u['id'],
+                    (int) ($u['piloto_asignado_id'] ?? 0),
+                    (int) $u['es_motriz'],
+                    (int) $u['admite_arrastre'],
+                    e($etiqueta),
+                    e($u['placa_unidad']),
+                    e($u['estacion_codigo']),
+                    $etiqueta === '' ? '' : ' · ' . e($etiqueta)
+                );
+            };
+            ?>
+            <label class="field"><span class="field__label">Unidad * <span class="field__warn" id="unidad-warn" hidden></span></span>
                 <select name="unidad_id" required>
                     <option value="">Selecciona…</option>
-                    <?php foreach ($reservables as $u): ?>
-                        <option value="<?= (int) $u['id'] ?>" data-piloto="<?= (int) ($u['piloto_asignado_id'] ?? 0) ?>" data-motriz="<?= (int) $u['es_motriz'] ?>" data-arrastre="<?= (int) $u['admite_arrastre'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['estacion_codigo']) ?></option>
-                    <?php endforeach; ?>
+                    <?php foreach ($unidadesOperativas as $u) echo $opcionUnidad($u); ?>
+                    <?php if ($unidadesFueraDeServicio !== []): ?>
+                        <optgroup label="En taller o fuera de servicio">
+                            <?php foreach ($unidadesFueraDeServicio as $u) echo $opcionUnidad($u); ?>
+                        </optgroup>
+                    <?php endif; ?>
                 </select></label>
             <label class="field"><span class="field__label">Tipo</span>
                 <select name="estado">
@@ -162,14 +196,14 @@ set_page_meta(
             <label class="field"><span class="field__label">Cabezal</span>
                 <select name="apoyo_motriz_id" data-apoyo="motriz">
                     <option value="">— Ninguno / del cliente —</option>
-                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
+                    <?php foreach ($unidadesOperativas as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
                         <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Chasis o equipo</span>
                 <select name="apoyo_arrastre_id" data-apoyo="arrastre">
                     <option value="">— Ninguno —</option>
-                    <?php foreach ($reservables as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
+                    <?php foreach ($unidadesOperativas as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
                         <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
                     <?php endforeach; ?>
                 </select></label>

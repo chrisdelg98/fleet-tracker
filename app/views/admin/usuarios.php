@@ -2,6 +2,7 @@
 /**
  * Administración › Usuarios (plan §5.2, §4).
  *
+ * @var array $usuario
  * @var array $usuarios
  * @var array $estaciones
  * @var array $roles
