@@ -6,6 +6,10 @@
  * fallando —la base caída, una transacción a medias— y un registro que depende de lo mismo
  * que intenta vigilar no sirve para diagnosticar.
  *
+ * Lo que se anota es que el servidor de correo **aceptó** el mensaje, que es lo único que
+ * este proceso presencia: la entrega al buzón ocurre después y fuera de aquí. Confundir las
+ * dos cosas fue lo que hizo que un correo rechazado al encaminarse figurara como enviado.
+ *
  * **No se guardan las direcciones**, solo cuántas eran. Basta para saber si el servidor pudo
  * enviar, y evita dejar correos de clientes en un archivo de texto que nadie audita.
  *

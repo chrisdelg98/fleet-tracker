@@ -48,6 +48,11 @@ final class CorreoService
         $fromName = trim((string) ($this->config['from_name'] ?? 'Disponibilidad de Flota'));
         $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text !== '' ? $text : strip_tags($html));
 
+        // Antes de hablar con nadie: una línea demasiado larga la acepta el servidor y la
+        // rechaza después, al encaminarla, cuando ya nadie está mirando. Comprobarlo aquí
+        // convierte ese fallo remoto y silencioso en un error inmediato y visible.
+        $this->assertLineasCortas($payload);
+
         $socket = $this->connect();
         try {
             $this->expect($socket, [220]);
@@ -138,6 +143,27 @@ final class CorreoService
     private function mimeHeader(string $value): string
     {
         return '=?UTF-8?B?' . base64_encode($value) . '?=';
+    }
+
+    /**
+     * Ninguna línea puede pasar de 998 octetos (RFC 5321 §4.5.3.1).
+     *
+     * Con el cuerpo en base64 esto no debería ocurrir nunca: es una red de seguridad contra
+     * una cabecera larga o un cambio futuro en cómo se arma el mensaje. Falla aquí a
+     * propósito, porque el otro camino es que el correo se acepte y se pierda al entregarlo.
+     */
+    private function assertLineasCortas(string $payload): void
+    {
+        foreach (explode("\r\n", $payload) as $n => $linea) {
+            if (strlen($linea) > 998) {
+                throw new RuntimeException(sprintf(
+                    'El mensaje tiene una línea de %d caracteres (línea %d) y el máximo del protocolo es 998; '
+                    . 'el servidor lo aceptaría y luego no podría entregarlo.',
+                    strlen($linea),
+                    $n + 1
+                ));
+            }
+        }
     }
 
     /**

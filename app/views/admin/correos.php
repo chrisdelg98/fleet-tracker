@@ -79,7 +79,7 @@ $enlace = static function (array $cambios) use ($q, $soloFallidos): string {
                         <td><?= (int) ($f['destinatarios'] ?? 0) ?></td>
                         <td>
                             <?php if ($ok): ?>
-                                <span class="badge badge--ok">Enviado</span>
+                                <span class="badge badge--ok">Aceptado</span>
                             <?php else: ?>
                                 <span class="badge badge--alert">Falló</span>
                                 <div class="muted"><?= e((string) ($f['error'] ?? '')) ?></div>
@@ -102,8 +102,13 @@ $enlace = static function (array $cambios) use ($q, $soloFallidos): string {
         <?php endif; ?>
     <?php endif; ?>
 
-    <p class="muted" style="margin-top: var(--sp-4)">
-        No se guardan las direcciones de correo, solo cuántas eran: basta para saber si el
-        servidor pudo entregar y evita dejar contactos de clientes en un archivo de texto.
-    </p>
+    <div class="card" style="margin-top: var(--sp-4)">
+        <p style="margin-top:0"><strong>«Aceptado» significa que el servidor de correo recibió el mensaje</strong>, no que
+           haya llegado al buzón. La entrega ocurre después y fuera de este sistema: un rebote
+           por una dirección inexistente o un rechazo del destinatario no se ve desde aquí.
+           Para eso está el registro de entregas del hosting (en cPanel, <em>Track Delivery</em>)
+           y el buzón del remitente, donde caen los rebotes.</p>
+        <p class="muted">No se guardan las direcciones, solo cuántas eran: basta para saber si el
+           servidor pudo recibir el mensaje y evita dejar contactos de clientes en un archivo de texto.</p>
+    </div>
 </section>
