@@ -60,6 +60,9 @@ class SearchableSelect {
         });
         // Cuando el valor del select cambia (incluida la carga en edición) refresca la vista.
         select.addEventListener('change', () => this.syncFromNative());
+        // Y cuando el formulario oculta opciones por una regla de negocio, pide reconstruir:
+        // la lista se arma una sola vez, así que no se enteraría por su cuenta.
+        select.addEventListener('opciones-cambiadas', () => { this.buildOptions(); this.syncFromNative(); });
     }
 
     buildOptions() {
@@ -67,6 +70,7 @@ class SearchableSelect {
         this.list.innerHTML = '';
         const addOption = (opt, groupLabel) => {
             if (opt.value === '' && opt.disabled) return;
+            if (opt.hidden) return;
             const li = document.createElement('li');
             li.className = 'ss__opt';
             li.textContent = opt.textContent;
@@ -78,11 +82,16 @@ class SearchableSelect {
         };
         for (const child of this.select.children) {
             if (child.tagName === 'OPTGROUP') {
-                const g = document.createElement('li');
-                g.className = 'ss__group';
-                g.textContent = child.label;
-                this.list.appendChild(g);
+                // El rótulo se agrega después: un grupo cuyas opciones se ocultaron todas
+                // dejaría un encabezado sin nada debajo.
+                const antes = this.items.length;
                 for (const opt of child.children) addOption(opt, child.label);
+                if (this.items.length > antes) {
+                    const g = document.createElement('li');
+                    g.className = 'ss__group';
+                    g.textContent = child.label;
+                    this.list.insertBefore(g, this.items[antes]);
+                }
             } else {
                 addOption(child);
             }

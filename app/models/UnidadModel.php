@@ -15,8 +15,28 @@ final class UnidadModel
         'piloto_asignado_id', 'estado_vehiculo', 'estado_notas',
     ];
 
+    /**
+     * ¿La unidad tiene algún permiso que la habilite a salir del país? Se deriva de sus
+     * permisos, no es un campo suyo. Expuesta como constante porque la piden el listado, la
+     * validación de movimientos y el inventario, y una copia desalineada mentiría distinto
+     * en cada pantalla.
+     */
+    public const SQL_PUEDE_INTERNACIONAL = 'EXISTS (SELECT 1 FROM unidad_permisos up
+                    JOIN permisos_especiales pe ON pe.id = up.permiso_especial_id
+                   WHERE up.unidad_id = u.id AND pe.activo = 1 AND pe.habilita_internacional = 1)';
+
     public function __construct(private PDO $pdo)
     {
+    }
+
+    /** Se consulta al escribir un movimiento: la regla no puede confiar en lo que mandó el formulario. */
+    public function puedeInternacional(int $id): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT ' . self::SQL_PUEDE_INTERNACIONAL . ' FROM unidades u WHERE u.id = :id'
+        );
+        $stmt->execute([':id' => $id]);
+        return (bool) $stmt->fetchColumn();
     }
 
     public function find(int $id): ?array
@@ -38,6 +58,8 @@ final class UnidadModel
         // El override abierto (bloqueo manual o taller) se trae aquí para que la gestión de
         // flota vea por qué una unidad está fuera de operación, no solo el tablero.
         $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.es_motriz, c.admite_arrastre,
+                       e.pais_id AS estacion_pais_id,
+                       ' . self::SQL_PUEDE_INTERNACIONAL . ' AS puede_internacional,
                        comb.nombre AS tipo_combustible,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
                        cap.nombre AS capacidad, p.nombre AS piloto_asignado,

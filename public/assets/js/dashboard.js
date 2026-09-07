@@ -346,6 +346,50 @@ function syncAvisoUnidad() {
 }
 
 /**
+ * Alcance geográfico de la unidad elegida.
+ *
+ * El país de su estación entra como origen por defecto, pero editable: un retorno sale desde
+ * donde quedó el equipo, no desde casa. Y si la unidad no tiene permiso internacional, los
+ * países se reducen al suyo y las rutas que cruzan frontera salen del catálogo, en vez de
+ * dejar armar el viaje entero para negarlo al guardar.
+ */
+function sincronizarAlcance() {
+    const opt = formReserva.elements['unidad_id'].selectedOptions[0];
+    const pais = opt && opt.value !== '' ? opt.dataset.pais : '';
+    const internacional = opt?.dataset.internacional === '1';
+    const soloNacional = pais !== '' && !internacional;
+
+    for (const name of ['pais_origen_id', 'pais_destino_id']) {
+        const sel = formReserva.elements[name];
+        if (!sel) continue;
+        let cambio = false;
+        for (const o of sel.options) {
+            const ocultar = soloNacional && o.value !== '' && o.value !== pais;
+            if (o.hidden !== ocultar) { o.hidden = ocultar; cambio = true; }
+        }
+        // El origen se propone; el destino solo se fuerza cuando no hay otra opción posible.
+        if (pais !== '' && (soloNacional || (name === 'pais_origen_id' && sel.value === ''))) {
+            sel.value = pais;
+        }
+        if (cambio) sel.dispatchEvent(new Event('opciones-cambiadas'));
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const ruta = formReserva.elements['ruta_id'];
+    if (!ruta) return;
+    let cambio = false;
+    for (const o of ruta.options) {
+        const cruza = o.value !== '' && o.dataset.origen !== o.dataset.destino;
+        const ocultar = cruza && soloNacional;
+        if (o.hidden !== ocultar) { o.hidden = ocultar; cambio = true; }
+    }
+    if (ruta.selectedOptions[0]?.hidden) ruta.value = '';
+    if (cambio) ruta.dispatchEvent(new Event('opciones-cambiadas'));
+    ruta.dispatchEvent(new Event('change', { bubbles: true }));
+    toggleRutaCustom();
+}
+
+/**
  * Los apoyos dependen de la categoría de la unidad: un camión anda solo y no engancha nada,
  * un cabezal jala pero no necesita otro cabezal. Se bloquean en vez de ocultarse para que la
  * grilla de cuatro columnas no se reacomode cada vez que se cambia de unidad.
@@ -386,6 +430,7 @@ function abrirReserva(unidadId) {
     aplicarPilotoAsignado();
     sincronizarApoyos();
     syncAvisoUnidad();
+    sincronizarAlcance();
     tipoTocadoManual = false;
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
@@ -423,6 +468,7 @@ if (formReserva) {
     formReserva.elements['unidad_id'].addEventListener('change', aplicarPilotoAsignado);
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarApoyos);
     formReserva.elements['unidad_id'].addEventListener('change', syncAvisoUnidad);
+    formReserva.elements['unidad_id'].addEventListener('change', sincronizarAlcance);
     formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
 

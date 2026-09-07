@@ -166,11 +166,14 @@ set_page_meta(
                 $etiqueta = $u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO
                     ? '' : EstadoVehiculo::label($u['estado_vehiculo']);
                 return sprintf(
-                    '<option value="%d" data-piloto="%d" data-motriz="%d" data-arrastre="%d" data-estado="%s">%s · %s%s</option>',
+                    '<option value="%d" data-piloto="%d" data-motriz="%d" data-arrastre="%d"'
+                    . ' data-pais="%d" data-internacional="%d" data-estado="%s">%s · %s%s</option>',
                     (int) $u['id'],
                     (int) ($u['piloto_asignado_id'] ?? 0),
                     (int) $u['es_motriz'],
                     (int) $u['admite_arrastre'],
+                    (int) $u['estacion_pais_id'],
+                    (int) $u['puede_internacional'],
                     e($etiqueta),
                     e($u['placa_unidad']),
                     e($u['estacion_codigo']),

@@ -39,6 +39,7 @@ final class MovimientoService
             'estado'         => $estado,
             'piloto_id'      => $this->pilotoOpcional($input, $unidad),
         ];
+        $this->assertAlcanceInternacional((int) $unidad['id'], $data);
 
         // Activos de apoyo: cabezal y/o chasis que acompañan a la unidad reservada. Ambos
         // opcionales — el cliente puede traer su propio cabezal y no todo equipo lleva chasis.
@@ -134,6 +135,7 @@ final class MovimientoService
             'estado'    => $mov['estado'],
             'piloto_id' => $mov['piloto_id'],
         ];
+        $this->assertAlcanceInternacional((int) $mov['unidad_id'], $data);
 
         tx($this->pdo, function () use ($id, $mov, $data, $tz, $user): void {
             $this->assertSinTraslape((int) $mov['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], $id, $tz);
@@ -347,6 +349,7 @@ final class MovimientoService
             'estado'    => EstadoMovimiento::RESERVADO,
             'piloto_id' => null,
         ];
+        $this->assertAlcanceInternacional((int) $ida['unidad_id'], $regreso);
 
         return tx($this->pdo, function () use ($regreso, $idIda, $paisSolicita, $user, $tz): int {
             $this->assertSinTraslape((int) $regreso['unidad_id'], $regreso['fecha_salida'], $regreso['fecha_fin_estimada'], null, $tz);
@@ -377,6 +380,25 @@ final class MovimientoService
                 'despues' => ['estado' => $hacia],
             ]);
         });
+    }
+
+    /**
+     * Una unidad sin permiso internacional no puede cruzar la frontera.
+     *
+     * El tipo de ruta no se pide: sale de comparar origen y destino, así que da igual si el
+     * viaje entró por una ruta del catálogo o a mano. El permiso se relee de la base y no del
+     * formulario, que es justo lo que un cliente de API no manda.
+     */
+    private function assertAlcanceInternacional(int $unidadId, array $plan): void
+    {
+        if ($plan['tipo_ruta'] !== TipoRuta::INTERNACIONAL) {
+            return;
+        }
+        if (!$this->unidades->puedeInternacional($unidadId)) {
+            json_unprocessable([
+                'pais_destino_id' => 'La unidad no tiene permiso para salir del país: origen y destino deben ser el mismo.',
+            ]);
+        }
     }
 
     /** Carga un movimiento que debe estar en un estado activo (no final) y autoriza estación. */
