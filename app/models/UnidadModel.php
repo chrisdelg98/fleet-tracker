@@ -22,7 +22,7 @@ final class UnidadModel
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT u.*, c.nombre AS categoria, c.es_motriz
+            'SELECT u.*, c.nombre AS categoria, c.es_motriz, c.admite_arrastre
                FROM unidades u
                JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
               WHERE u.id = :id LIMIT 1'
@@ -37,7 +37,8 @@ final class UnidadModel
     {
         // El override abierto (bloqueo manual o taller) se trae aquí para que la gestión de
         // flota vea por qué una unidad está fuera de operación, no solo el tablero.
-        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.es_motriz, comb.nombre AS tipo_combustible,
+        $sql = 'SELECT u.*, c.nombre AS categoria, c.es_flota_operativa, c.es_motriz, c.admite_arrastre,
+                       comb.nombre AS tipo_combustible,
                        e.codigo AS estacion_codigo, te.nombre AS tipo_equipo,
                        cap.nombre AS capacidad, p.nombre AS piloto_asignado,
                        o.tipo AS override_tipo, o.motivo AS override_motivo,

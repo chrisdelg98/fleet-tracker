@@ -151,7 +151,7 @@ set_page_meta(
                 <select name="unidad_id" required>
                     <option value="">Selecciona…</option>
                     <?php foreach ($reservables as $u): ?>
-                        <option value="<?= (int) $u['id'] ?>" data-piloto="<?= (int) ($u['piloto_asignado_id'] ?? 0) ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['estacion_codigo']) ?></option>
+                        <option value="<?= (int) $u['id'] ?>" data-piloto="<?= (int) ($u['piloto_asignado_id'] ?? 0) ?>" data-motriz="<?= (int) $u['es_motriz'] ?>" data-arrastre="<?= (int) $u['admite_arrastre'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['estacion_codigo']) ?></option>
                     <?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Tipo</span>

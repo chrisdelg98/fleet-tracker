@@ -517,9 +517,35 @@ final class MovimientoService
             if ($apoyo['estado_vehiculo'] !== EstadoVehiculo::OPERATIVO) {
                 json_unprocessable(['apoyos' => "{$apoyo['placa_unidad']} no está operativa."]);
             }
+            $this->assertApoyoCompatible($rol, $unidad, $apoyo);
             $out[] = ['id' => $id, 'rol' => $rol, 'placa_unidad' => $apoyo['placa_unidad']];
         }
         return $out;
+    }
+
+    /**
+     * La categoría manda: un camión se mueve solo y no engancha nada, un cabezal jala pero no
+     * necesita otro cabezal. El formulario ya bloquea los campos que no aplican, pero la regla
+     * vive aquí: la API se puede llamar directo y un formulario en caché manda lo que sea.
+     */
+    private function assertApoyoCompatible(string $rol, array $unidad, array $apoyo): void
+    {
+        if ($rol === RolUnidadMovimiento::MOTRIZ) {
+            if ((int) $unidad['es_motriz'] === 1) {
+                json_unprocessable(['apoyos' => "{$unidad['placa_unidad']} se mueve sola: no lleva cabezal."]);
+            }
+            if ((int) $apoyo['es_motriz'] !== 1) {
+                json_unprocessable(['apoyos' => "{$apoyo['placa_unidad']} no se mueve sola: no puede ir como cabezal."]);
+            }
+            return;
+        }
+
+        if ((int) $unidad['admite_arrastre'] !== 1) {
+            json_unprocessable(['apoyos' => "{$unidad['placa_unidad']} no lleva equipo enganchado."]);
+        }
+        if ((int) $apoyo['es_motriz'] === 1) {
+            json_unprocessable(['apoyos' => "{$apoyo['placa_unidad']} se mueve sola: no puede ir enganchada."]);
+        }
     }
 
     /** Corta con 409 si el activo de apoyo ya está comprometido en ese rango. */

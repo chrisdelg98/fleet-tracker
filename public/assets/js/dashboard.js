@@ -331,6 +331,30 @@ function aplicarPilotoAsignado() {
     selPiloto.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+/**
+ * Los apoyos dependen de la categoría de la unidad: un camión anda solo y no engancha nada,
+ * un cabezal jala pero no necesita otro cabezal. Se bloquean en vez de ocultarse para que la
+ * grilla de cuatro columnas no se reacomode cada vez que se cambia de unidad.
+ */
+function sincronizarApoyos() {
+    const opt = formReserva.elements['unidad_id'].selectedOptions[0];
+    const elegida = !!opt && opt.value !== '';
+    const reglas = [
+        ['apoyo_motriz_id', elegida && opt.dataset.motriz !== '1', 'La unidad se mueve sola'],
+        ['apoyo_arrastre_id', elegida && opt.dataset.arrastre === '1', 'No lleva equipo enganchado'],
+    ];
+    for (const [name, aplica, motivo] of reglas) {
+        const sel = formReserva.elements[name];
+        if (!sel) continue;
+        sel.disabled = !aplica;
+        sel.dataset.placeholderBloqueado = elegida ? motivo : 'Elige la unidad primero';
+        // Un apoyo que dejó de aplicar no puede quedarse pegado al cambiar de unidad.
+        if (!aplica) sel.value = '';
+        sel.closest('.field')?.classList.toggle('is-disabled', !aplica);
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
 /** Advertencia sutil: el piloto elegido tiene la licencia vencida (no bloquea el guardado). */
 function syncAvisoLicencia() {
     const aviso = document.getElementById('piloto-warn');
@@ -346,6 +370,7 @@ function abrirReserva(unidadId) {
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     aplicarPilotoAsignado();
+    sincronizarApoyos();
     tipoTocadoManual = false;
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
@@ -381,6 +406,7 @@ function toggleRutaCustom() {
 if (formReserva) {
     formReserva.elements['ruta_id'].addEventListener('change', toggleRutaCustom);
     formReserva.elements['unidad_id'].addEventListener('change', aplicarPilotoAsignado);
+    formReserva.elements['unidad_id'].addEventListener('change', sincronizarApoyos);
     formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
 

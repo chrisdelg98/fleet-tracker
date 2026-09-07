@@ -94,6 +94,9 @@ class SearchableSelect {
         this.input.value = opt && opt.value !== '' ? opt.textContent.trim() : '';
         // El <select> nativo manda: si está deshabilitado, la vista también lo está.
         this.input.disabled = this.select.disabled;
+        // Un campo bloqueado que no dice por qué se lee como un error de la pantalla.
+        this.input.placeholder = (this.select.disabled && this.select.dataset.placeholderBloqueado)
+            || this.select.dataset.placeholder || 'Buscar…';
         if (this.select.disabled) this.close();
     }
 
