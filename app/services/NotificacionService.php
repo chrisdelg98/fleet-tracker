@@ -331,7 +331,9 @@ final class NotificacionService
         $html = '<table role="presentation" cellpadding="0" cellspacing="0"'
             . ' style="border-collapse:collapse;width:100%;font-size:15px;line-height:1.45">';
         foreach ($filas as $etiqueta => $valor) {
-            $html .= '<tr>'
+            // Un salto por fila: el transporte ya no depende de ello desde que el cuerpo va
+            // codificado, pero deja el fuente legible y no vuelve a nacer una línea enorme.
+            $html .= "\n" . '<tr>'
                 . '<td style="border:' . $borde . ';background:#eef2f6;padding:7px 12px;'
                 . 'font-weight:600;color:#31404f;white-space:nowrap">' . e($etiqueta) . '</td>'
                 . '<td style="border:' . $borde . ';padding:7px 12px;font-weight:700;color:#12202e">'

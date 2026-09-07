@@ -116,17 +116,20 @@ final class CorreoService
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
         ];
 
+        // Base64 y no 8bit: el HTML de un aviso se genera en una sola línea larguísima y SMTP
+        // limita la línea a 998 octetos (el Exim del servidor rechazaba ya a los 2048).
+        // Codificado, ninguna línea pasa de 76 pase lo que pase con el contenido.
         $body = [];
         $body[] = '--' . $boundary;
         $body[] = 'Content-Type: text/plain; charset=UTF-8';
-        $body[] = 'Content-Transfer-Encoding: 8bit';
+        $body[] = 'Content-Transfer-Encoding: base64';
         $body[] = '';
-        $body[] = $this->dotStuff($text);
+        $body[] = $this->base64($text);
         $body[] = '--' . $boundary;
         $body[] = 'Content-Type: text/html; charset=UTF-8';
-        $body[] = 'Content-Transfer-Encoding: 8bit';
+        $body[] = 'Content-Transfer-Encoding: base64';
         $body[] = '';
-        $body[] = $this->dotStuff($html);
+        $body[] = $this->base64($html);
         $body[] = '--' . $boundary . '--';
 
         return implode("\r\n", $headers) . "\r\n\r\n" . implode("\r\n", $body);
@@ -137,10 +140,19 @@ final class CorreoService
         return '=?UTF-8?B?' . base64_encode($value) . '?=';
     }
 
-    private function dotStuff(string $value): string
+    /**
+     * Cuerpo en base64, cortado en líneas de 76.
+     *
+     * Sustituye al relleno de puntos que hacía falta con 8bit: el alfabeto base64 no incluye
+     * el punto, así que ninguna línea puede empezar por uno y hacerse pasar por el fin de
+     * los datos. Los saltos se normalizan a CRLF antes de codificar, que es lo que espera
+     * quien decodifique al otro lado.
+     */
+    private function base64(string $value): string
     {
-        $normalized = str_replace(["\r\n", "\r"], "\n", $value);
-        return preg_replace('/^\./m', '..', str_replace("\n", "\r\n", $normalized)) ?? $value;
+        $normalizado = str_replace(["\r\n", "\r"], "\n", $value);
+        $crlf = str_replace("\n", "\r\n", $normalizado);
+        return rtrim(chunk_split(base64_encode($crlf), 76, "\r\n"), "\r\n");
     }
 
     private function command($socket, string $command, array $codes): string
