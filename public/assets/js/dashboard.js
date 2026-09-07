@@ -5,6 +5,7 @@
  */
 import { api, showError, mensajeError } from './api.js';
 import { confirmar } from './confirm.js';
+import { toast } from './toast.js';
 
 const cfg = JSON.parse(document.getElementById('dash-config').textContent);
 const body = document.getElementById('dash-body');
@@ -421,6 +422,25 @@ function syncAvisoLicencia() {
     aviso.hidden = opt?.dataset.licenciaVencida !== '1';
 }
 
+/**
+ * Cómo le fue al correo de la reserva. Va en un aviso efímero y no en un alert: la reserva
+ * ya se guardó, esto solo informa de algo que pasó después y no obliga a decidir nada.
+ * Callado cuando no había a quién avisar — ahí no ocurrió nada que contar.
+ */
+function avisarCorreo(aviso) {
+    if (!aviso) return;
+    if (aviso.error) {
+        // Con un envío a varios, el fallo puede llegar después de que alguno ya salió: decir
+        // "no salió" mandaría a reenviarlo a todos, incluidos los que ya lo recibieron.
+        const parcial = aviso.enviados > 0 ? ` Sí llegó a ${aviso.enviados}.` : '';
+        toast(`La reserva se guardó, pero el correo falló: ${aviso.error}${parcial}`, { tono: 'error' });
+        return;
+    }
+    if (aviso.enviados > 0) {
+        toast(`Aviso enviado a ${aviso.enviados} ${aviso.enviados === 1 ? 'contacto' : 'contactos'}.`);
+    }
+}
+
 function abrirReserva(unidadId) {
     if (!formReserva) return;
     formReserva.reset();
@@ -496,8 +516,7 @@ if (formReserva) {
         if (!r.ok) { showError(errReserva, r); return; }
         dlgReserva.close();
         load();
-        // La reserva quedó guardada; si el correo no salió hay que decirlo, no esconderlo.
-        if (r.data?.aviso) alert(r.message);
+        avisarCorreo(r.data?.aviso);
     });
 }
 

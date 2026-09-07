@@ -83,16 +83,23 @@ final class NotificacionService
      * A diferencia del resto de avisos, los destinatarios no vienen de las suscripciones sino
      * del propio movimiento: quien reserva decide a quién avisar de ESE viaje, que puede ser
      * un cliente externo sin usuario en el sistema.
+     *
+     * Son tres desenlaces distintos y quien llama tiene que poder contarlos aparte: se envió,
+     * no había a quién, o falló. "Enviado" y "nadie a quien avisar" no son lo mismo.
+     *
+     * @return array{enviados: int, error: string|null}
      */
-    /** @return string|null null si se envió (o no había a quién); el motivo del fallo si no. */
-    public function notificarReservaCreada(int $movimientoId, ?string $destinatarios): ?string
+    public function notificarReservaCreada(int $movimientoId, ?string $destinatarios): array
     {
         $correos = CatalogoAdminService::correos((string) $destinatarios);
         if ($correos === []) {
-            return null;
+            return ['enviados' => 0, 'error' => null];
         }
 
-        return $this->safe(function () use ($movimientoId, $correos): void {
+        // Por referencia: si el tercer correo falla, los dos primeros ya salieron y el
+        // aviso tiene que decir eso, no dar el envío entero por perdido.
+        $enviados = 0;
+        $error = $this->safe(function () use ($movimientoId, $correos, &$enviados): void {
             // El aviso lo lee quien recibe la unidad: necesita saber qué llega y quién la trae,
             // con los datos con que se identifica al motorista en la frontera y en la báscula.
             $stmt = $this->pdo->prepare(
@@ -145,19 +152,11 @@ final class NotificacionService
                 'Reservado para' => $m['reservado_para'],
                 'Referencia CW' => $m['referencia_cw'],
             ], static fn($v): bool => trim((string) $v) !== '');
-            $detalle = '<table style="border-collapse:collapse">';
-            foreach ($filas as $k => $v) {
-                $detalle .= '<tr><td style="padding:4px 12px 4px 0;color:#5b6470">' . e($k) . '</td>'
-                    . '<td style="padding:4px 0"><strong>' . e((string) $v) . '</strong></td></tr>';
-            }
-            $detalle .= '</table>';
-
             $subject = 'Reserva confirmada · ' . $m['placa_unidad'] . ' · ' . $ruta;
             $html = $this->emailTemplate(
                 'Reserva confirmada',
-                '<p>Se programó el siguiente movimiento.</p>' . $detalle,
-                rtrim($this->appUrl, '/') . '/timeline',
-                'Ver el timeline'
+                '<p style="margin:0 0 16px">Se programó el siguiente movimiento.</p>'
+                    . $this->tablaDetalle($filas)
             );
             $text = "Reserva confirmada
 "
@@ -166,8 +165,11 @@ final class NotificacionService
 
             foreach ($correos as $correo) {
                 $this->correo->send($correo, $subject, $html, $text);
+                $enviados++;
             }
         });
+
+        return ['enviados' => $enviados, 'error' => $error];
     }
 
     public function enviarPrueba(array $suscripcion, array $user): void
@@ -266,14 +268,43 @@ final class NotificacionService
         return $stmt->fetch() ?: null;
     }
 
-    private function emailTemplate(string $title, string $body, string $link, string $cta): string
+    /** El botón es opcional: hay avisos que solo informan y no tienen a dónde llevarte. */
+    private function emailTemplate(string $title, string $body, ?string $link = null, string $cta = ''): string
     {
+        $boton = $link === null || $cta === '' ? '' :
+            '<p style="margin:24px 0 0"><a href="' . e($link) . '" style="display:inline-block;background:#1f4e79;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">' . e($cta) . '</a></p>';
+
         return '<html lang="es"><body style="font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;padding:24px;color:#1c2733">'
             . '<div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dde3ea;border-radius:8px;padding:24px">'
             . '<h1 style="margin:0 0 16px;font-size:24px;color:#1f4e79">' . e($title) . '</h1>'
             . $body
-            . '<p style="margin:24px 0 0"><a href="' . e($link) . '" style="display:inline-block;background:#1f4e79;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">' . e($cta) . '</a></p>'
+            . $boton
             . '</div></body></html>';
+    }
+
+    /**
+     * Tabla de dos columnas con rejilla, como la que se llevaba a mano en la hoja de control.
+     *
+     * El borde no es decoración: sin él la vista salta de una fila a otra al leer en el
+     * teléfono, y quien recibe esto está copiando placas y números de licencia. Todo va con
+     * estilos en línea porque los clientes de correo descartan las hojas de estilo.
+     *
+     * @param array<string, string> $filas
+     */
+    private function tablaDetalle(array $filas): string
+    {
+        $borde = '1px solid #b9c2cc';
+        $html = '<table role="presentation" cellpadding="0" cellspacing="0"'
+            . ' style="border-collapse:collapse;width:100%;font-size:15px;line-height:1.45">';
+        foreach ($filas as $etiqueta => $valor) {
+            $html .= '<tr>'
+                . '<td style="border:' . $borde . ';background:#eef2f6;padding:7px 12px;'
+                . 'font-weight:600;color:#31404f;white-space:nowrap">' . e($etiqueta) . '</td>'
+                . '<td style="border:' . $borde . ';padding:7px 12px;font-weight:700;color:#12202e">'
+                . e((string) $valor) . '</td>'
+                . '</tr>';
+        }
+        return $html . '</table>';
     }
 
     /**

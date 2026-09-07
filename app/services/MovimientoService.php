@@ -23,12 +23,17 @@ final class MovimientoService
     ) {
     }
 
-    /** Motivo por el que el aviso de la última reserva no salió, o null si salió (o no había a quién). */
-    private ?string $avisoFallido = null;
+    /**
+     * Cómo le fue al aviso por correo de la última reserva creada.
+     *
+     * @var array{enviados: int, error: string|null}
+     */
+    private array $avisoCorreo = ['enviados' => 0, 'error' => null];
 
-    public function avisoFallido(): ?string
+    /** @return array{enviados: int, error: string|null} */
+    public function avisoCorreo(): array
     {
-        return $this->avisoFallido;
+        return $this->avisoCorreo;
     }
 
     /** Crea un movimiento/reserva. Corta con 403/422/409 según permiso, validación o traslape. */
@@ -75,7 +80,8 @@ final class MovimientoService
         // Fuera de la transacción y a prueba de fallos: la reserva ya es válida y está
         // guardada. Que el servidor de correo esté caído no puede deshacerla, pero sí tiene
         // que decirlo: un aviso que no sale y no avisa es peor que no tener avisos.
-        $this->avisoFallido = $this->notificaciones?->notificarReservaCreada($id, $data['notificar_a']);
+        $this->avisoCorreo = $this->notificaciones?->notificarReservaCreada($id, $data['notificar_a'])
+            ?? ['enviados' => 0, 'error' => null];
 
         return $id;
     }
