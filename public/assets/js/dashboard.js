@@ -206,7 +206,9 @@ function accionesHtml(u) {
     } else if (u.override && u.override.tipo === 'BLOQUEADA') {
         acc.push(item('desbloquear', 'Desbloquear'));
     } else if (m && m.estado === 'RESERVADO') {
-        acc.push(item('confirmar', 'Confirmar'));
+        // Marcar salida no exige confirmar antes: la unidad que ya se fue está más que
+        // confirmada, y pedir los dos pasos solo agregaba un clic.
+        acc.push(item('confirmar', 'Confirmar'), item('salida', 'Marcar salida'));
         cancelar = item('cancelar', 'Cancelar', true);
     } else if (m && m.estado === 'PROGRAMADO') {
         acc.push(item('salida', 'Marcar salida'), item('reprogramar', 'Cambiar fecha de fin'));
@@ -573,7 +575,7 @@ function accionesPanel(u) {
     } else if (u.override && u.override.tipo === 'BLOQUEADA') {
         acc.push(btn('desbloquear', 'Desbloquear', 'btn--linea-principal'));
     } else if (m && m.estado === 'RESERVADO') {
-        acc.push(btn('confirmar', 'Confirmar', 'btn--linea-principal'));
+        acc.push(btn('confirmar', 'Confirmar', 'btn--linea-principal'), btn('salida', 'Marcar salida'));
     } else if (m && m.estado === 'PROGRAMADO') {
         acc.push(btn('salida', 'Marcar salida', 'btn--linea-principal'), btn('reprogramar', 'Cambiar fecha de fin'));
     } else if (m && m.estado === 'EN_TRANSITO') {

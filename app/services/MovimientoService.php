@@ -162,12 +162,19 @@ final class MovimientoService
         $this->transicion($id, $user, EstadoMovimiento::RESERVADO, EstadoMovimiento::PROGRAMADO);
     }
 
-    /** PROGRAMADO → EN_TRANSITO (requiere piloto, regla 11). */
+    /**
+     * RESERVADO/PROGRAMADO → EN_TRANSITO (requiere piloto, regla 11).
+     *
+     * Se admite salir desde RESERVADO sin confirmar antes: marcar la salida es una afirmación
+     * más fuerte que confirmar —la unidad ya se fue—, así que exigir los dos pasos solo agrega
+     * clics. La bitácora guarda el salto tal cual (RESERVADO → EN_TRANSITO), sin inventar una
+     * confirmación que nadie hizo.
+     */
     public function marcarSalida(int $id, array $input, array $user): void
     {
         $mov = $this->cargarActivo($id, $user);
-        if ($mov['estado'] !== EstadoMovimiento::PROGRAMADO) {
-            json_error('Solo un movimiento PROGRAMADO puede marcar salida.', 409);
+        if (!in_array($mov['estado'], [EstadoMovimiento::RESERVADO, EstadoMovimiento::PROGRAMADO], true)) {
+            json_error('Solo un movimiento reservado o programado puede marcar salida.', 409);
         }
 
         $pilotoId = $mov['piloto_id'] ?? ($input['piloto_id'] ?? null);
