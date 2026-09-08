@@ -179,9 +179,24 @@ final class MovimientoService
         $tz = $this->estacionTz((int) $unidad['estacion_id']);
 
         $data = $this->validarPlan($input, $tz) + [
+            // El estado no se edita: se mueve por la máquina de estados (confirmar, salida,
+            // llegada). Si se pudiera cambiar aquí, editar sería la puerta de atrás de §6.
             'estado'    => $mov['estado'],
-            'piloto_id' => $mov['piloto_id'],
+            // Ausente la clave, se conserva el piloto; presente y vacía, se quita. Son cosas
+            // distintas: "no me toques esto" y "quítalo".
+            'piloto_id' => array_key_exists('piloto_id', $input)
+                ? $this->pilotoOpcional($input, $unidad)
+                : ($mov['piloto_id'] !== null ? (int) $mov['piloto_id'] : null),
         ];
+
+        // Con la reserva ya confirmada, mover la liberación exige un motivo y va por
+        // reprogramarFin (regla del plan §6). Editar no puede saltarse eso, así que a partir
+        // de PROGRAMADO las fechas se conservan aunque el formulario mande otras.
+        if ($mov['estado'] !== EstadoMovimiento::RESERVADO) {
+            $data['fecha_salida'] = $mov['fecha_salida'];
+            $data['fecha_fin_estimada'] = $mov['fecha_fin_estimada'];
+        }
+
         $this->assertAlcanceInternacional((int) $mov['unidad_id'], $data);
 
         tx($this->pdo, function () use ($id, $mov, $data, $tz, $user): void {

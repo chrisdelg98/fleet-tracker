@@ -142,7 +142,7 @@ set_page_meta(
     <form method="dialog" class="form" id="form-reserva" novalidate>
         <div class="dialog__head">
             <h2 id="dlg-reserva-title">Nueva reserva</h2>
-            <p class="dialog__lede">Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.</p>
+            <p class="dialog__lede" id="dlg-reserva-lede">Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.</p>
         </div>
         <div class="dialog__body">
         <!-- Cuatro columnas y sin secciones: el formulario se lee de un barrido y ninguna
@@ -276,7 +276,7 @@ set_page_meta(
         <p class="form__error" id="form-reserva-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
-            <button type="submit" class="btn btn--primary">Guardar reserva</button>
+            <button type="submit" class="btn btn--primary" id="dlg-reserva-guardar">Guardar reserva</button>
         </div>
     </form>
 </dialog>

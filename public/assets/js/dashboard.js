@@ -224,6 +224,9 @@ function accionesHtml(u) {
     if (m && m.retorno_disponible && !m.regreso_id) {
         acc.push(item('apartar-retorno', 'Apartar retorno'));
     }
+    if (m && !['COMPLETADO', 'CANCELADO'].includes(m.estado)) {
+        acc.push(item('editar', 'Editar reserva'));
+    }
     if (m && m.contactos_aviso > 0) {
         acc.push(item('reenviar-aviso', 'Reenviar aviso por correo'));
     }
@@ -266,6 +269,7 @@ if (cfg.puedeReservar) {
         if (mov === 'desbloquear') return postAccion(`/api/unidades/${unidad}/desbloquear`);
         if (mov === 'confirmar') return postAccion(`/api/movimientos/${id}/confirmar`);
         if (mov === 'llegada') return postAccion(`/api/movimientos/${id}/llegada`);
+        if (mov === 'editar') return abrirEdicion(id);
         if (mov === 'reenviar-aviso') {
             const u2 = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
             const cuantos = u2?.movimiento?.contactos_aviso || 0;
@@ -321,6 +325,9 @@ async function checkConflicto() {
 
     const qs = new URLSearchParams({ unidad_id: unidad, fecha_salida: salida, fecha_fin_estimada: fin });
     if (piloto) qs.set('piloto_id', piloto);
+    // Al editar, el propio movimiento ocupa ese rango: sin excluirlo se avisaría de un choque
+    // consigo mismo. El servidor ya lo excluye al guardar; esto alinea el aviso con la regla.
+    if (formReserva.dataset.movimiento) qs.set('except_id', formReserva.dataset.movimiento);
     const r = await api('GET', `/api/movimientos/conflictos?${qs}`);
     const datos = (r.ok && r.data) ? r.data : {};
 
@@ -459,9 +466,100 @@ function avisarCorreo(aviso) {
     }
 }
 
+/**
+ * Campos que no se editan, y por qué. Se bloquean en vez de esconderse para que el formulario
+ * se lea igual en los dos modos y quede claro qué se puede tocar.
+ */
+const NO_EDITABLE = {
+    unidad_id: 'La unidad no se cambia: es otra reserva',
+    estado: 'Se avanza con Confirmar o Marcar salida',
+    apoyo_motriz_id: 'El equipo no se cambia al editar',
+    apoyo_arrastre_id: 'El equipo no se cambia al editar',
+};
+
+/** Bloquea o libera un campo dejando dicho el motivo dentro del propio combobox. */
+function bloquear(sel, motivo) {
+    if (!sel) return;
+    sel.disabled = motivo !== null;
+    if (motivo !== null) sel.dataset.placeholderBloqueado = motivo;
+    sel.closest('.field')?.classList.toggle('is-disabled', sel.disabled);
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/**
+ * Abre el mismo diálogo en modo edición.
+ *
+ * Reutilizar el formulario de alta no es solo ahorro: las reglas que ya viven ahí —alcance
+ * internacional, apoyos por categoría, aviso de licencia vencida— se aplican igual al editar,
+ * y no hay una segunda pantalla que se quede atrás cuando cambie una regla.
+ */
+async function abrirEdicion(id) {
+    const r = await api('GET', `/api/movimientos/${id}`);
+    if (!r.ok) { toast(mensajeError(r, 'No se pudo cargar la reserva.'), { tono: 'error' }); return; }
+    const m = r.data;
+    const fila = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
+    const tz = fila?.timezone;
+
+    formReserva.reset();
+    formReserva.dataset.movimiento = id;
+    document.getElementById('dlg-reserva-title').textContent = `Editar reserva #${id}`;
+    document.getElementById('dlg-reserva-lede').textContent =
+        'Cambia piloto, ruta o datos del viaje. La unidad y el equipo no se cambian aquí.';
+    document.getElementById('dlg-reserva-guardar').textContent = 'Guardar cambios';
+
+    const v = (nombre, valor) => { const el = formReserva.elements[nombre]; if (el) el.value = valor ?? ''; };
+    v('unidad_id', m.unidad_id);
+    v('estado', m.estado);
+    v('piloto_id', m.piloto_id);
+    v('ruta_id', m.ruta_id);
+    v('pais_origen_id', m.pais_origen_id);
+    v('pais_destino_id', m.pais_destino_id);
+    v('ruta_custom_origen', m.ruta_custom_origen);
+    v('ruta_custom_destino', m.ruta_custom_destino);
+    v('fecha_salida', paraInput(m.fecha_salida, tz));
+    v('fecha_fin_estimada', paraInput(m.fecha_fin_estimada, tz));
+    v('reservado_para', m.reservado_para);
+    v('referencia_cw', m.referencia_cw);
+    v('notificar_a', m.notificar_a);
+    formReserva.elements['retorno_disponible'].checked = Number(m.retorno_disponible) === 1;
+    formReserva.elements['queda_con_cliente'].checked = Number(m.queda_con_cliente) === 1;
+
+    formReserva.querySelectorAll('select').forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
+    toggleRutaCustom();
+    syncAvisoLicencia();
+    for (const [nombre, motivo] of Object.entries(NO_EDITABLE)) bloquear(formReserva.elements[nombre], motivo);
+
+    // Confirmada la reserva, la liberación se mueve con «Cambiar fecha de fin», que pide un
+    // motivo. El servidor lo impone igual; aquí solo se evita ofrecer algo que no se guardará.
+    const fechasFijas = m.estado !== 'RESERVADO';
+    for (const nombre of ['fecha_salida', 'fecha_fin_estimada']) {
+        const el = formReserva.elements[nombre];
+        el.disabled = fechasFijas;
+        el.title = fechasFijas ? 'Con la reserva confirmada, la fecha se cambia desde «Cambiar fecha de fin».' : '';
+        el.closest('.field')?.classList.toggle('is-disabled', fechasFijas);
+    }
+
+    errReserva.hidden = true;
+    if (warnReserva) warnReserva.hidden = true;
+    dlgReserva.showModal();
+}
+
 function abrirReserva(unidadId) {
     if (!formReserva) return;
     formReserva.reset();
+    delete formReserva.dataset.movimiento;
+    document.getElementById('dlg-reserva-title').textContent = 'Nueva reserva';
+    document.getElementById('dlg-reserva-lede').textContent =
+        'Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.';
+    document.getElementById('dlg-reserva-guardar').textContent = 'Guardar reserva';
+    // Lo que el modo edición hubiera bloqueado vuelve a estar disponible.
+    for (const nombre of Object.keys(NO_EDITABLE)) bloquear(formReserva.elements[nombre], null);
+    for (const nombre of ['fecha_salida', 'fecha_fin_estimada']) {
+        const el = formReserva.elements[nombre];
+        el.disabled = false;
+        el.title = '';
+        el.closest('.field')?.classList.remove('is-disabled');
+    }
     if (unidadId) formReserva.elements['unidad_id'].value = unidadId;
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
@@ -530,11 +628,26 @@ if (formReserva) {
             if (el.type === 'checkbox') { p[el.name] = el.checked ? 1 : 0; continue; }
             if (el.value !== '') p[el.name] = el.value;
         }
-        const r = await api('POST', '/api/movimientos', p);
+        const editando = formReserva.dataset.movimiento;
+        if (editando) {
+            // Al editar se manda el campo aunque vaya vacío: sin eso, quitar el piloto o los
+            // contactos sería indistinguible de no haberlos tocado, y no se podrían borrar.
+            for (const name of ['piloto_id', 'ruta_id', 'ruta_custom_origen', 'ruta_custom_destino',
+                'reservado_para', 'referencia_cw', 'notificar_a', 'fecha_salida', 'fecha_fin_estimada',
+                'pais_origen_id', 'pais_destino_id']) {
+                const el = formReserva.elements[name];
+                if (el) p[name] = el.value;
+            }
+        }
+
+        const r = editando
+            ? await api('PUT', `/api/movimientos/${editando}`, p)
+            : await api('POST', '/api/movimientos', p);
         if (!r.ok) { showError(errReserva, r); return; }
         dlgReserva.close();
         load();
-        avisarCorreo(r.data?.aviso);
+        if (editando) toast('Reserva actualizada.');
+        else avisarCorreo(r.data?.aviso);
     });
 }
 
@@ -668,6 +781,7 @@ function accionesPanel(u) {
     } else if (m && m.estado === 'EN_TRANSITO') {
         acc.push(btn('llegada', 'Marcar llegada', 'btn--linea-principal'), btn('reprogramar', 'Cambiar fecha de fin'));
     }
+    if (m && !['COMPLETADO', 'CANCELADO'].includes(m.estado)) acc.push(btn('editar', 'Editar reserva'));
     if (m && m.retorno_disponible && !m.regreso_id) acc.push(btn('apartar-retorno', 'Apartar retorno'));
     if (m && m.estado !== 'EN_TRANSITO') acc.push(btn('cancelar', 'Cancelar movimiento', 'btn--linea-peligro'));
     return acc;
