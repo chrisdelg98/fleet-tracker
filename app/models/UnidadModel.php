@@ -104,6 +104,11 @@ final class UnidadModel
             $sql .= ' AND u.en_disponibilidad = :ed';
             $params[':ed'] = (int) (bool) $filtros['en_disponibilidad'];
         }
+        // Alcance: la misma condición que pinta el distintivo INT/NAC, para que filtrar y ver
+        // no puedan discrepar. '0' es un filtro válido, así que se compara contra '' y no empty().
+        if (isset($filtros['internacional']) && $filtros['internacional'] !== '') {
+            $sql .= ((int) $filtros['internacional'] === 1 ? ' AND ' : ' AND NOT ') . self::SQL_PUEDE_INTERNACIONAL;
+        }
         if (!empty($filtros['q'])) {
             // CONCAT con un solo placeholder: los prepares nativos no permiten reusar :q.
             $sql .= ' AND u.placa_unidad LIKE :q';

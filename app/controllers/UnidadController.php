@@ -28,6 +28,7 @@ final class UnidadController
             'tipo_equipo_id'    => $_GET['tipo_equipo_id'] ?? '',
             'estado_vehiculo'   => $_GET['estado_vehiculo'] ?? '',
             'en_disponibilidad' => $_GET['en_disponibilidad'] ?? '',
+            'internacional'     => $_GET['internacional'] ?? '',
             'q'                 => trim((string) ($_GET['q'] ?? '')),
         ];
         $estacionFiltro = $verTodas

@@ -38,7 +38,7 @@ set_page_meta(
         <div class="filters-panel__bar">
             <div class="filters-panel__summary">
                 <strong>Filtros</strong>
-                <span>Estación, categoría, tipo, estado, clasificación y placa</span>
+                <span>Estación, categoría, tipo, estado, clasificación, alcance y placa</span>
             </div>
             <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="flota-filters-more">
                 <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
@@ -75,8 +75,14 @@ set_page_meta(
                         <option value="1" <?= (string) $filtros['en_disponibilidad'] === '1' ? 'selected' : '' ?>>Flota operativa</option>
                         <option value="0" <?= (string) $filtros['en_disponibilidad'] === '0' ? 'selected' : '' ?>>Solo inventario</option>
                     </select></label>
+                <label class="field"><span class="field__label">Alcance</span>
+                    <select name="internacional">
+                        <option value="">Todos</option>
+                        <option value="1" <?= (string) $filtros['internacional'] === '1' ? 'selected' : '' ?>>Internacional</option>
+                        <option value="0" <?= (string) $filtros['internacional'] === '0' ? 'selected' : '' ?>>Solo nacional</option>
+                    </select></label>
                 <label class="field"><span class="field__label">Buscar placa</span>
-                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Placa de unidad o furgón…" class="search"></label>
+                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Placa de la unidad…" class="search"></label>
             </div>
             <div class="filters-actions">
                 <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
@@ -109,6 +115,11 @@ set_page_meta(
                     <tr data-id="<?= (int) $u['id'] ?>">
                         <td>
                             <strong><?= e($u['placa_unidad']) ?></strong>
+                            <?php if ((int) $u['puede_internacional'] === 1): ?>
+                                <span class="alcance alcance--int" title="Tiene permiso vigente para cruzar frontera">INT</span>
+                            <?php else: ?>
+                                <span class="alcance alcance--nac" title="Sin permiso internacional: solo rutas dentro de su país">NAC</span>
+                            <?php endif; ?>
                         </td>
                         <td><?= e($u['categoria']) ?></td>
                         <td><?= e($u['tipo_equipo'] ?? '—') ?><?php if (!empty($u['capacidad'])): ?> · <?= e($u['capacidad']) ?><?php endif; ?>
