@@ -129,6 +129,21 @@ final class EstadoMovimiento
     {
         return [self::RESERVADO, self::PROGRAMADO, self::EN_TRANSITO, self::COMPLETADO, self::CANCELADO];
     }
+
+    /**
+     * Etiqueta de interfaz. Importa distinguir apartado de confirmado: son estados distintos
+     * y llamar "confirmada" a una reserva que nadie confirmó promete algo que no ocurrió.
+     */
+    public static function label(string $estado): string
+    {
+        return [
+            self::RESERVADO   => 'Reserva',
+            self::PROGRAMADO  => 'Programado',
+            self::EN_TRANSITO => 'En tránsito',
+            self::COMPLETADO  => 'Completado',
+            self::CANCELADO   => 'Cancelado',
+        ][$estado] ?? $estado;
+    }
 }
 
 /** Papel de un activo dentro de un movimiento (tabla movimiento_unidades). */

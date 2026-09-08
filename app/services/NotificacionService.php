@@ -136,9 +136,10 @@ final class NotificacionService
             // con los datos con que se identifica al motorista en la frontera y en la báscula.
             $stmt = $this->pdo->prepare(
                 'SELECT m.id, m.estado, m.fecha_salida, m.fecha_fin_estimada, m.reservado_para,
-                        m.referencia_cw,
+                        m.referencia_cw, m.ruta_custom_origen, m.ruta_custom_destino,
+                        r.ciudad_origen, r.ciudad_destino,
                         u.placa_unidad, cu.es_motriz AS unidad_es_motriz,
-                        e.timezone, e.codigo AS estacion_codigo,
+                        e.timezone, e.codigo AS estacion_codigo, e.nombre AS estacion_nombre,
                         p.nombre AS piloto, p.no_licencia, p.documento_identidad, p.telefonos,
                         p.codigo_nacional, p.codigo_internacional,
                         pais_e.etiqueta_codigo_nacional, pais_e.etiqueta_codigo_internacional,
@@ -148,6 +149,7 @@ final class NotificacionService
                    JOIN categorias_vehiculo cu ON cu.id = u.categoria_vehiculo_id
                    JOIN estaciones e ON e.id = u.estacion_id
                    JOIN paises pais_e ON pais_e.id = e.pais_id
+                   LEFT JOIN rutas r ON r.id = m.ruta_id
                    LEFT JOIN pilotos p ON p.id = m.piloto_id
                    LEFT JOIN paises po ON po.id = m.pais_origen_id
                    LEFT JOIN paises pd ON pd.id = m.pais_destino_id
@@ -162,7 +164,16 @@ final class NotificacionService
             // En la hora de la estación: quien recibe el aviso trabaja en ese huso, no en UTC.
             $salida = format_local($m['fecha_salida'], $m['timezone'], 'd/m/Y H:i');
             $fin    = format_local($m['fecha_fin_estimada'], $m['timezone'], 'd/m/Y H:i');
-            $ruta   = ($m['origen'] ?? '?') . ' → ' . ($m['destino'] ?? '?');
+            // La ciudad viene de la ruta del catálogo o, si el viaje se armó a mano, del propio
+            // movimiento. Un país solo ("SV → SV") no dice nada en un viaje nacional: quien
+            // recibe necesita saber de qué ciudad a cuál.
+            $lado = static function (?string $ciudad, ?string $pais): string {
+                $ciudad = trim((string) $ciudad);
+                return $ciudad === '' ? ($pais ?? '?') : $ciudad . ', ' . ($pais ?? '?');
+            };
+            $rutaCorta = ($m['origen'] ?? '?') . ' → ' . ($m['destino'] ?? '?');
+            $ruta = $lado($m['ruta_custom_origen'] ?: $m['ciudad_origen'], $m['origen'])
+                . ' → ' . $lado($m['ruta_custom_destino'] ?: $m['ciudad_destino'], $m['destino']);
 
             // Cabezal y furgón salen de los papeles del viaje: la unidad reservada es uno de los
             // dos según su categoría, y el acompañante es el otro.
@@ -184,16 +195,34 @@ final class NotificacionService
                 // cuándo vuelve a estar libre la unidad. Es el mismo campo que el formulario
                 // llama "Se libera", y llamarlo "entrega" hacía prometer una fecha distinta.
                 'Liberación estimada' => $fin,
-                'Reservado para' => $m['reservado_para'],
                 'Referencia CW' => $m['referencia_cw'],
+                // Al final y solo si viene: cierra la ficha diciendo para quién es el viaje,
+                // que es lo que se mira de último, cuando ya se sabe qué unidad llega.
+                'Reservado para' => $m['reservado_para'],
             ], static fn($v): bool => trim((string) $v) !== '');
-            $subject = 'Reserva confirmada · ' . $m['placa_unidad'] . ' · ' . $ruta;
+            // Las dos placas en el asunto: quien recibe busca por la que le dijeron, y no
+            // siempre es la de la unidad reservada — a veces le dan la del furgón.
+            $placas = implode(' · ', array_filter([$cabezal, $furgon])) ?: (string) $m['placa_unidad'];
+            // El prefijo dice el estado real, no "confirmada": un apartado y un programado no
+            // son lo mismo, y al reenviar un viaje ya en curso el asunto lo refleja.
+            $subject = EstadoMovimiento::label((string) $m['estado'])
+                . ' · ' . $m['estacion_nombre'] . ' · ' . $placas . ' · ' . $rutaCorta;
+            // El encabezado dice de dónde viene la reserva: quien la recibe trabaja con varias
+            // estaciones y lo primero que necesita saber es quién se la está mandando.
             $html = $this->emailTemplate(
-                'Reserva confirmada',
-                '<p style="margin:0 0 16px">Se programó el siguiente movimiento.</p>'
-                    . $this->tablaDetalle($filas)
+                mb_strtoupper((string) $m['estacion_nombre'], 'UTF-8'),
+                '<p style="margin:0 0 16px; text-align:center;">' . ($m['estado'] === EstadoMovimiento::RESERVADO
+                    ? 'Se reservó el siguiente movimiento.'
+                    : 'Se programó el siguiente movimiento.') . '</p>'
+                    . $this->tablaDetalle($filas),
+                null,
+                '',
+                'Reserva hecha'
             );
-            $text = "Reserva confirmada
+            // La versión en texto plano repite el encabezado: hay clientes de correo que
+            // no muestran HTML, y ahí también tiene que verse de quién viene la reserva.
+            $text = 'RESERVA HECHA ' . mb_strtoupper((string) $m['estacion_nombre'], 'UTF-8') . "
+
 "
                 . implode("
 ", array_map(static fn($k, $v): string => "{$k}: {$v}", array_keys($filas), $filas));
@@ -305,15 +334,34 @@ final class NotificacionService
         return $stmt->fetch() ?: null;
     }
 
-    /** El botón es opcional: hay avisos que solo informan y no tienen a dónde llevarte. */
-    private function emailTemplate(string $title, string $body, ?string $link = null, string $cta = ''): string
-    {
+    /**
+     * Marco común de los correos.
+     *
+     * El botón es opcional: hay avisos que solo informan y no tienen a dónde llevarte. El
+     * antetítulo también, y sirve para nombrar el título sin repetirlo dentro: "Reserva hecha
+     * por" arriba y la estación debajo se lee de un golpe.
+     */
+    private function emailTemplate(
+        string $title,
+        string $body,
+        ?string $link = null,
+        string $cta = '',
+        string $antetitulo = ''
+    ): string {
         $boton = $link === null || $cta === '' ? '' :
             '<p style="margin:24px 0 0"><a href="' . e($link) . '" style="display:inline-block;background:#1f4e79;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">' . e($cta) . '</a></p>';
 
+        $encabezado = $antetitulo === ''
+            ? '<h1 style="margin:0 0 16px;font-size:24px;color:#1f4e79">' . e($title) . '</h1>'
+            : '<div style="text-align:center;margin:0 0 20px">'
+                . '<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#5b6470">'
+                . e($antetitulo) . '</div>'
+                . '<h1 style="margin:4px 0 0;font-size:24px;color:#1f4e79;text-transform:uppercase;letter-spacing:0.02em">'
+                . e($title) . '</h1></div>';
+
         return '<html lang="es"><body style="font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;padding:24px;color:#1c2733">'
             . '<div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dde3ea;border-radius:8px;padding:24px">'
-            . '<h1 style="margin:0 0 16px;font-size:24px;color:#1f4e79">' . e($title) . '</h1>'
+            . $encabezado
             . $body
             . $boton
             . '</div></body></html>';
