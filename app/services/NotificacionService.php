@@ -120,7 +120,8 @@ final class NotificacionService
         int $movimientoId,
         ?string $destinatarios,
         string $evento = 'reserva.creada',
-        ?string $usuario = null
+        ?string $usuario = null,
+        ?string $correoUsuario = null
     ): array {
         $correos = CatalogoAdminService::correos((string) $destinatarios);
         if ($correos === []) {
@@ -131,7 +132,7 @@ final class NotificacionService
         // Por referencia: si el tercer correo falla, los dos primeros ya salieron y el
         // aviso tiene que decir eso, no dar el envío entero por perdido.
         $enviados = 0;
-        $error = $this->safe(function () use ($movimientoId, $correos, &$enviados): void {
+        $error = $this->safe(function () use ($movimientoId, $correos, $correoUsuario, &$enviados): void {
             // El aviso lo lee quien recibe la unidad: necesita saber qué llega y quién la trae,
             // con los datos con que se identifica al motorista en la frontera y en la báscula.
             $stmt = $this->pdo->prepare(
@@ -227,8 +228,19 @@ final class NotificacionService
                 . implode("
 ", array_map(static fn($k, $v): string => "{$k}: {$v}", array_keys($filas), $filas));
 
+            // Reply-To a quien reservó: el remitente es un buzón automático que nadie lee, así
+            // que sin esto la respuesta del cliente se pierde.
             foreach ($correos as $correo) {
-                $this->correo->send($correo, $subject, $html, $text);
+                $this->correo->send($correo, $subject, $html, $text, $correoUsuario);
+                $enviados++;
+            }
+
+            // Y una copia para quien la hizo. Va aparte y no como Cc porque se manda un correo
+            // por destinatario —para que los contactos no se vean entre ellos—, y un Cc en cada
+            // uno le dejaría tantas copias como contactos tenga la lista.
+            $suyo = trim((string) $correoUsuario);
+            if ($suyo !== '' && !in_array(strtolower($suyo), array_map('strtolower', $correos), true)) {
+                $this->correo->send($suyo, 'Copia · ' . $subject, $html, $text);
                 $enviados++;
             }
         });

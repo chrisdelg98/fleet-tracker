@@ -80,8 +80,13 @@ final class MovimientoService
         // Fuera de la transacción y a prueba de fallos: la reserva ya es válida y está
         // guardada. Que el servidor de correo esté caído no puede deshacerla, pero sí tiene
         // que decirlo: un aviso que no sale y no avisa es peor que no tener avisos.
-        $this->avisoCorreo = $this->notificaciones?->notificarReservaCreada($id, $data['notificar_a'])
-            ?? ['enviados' => 0, 'error' => null];
+        $this->avisoCorreo = $this->notificaciones?->notificarReservaCreada(
+            $id,
+            $data['notificar_a'],
+            'reserva.creada',
+            $this->quien($user),
+            (string) ($user['email'] ?? '')
+        ) ?? ['enviados' => 0, 'error' => null];
 
         return $id;
     }
@@ -165,7 +170,8 @@ final class MovimientoService
             $id,
             $mov['notificar_a'],
             'reserva.reenviada',
-            (string) ($user['nombre'] ?? $user['email'] ?? $user['id'])
+            $this->quien($user),
+            (string) ($user['email'] ?? '')
         ) ?? ['enviados' => 0, 'error' => 'No hay servicio de correo configurado.'];
 
         return $r + ['destinatarios' => count($contactos)];
@@ -718,6 +724,12 @@ final class MovimientoService
             409,
             "Traslape de piloto con el movimiento #{$c['id']}."
         );
+    }
+
+    /** Con qué nombre queda en la bitácora quien disparó un aviso. */
+    private function quien(array $user): string
+    {
+        return (string) ($user['nombre'] ?? $user['email'] ?? $user['id'] ?? '');
     }
 
     private function pilotoOpcional(array $input, array $unidad): ?int

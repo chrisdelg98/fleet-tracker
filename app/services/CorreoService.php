@@ -37,7 +37,12 @@ final class CorreoService
         return $faltan;
     }
 
-    public function send(string $to, string $subject, string $html, string $text = ''): void
+    /**
+     * @param string|null $responderA Dirección a la que va la respuesta del destinatario.
+     *                                Sin ella, un cliente que contesta el aviso escribe al
+     *                                buzón automático del sistema, que nadie lee.
+     */
+    public function send(string $to, string $subject, string $html, string $text = '', ?string $responderA = null): void
     {
         $faltan = $this->faltantes();
         if ($faltan !== []) {
@@ -46,7 +51,7 @@ final class CorreoService
 
         $from = trim((string) $this->config['from']);
         $fromName = trim((string) ($this->config['from_name'] ?? 'Disponibilidad de Flota'));
-        $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text !== '' ? $text : strip_tags($html));
+        $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text !== '' ? $text : strip_tags($html), $responderA);
 
         // Antes de hablar con nadie: una línea demasiado larga la acepta el servidor y la
         // rechaza después, al encaminarla, cuando ya nadie está mirando. Comprobarlo aquí
@@ -109,7 +114,7 @@ final class CorreoService
         return $socket;
     }
 
-    private function buildMessage(string $from, string $fromName, string $to, string $subject, string $html, string $text): string
+    private function buildMessage(string $from, string $fromName, string $to, string $subject, string $html, string $text, ?string $responderA = null): string
     {
         $boundary = 'b' . bin2hex(random_bytes(12));
         $headers = [
@@ -120,6 +125,9 @@ final class CorreoService
             'MIME-Version: 1.0',
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
         ];
+        if ($responderA !== null && trim($responderA) !== '') {
+            $headers[] = 'Reply-To: <' . trim($responderA) . '>';
+        }
 
         // Base64 y no 8bit: el HTML de un aviso se genera en una sola línea larguísima y SMTP
         // limita la línea a 998 octetos (el Exim del servidor rechazaba ya a los 2048).
