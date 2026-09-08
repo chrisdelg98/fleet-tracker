@@ -230,6 +230,12 @@ function accionesHtml(u) {
     if (m && m.contactos_aviso > 0) {
         acc.push(item('reenviar-aviso', 'Reenviar aviso por correo'));
     }
+    // El tablero mide la disponibilidad del periodo que se está viendo: que hoy esté ocupada
+    // no dice nada de la semana que viene. El traslape lo decide el guardado con las fechas
+    // exactas, así que apartarla para otro periodo tiene que poder intentarse desde aquí.
+    if (u.estado !== 'DISPONIBLE') {
+        acc.push(item('reservar', 'Reservar otro periodo'));
+    }
     if (cancelar) acc.push(cancelar);
     if (!acc.length) return '<span class="muted">—</span>';
     return `<div class="rowmenu" data-rowmenu>
@@ -783,6 +789,7 @@ function accionesPanel(u) {
     }
     if (m && !['COMPLETADO', 'CANCELADO'].includes(m.estado)) acc.push(btn('editar', 'Editar reserva'));
     if (m && m.retorno_disponible && !m.regreso_id) acc.push(btn('apartar-retorno', 'Apartar retorno'));
+    if (u.estado !== 'DISPONIBLE') acc.push(btn('reservar', 'Reservar otro periodo'));
     if (m && m.estado !== 'EN_TRANSITO') acc.push(btn('cancelar', 'Cancelar movimiento', 'btn--linea-peligro'));
     return acc;
 }
