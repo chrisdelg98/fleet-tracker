@@ -179,8 +179,11 @@ final class NotificacionService
                 'Documento'     => $m['documento_identidad'],
                 'Teléfono'      => $m['telefonos'],
                 'Ruta'          => $ruta,
-                'Salida'        => $salida,
-                'Entrega estimada' => $fin,
+                'Salida estimada' => $salida,
+                // No es cuándo se entrega la carga —eso puede ocurrir bastante antes— sino
+                // cuándo vuelve a estar libre la unidad. Es el mismo campo que el formulario
+                // llama "Se libera", y llamarlo "entrega" hacía prometer una fecha distinta.
+                'Liberación estimada' => $fin,
                 'Reservado para' => $m['reservado_para'],
                 'Referencia CW' => $m['referencia_cw'],
             ], static fn($v): bool => trim((string) $v) !== '');
