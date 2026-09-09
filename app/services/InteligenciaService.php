@@ -378,6 +378,13 @@ final class InteligenciaService
         ];
     }
 
+    /**
+     * A qué se suscribe: estación o país. Hoy solo queda el aviso de retorno, que es por país;
+     * la firma conserva el tipo porque la tabla admite más de uno y el día que se agregue otro
+     * la decisión vuelve a vivir aquí.
+     *
+     * @return array{0: int|null, 1: int|null} [estacion_id, pais_id]
+     */
     private function resolverObjetivoSuscripcion(string $tipo, array $input, array $user): array
     {
         if ($this->alcance($user) !== null) {
@@ -385,20 +392,7 @@ final class InteligenciaService
             if ($estacion === null) {
                 throw new RuntimeException('La estación del usuario no existe.');
             }
-            if ($tipo === SuscripcionCorreoModel::TIPO_UNIDAD_LIBERADA) {
-                return [(int) $estacion['id'], null];
-            }
             return [null, (int) $estacion['pais_id']];
-        }
-
-        if ($tipo === SuscripcionCorreoModel::TIPO_UNIDAD_LIBERADA) {
-            $estacionId = !empty($input['estacion_id']) && ctype_digit((string) $input['estacion_id'])
-                ? (int) $input['estacion_id']
-                : 0;
-            if ($estacionId < 1 || $this->estaciones->find($estacionId) === null) {
-                throw new InvalidArgumentException('Selecciona una estación válida para esta suscripción.');
-            }
-            return [$estacionId, null];
         }
 
         $paisId = !empty($input['pais_id']) && ctype_digit((string) $input['pais_id'])

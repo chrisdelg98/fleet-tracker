@@ -299,7 +299,6 @@ final class MovimientoService
             ]);
         });
 
-        $this->notificaciones?->notificarUnidadLiberadaPorUnidad((int) $mov['unidad_id']);
     }
 
     /** Activo → CANCELADO (motivo obligatorio, regla 6). */

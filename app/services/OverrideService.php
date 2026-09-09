@@ -46,7 +46,6 @@ final class OverrideService
         });
 
         if ($cerrados > 0) {
-            $this->notificaciones?->notificarUnidadLiberadaPorUnidad($unidadId);
         }
     }
 

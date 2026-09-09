@@ -8,6 +8,12 @@ declare(strict_types=1);
 
 final class SuscripcionCorreoModel
 {
+    /**
+     * El aviso de unidad liberada se retiró: saltaba con cada llegada y cada cambio de estado,
+     * y el tablero ya muestra la disponibilidad en vivo. La constante queda porque la columna
+     * es un ENUM que aún la admite y hay filas viejas que hay que poder leer, pero no se
+     * ofrece al suscribirse ni se envía nada.
+     */
     public const TIPO_UNIDAD_LIBERADA = 'UNIDAD_LIBERADA';
     public const TIPO_RETORNO_DISPONIBLE = 'RETORNO_DISPONIBLE';
 
@@ -17,7 +23,7 @@ final class SuscripcionCorreoModel
 
     public static function tipos(): array
     {
-        return [self::TIPO_UNIDAD_LIBERADA, self::TIPO_RETORNO_DISPONIBLE];
+        return [self::TIPO_RETORNO_DISPONIBLE];
     }
 
     public function find(int $id): ?array
@@ -93,27 +99,6 @@ final class SuscripcionCorreoModel
     public function eliminar(int $id): void
     {
         $this->pdo->prepare('DELETE FROM suscripciones_correo WHERE id = :id')->execute([':id' => $id]);
-    }
-
-    public function destinatariosUnidadLiberada(int $estacionId): array
-    {
-        $stmt = $this->pdo->prepare(
-            'SELECT DISTINCT u.id, u.nombre, u.email
-               FROM suscripciones_correo sc
-               JOIN usuarios u ON u.id = sc.user_id
-              WHERE sc.tipo = :tipo
-                AND sc.estacion_id = :estacion
-                AND sc.activo = 1
-                AND u.activo = 1'
-        );
-        $stmt->execute([
-            ':tipo' => self::TIPO_UNIDAD_LIBERADA,
-            ':estacion' => $estacionId,
-        ]);
-        return array_values(array_filter(
-            $stmt->fetchAll(),
-            static fn(array $row): bool => trim((string) ($row['email'] ?? '')) !== ''
-        ));
     }
 
     public function destinatariosRetorno(int $paisId): array

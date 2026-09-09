@@ -105,7 +105,6 @@ final class UnidadService
         });
 
         if ($esOperativo && (int) $unidad['en_disponibilidad'] === 1) {
-            $this->notificaciones?->notificarUnidadLiberadaPorUnidad($id);
         }
     }
 
