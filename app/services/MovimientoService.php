@@ -19,7 +19,8 @@ final class MovimientoService
         private UnidadModel $unidades,
         private RutaModel $rutas,
         private PilotoModel $pilotos,
-        private ?NotificacionService $notificaciones = null
+        private ?NotificacionService $notificaciones = null,
+        private ?MovimientoTerceroModel $terceros = null
     ) {
     }
 
@@ -36,11 +37,34 @@ final class MovimientoService
         return $this->avisoCorreo;
     }
 
-    /** Crea un movimiento/reserva. Corta con 403/422/409 según permiso, validación o traslape. */
+    /**
+     * Crea un movimiento. Corta con 403/422/409 según permiso, validación o traslape.
+     *
+     * La unidad ya no es obligatoria: un flete hecho enteramente por un tercero no tiene
+     * ninguna nuestra. La sustituye una regla más floja y más cierta — **tiene que haber al
+     * menos una de las dos cosas**, unidad propia o datos de tercero — y no son excluyentes:
+     * tu furgón con un cabezal ajeno es una combinación legítima y frecuente.
+     */
     public function crear(array $input, array $user): int
     {
-        $unidad = $this->unidadParaMovimiento((int) ($input['unidad_id'] ?? 0), $user);
-        $tz = $this->estacionTz((int) $unidad['estacion_id']);
+        $tercero = $this->terceroValidado($input);
+        $unidad = !empty($input['unidad_id'])
+            ? $this->unidadParaMovimiento((int) $input['unidad_id'], $user)
+            : null;
+
+        if ($unidad === null && $tercero === null) {
+            json_unprocessable([
+                'unidad_id' => 'Indica la unidad, o los datos del tercero que hace el movimiento.',
+            ]);
+        }
+
+        // Sin unidad propia no hay de dónde deducir la estación: la pone quien registra, y
+        // por eso una estación que vende fletes sin flota sigue teniendo trabajo atribuible.
+        $estacionId = $unidad !== null
+            ? (int) $unidad['estacion_id']
+            : $this->estacionDeRegistro($input, $user);
+        $this->assertPuedeEscribir($user, $estacionId);
+        $tz = $this->estacionTz($estacionId);
 
         $estado = $input['estado'] ?? EstadoMovimiento::RESERVADO;
         if (!in_array($estado, [EstadoMovimiento::RESERVADO, EstadoMovimiento::PROGRAMADO], true)) {
@@ -48,18 +72,30 @@ final class MovimientoService
         }
 
         $data = $this->validarPlan($input, $tz) + [
-            'unidad_id'      => (int) $unidad['id'],
+            'unidad_id'      => $unidad !== null ? (int) $unidad['id'] : null,
+            'estacion_id'    => $estacionId,
             'estado'         => $estado,
-            'piloto_id'      => $this->pilotoOpcional($input, $unidad),
+            'piloto_id'      => $unidad !== null ? $this->pilotoOpcional($input, $unidad) : null,
         ];
-        $this->assertAlcanceInternacional((int) $unidad['id'], $data);
+        // Sin elección, la clase sale de la ruta y la operación nace en el caso más frecuente:
+        // dos campos que en el uso normal nadie tiene que tocar.
+        $data['clase'] = $this->claseValida($input['clase'] ?? null)
+            ?? ClaseMovimiento::proponer((int) $data['pais_origen_id'], (int) $data['pais_destino_id']);
+        $data['servicio_a_tercero'] = (int) (bool) ($input['servicio_a_tercero'] ?? 0);
+
+        if ($unidad !== null) {
+            $this->assertAlcanceInternacional((int) $unidad['id'], $data);
+        }
 
         // Activos de apoyo: cabezal y/o chasis que acompañan a la unidad reservada. Ambos
         // opcionales — el cliente puede traer su propio cabezal y no todo equipo lleva chasis.
-        $apoyos = $this->apoyosValidados($input, $unidad, $user);
+        $apoyos = $unidad !== null ? $this->apoyosValidados($input, $unidad, $user) : [];
 
-        $id = tx($this->pdo, function () use ($data, $apoyos, $user, $tz): int {
-            $this->assertSinTraslape((int) $data['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
+        $id = tx($this->pdo, function () use ($data, $apoyos, $tercero, $user, $tz): int {
+            // El traslape se calcula solo sobre lo nuestro: un camión ajeno no lo controlamos.
+            if ($data['unidad_id'] !== null) {
+                $this->assertSinTraslape((int) $data['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
+            }
             $this->assertPilotoSinTraslape($data['piloto_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
             foreach ($apoyos as $apoyo) {
                 $this->assertApoyoLibre($apoyo, $data['fecha_salida'], $data['fecha_fin_estimada'], null, $tz);
@@ -68,8 +104,12 @@ final class MovimientoService
             foreach ($apoyos as $apoyo) {
                 $this->apoyos->agregar($id, (int) $apoyo['id'], $apoyo['rol'], $user['id']);
             }
+            if ($tercero !== null) {
+                $this->terceros?->guardar($id, $tercero);
+            }
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CREAR, [
-                'despues' => $data + ['apoyos' => array_column($apoyos, 'placa_unidad')],
+                'despues' => $data + ['apoyos' => array_column($apoyos, 'placa_unidad')]
+                    + ($tercero !== null ? ['tercero' => $tercero['proveedor']] : []),
             ]);
             return $id;
         });
@@ -194,6 +234,13 @@ final class MovimientoService
                 ? $this->pilotoOpcional($input, $unidad)
                 : ($mov['piloto_id'] !== null ? (int) $mov['piloto_id'] : null),
         ];
+
+        // Clase y operación se conservan si no vienen: son clasificaciones del movimiento, y
+        // una edición de ruta o de piloto no tiene por qué reclasificarlo.
+        $data['clase'] = $this->claseValida($input['clase'] ?? null) ?? (string) $mov['clase'];
+        $data['servicio_a_tercero'] = array_key_exists('servicio_a_tercero', $input)
+            ? (int) (bool) $input['servicio_a_tercero']
+            : (int) $mov['servicio_a_tercero'];
 
         // Con la reserva ya confirmada, mover la liberación exige un motivo y va por
         // reprogramarFin (regla del plan §6). Editar no puede saltarse eso, así que a partir
@@ -723,6 +770,63 @@ final class MovimientoService
             409,
             "Traslape de piloto con el movimiento #{$c['id']}."
         );
+    }
+
+    /**
+     * Datos del camión de tercero, o null si el movimiento no lleva uno.
+     *
+     * Solo el proveedor es obligatorio: es lo mínimo para que el registro sirva de algo —saber
+     * con quién se trabajó— y pedir más convertiría en trámite lo que tiene que ser rápido.
+     *
+     * @return array<string, string>|null
+     */
+    private function terceroValidado(array $input): ?array
+    {
+        $campos = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+                   'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional'];
+
+        $datos = [];
+        foreach ($campos as $campo) {
+            $valor = trim((string) ($input[$campo] ?? ''));
+            if ($valor !== '') {
+                // Las placas en mayúsculas, como las de la flota propia: si no, la misma placa
+                // escrita de dos formas serían dos camiones y el autocompletado no la encuentra.
+                $datos[$campo] = in_array($campo, ['placa_motriz', 'placa_arrastre', 'piloto'], true)
+                    ? mb_strtoupper($valor, 'UTF-8')
+                    : $valor;
+            }
+        }
+        if ($datos === []) {
+            return null;
+        }
+        if (!isset($datos['proveedor'])) {
+            json_unprocessable(['proveedor' => 'Indica de qué proveedor es la unidad.']);
+        }
+        return $datos;
+    }
+
+    /** Clase pedida, si es una de las válidas; null para que decida quien llame. */
+    private function claseValida($valor): ?string
+    {
+        $valor = is_string($valor) ? trim($valor) : '';
+        return in_array($valor, ClaseMovimiento::values(), true) ? $valor : null;
+    }
+
+    /**
+     * Estación a la que se le atribuye un movimiento sin unidad propia: la que se indique o,
+     * si no, la de quien registra. Un admin global sin estación tiene que decirla.
+     */
+    private function estacionDeRegistro(array $input, array $user): int
+    {
+        $pedida = (int) ($input['estacion_id'] ?? 0);
+        if ($pedida > 0) {
+            return $pedida;
+        }
+        $propia = (int) ($user['estacion_id'] ?? 0);
+        if ($propia > 0) {
+            return $propia;
+        }
+        json_unprocessable(['estacion_id' => 'Indica a qué estación corresponde el movimiento.']);
     }
 
     /** Con qué nombre queda en la bitácora quien disparó un aviso. */

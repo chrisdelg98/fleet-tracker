@@ -146,6 +146,39 @@ final class EstadoMovimiento
     }
 }
 
+/**
+ * Clase de trabajo de un movimiento.
+ *
+ * LOCAL no sale en el tablero de disponibilidad —una carrera de la bodega a la fábrica no es
+ * lo que se mira al buscar un camión para el jueves— pero sigue ocupando la unidad: ocultarlo
+ * del cálculo permitiría reservarla dos veces.
+ */
+final class ClaseMovimiento
+{
+    public const VIAJE = 'VIAJE';
+    public const LOCAL = 'LOCAL';
+
+    public static function values(): array
+    {
+        return [self::VIAJE, self::LOCAL];
+    }
+
+    public static function label(string $clase): string
+    {
+        return [self::VIAJE => 'Viaje', self::LOCAL => 'Local'][$clase] ?? $clase;
+    }
+
+    /**
+     * Clase propuesta según la ruta. Se propone, no se impone: acierta con el caso real del
+     * negocio —puerto a bodega del cliente, mismo país, ciudades distintas— y donde falla
+     * (un viaje largo dentro del mismo país) se corrige con un clic.
+     */
+    public static function proponer(int $paisOrigen, int $paisDestino): string
+    {
+        return $paisOrigen === $paisDestino ? self::LOCAL : self::VIAJE;
+    }
+}
+
 /** Papel de un activo dentro de un movimiento (tabla movimiento_unidades). */
 final class RolUnidadMovimiento
 {

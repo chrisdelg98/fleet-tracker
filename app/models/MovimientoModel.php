@@ -14,6 +14,7 @@ final class MovimientoModel
         'pais_origen_id', 'pais_destino_id', 'tipo_ruta', 'fecha_salida', 'fecha_fin_estimada',
         'referencia_cw', 'retorno_disponible', 'queda_con_cliente', 'reservado_para',
         'notificar_a', 'notas', 'estado',
+        'estacion_id', 'clase', 'servicio_a_tercero',
     ];
 
     public function __construct(private PDO $pdo)
@@ -84,7 +85,11 @@ final class MovimientoModel
     /** Actualiza el plan del movimiento (ruta/fechas/flags), sin tocar el estado. */
     public function actualizarPlan(int $id, array $data): void
     {
-        $cols = array_filter(self::CAMPOS, static fn(string $c): bool => $c !== 'estado' && $c !== 'unidad_id');
+        // La estación se fija al crear y no cambia al editar el plan, igual que la unidad:
+        // ambas dicen de quién es el movimiento, no cómo se va a hacer. Excluirlas también
+        // evita que una edición que no las mande las deje en NULL.
+        $fijas = ['estado', 'unidad_id', 'estacion_id'];
+        $cols = array_filter(self::CAMPOS, static fn(string $c): bool => !in_array($c, $fijas, true));
         $sets = array_map(static fn(string $c): string => "{$c} = :{$c}", $cols);
         $params = [':id' => $id];
         foreach ($cols as $c) {

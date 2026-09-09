@@ -154,8 +154,8 @@ $router->post('/api/catalogos/{tabla}/{id}/activo', fn($p) => $adminController->
 // ── Fase 2: Motor de disponibilidad (movimientos, dashboard, overrides) ──
 $movimientoModel = new MovimientoModel($pdo);
 $movimientoUnidadModel = new MovimientoUnidadModel($pdo);
-$movimientoUnidadModel = new MovimientoUnidadModel($pdo);
-$movimientoService = new MovimientoService($pdo, $movimientoModel, $movimientoUnidadModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService);
+$movimientoTerceroModel = new MovimientoTerceroModel($pdo);
+$movimientoService = new MovimientoService($pdo, $movimientoModel, $movimientoUnidadModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService, $movimientoTerceroModel);
 $overrideService = new OverrideService($pdo, $overrideModel, $unidadModel, $notificacionService);
 $movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService);
 $disponibilidadController = new DisponibilidadController(
