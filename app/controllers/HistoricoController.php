@@ -42,7 +42,7 @@ final class HistoricoController
                 isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1,
                 HistoricoService::porPaginaValido((int) ($_GET['por_pagina'] ?? 0))
             ),
-        ], 'Historial de viajes · Disponibilidad de Flota');
+        ], 'Historial de viajes · Flete Finder');
     }
 
     /** GET /historico/sistema — registro crudo de toda escritura, un nivel adentro. */
@@ -64,7 +64,7 @@ final class HistoricoController
             'usuarios'  => $this->usuarios->listar(),
             'entidades' => ['movimiento', 'unidad', 'piloto', 'ruta', 'override', 'estacion', 'usuario'],
             'acciones'  => [AccionBitacora::CREAR, AccionBitacora::EDITAR, AccionBitacora::CAMBIO_ESTADO, AccionBitacora::CANCELAR, AccionBitacora::ELIMINAR],
-        ], 'Registro del sistema · Disponibilidad de Flota');
+        ], 'Registro del sistema · Flete Finder');
     }
 
     /** Devuelve el usuario si puede entrar; si no, responde 403 y devuelve null. */

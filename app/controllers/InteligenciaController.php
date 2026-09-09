@@ -35,7 +35,7 @@ final class InteligenciaController
             'paises' => $this->service->opcionesPaises($user),
             'alcanceTotal' => $this->service->alcance($user) === null,
             'tiposSuscripcion' => SuscripcionCorreoModel::tipos(),
-        ], 'Inteligencia · Disponibilidad de Flota');
+        ], 'Inteligencia · Flete Finder');
     }
 
     public function crearSuscripcion(): void

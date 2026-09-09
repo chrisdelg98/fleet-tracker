@@ -33,7 +33,7 @@ final class InventarioController
             'estaciones' => $this->catalogos->activos('estaciones', 'codigo'),
             'categorias' => $this->catalogos->activos('categorias_vehiculo', 'orden'),
             'estados'    => EstadoVehiculo::values(),
-        ], 'Inventario · Disponibilidad de Flota');
+        ], 'Inventario · Flete Finder');
     }
 
     /** GET /api/unidades/{id}/estadisticas — ficha completa para el panel del inventario. */

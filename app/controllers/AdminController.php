@@ -24,7 +24,7 @@ final class AdminController
     public function index(): void
     {
         $user = require_admin_web();
-        render('admin/index', ['usuario' => $user], 'Administración · Disponibilidad de Flota');
+        render('admin/index', ['usuario' => $user], 'Administración · Flete Finder');
     }
 
     public function estacionesPage(): void

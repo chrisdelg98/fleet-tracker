@@ -45,7 +45,7 @@ $correoService = new CorreoService([
     'username' => $env['MAIL_USERNAME'] ?? '',
     'password' => $env['MAIL_PASSWORD'] ?? '',
     'from' => $primero($env, 'MAIL_FROM', 'MAIL_FROM_ADDRESS'),
-    'from_name' => $primero($env, 'MAIL_FROM_NAME', 'APP_NAME') ?: 'Disponibilidad de Flota',
+    'from_name' => $primero($env, 'MAIL_FROM_NAME', 'APP_NAME') ?: 'Flete Finder',
     'encryption' => $env['MAIL_ENCRYPTION'] ?? '',
 ]);
 $correoLogService = new CorreoLogService();

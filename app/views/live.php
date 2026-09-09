@@ -24,7 +24,7 @@
         <div class="live__brand">
             <img src="/assets/img/logo-small.png" alt="" class="live__logo">
             <div class="live__brand-copy">
-                <strong>Disponibilidad de Flota</strong>
+                <strong>Flete Finder</strong>
                 <span class="live__pulse"><span class="live__dot" id="live-dot"></span> En vivo</span>
             </div>
         </div>

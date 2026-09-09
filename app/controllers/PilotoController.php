@@ -41,7 +41,7 @@ final class PilotoController
             'porPiloto'      => $this->pilotos->unidadesPorPiloto(
                 array_map(static fn(array $p): int => (int) $p['id'], $pilotos)
             ),
-        ], 'Pilotos · Disponibilidad de Flota');
+        ], 'Pilotos · Flete Finder');
     }
 
     public function apiShow(array $params): void

@@ -50,7 +50,7 @@ final class CorreoService
         }
 
         $from = trim((string) $this->config['from']);
-        $fromName = trim((string) ($this->config['from_name'] ?? 'Disponibilidad de Flota'));
+        $fromName = trim((string) ($this->config['from_name'] ?? 'Flete Finder'));
         $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text !== '' ? $text : strip_tags($html), $responderA);
 
         // Antes de hablar con nadie: una línea demasiado larga la acepta el servidor y la

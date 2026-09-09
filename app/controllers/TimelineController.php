@@ -78,7 +78,7 @@ final class TimelineController
             'verTodas'   => $user['rol'] === Rol::ADMIN_GLOBAL,
             'estaciones' => $this->catalogos->activos('estaciones', 'codigo'),
             'categorias' => $this->catalogos->activos('categorias_vehiculo', 'orden'),
-        ], 'Timeline · Disponibilidad de Flota');
+        ], 'Timeline · Flete Finder');
     }
 
     /** Unidades operativas en alcance con sus bloques de movimiento dentro de la ventana. */

@@ -20,7 +20,7 @@ final class RutaController
             'usuario' => $user,
             'rutas'   => $this->rutas->listar($q !== '' ? $q : null),
             'q'       => $q,
-        ], 'Rutas · Disponibilidad de Flota');
+        ], 'Rutas · Flete Finder');
     }
 
     public function apiShow(array $params): void

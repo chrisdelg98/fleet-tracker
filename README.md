@@ -1,6 +1,6 @@
 # 🚛 Sistema de Disponibilidad y Tracking de Flota
 
-Plataforma web para la **visibilidad en tiempo real de la disponibilidad de flota** entre las estaciones de la empresa en Centroamérica. Permite consultar qué unidades están libres en cualquier país —hoy, mañana o la próxima semana—, gestionar reservas y movimientos, aprovechar **retornos** para que ningún contenedor viaje vacío, y mantener el **inventario vehicular** completo de la organización.
+Plataforma web para la **visibilidad en tiempo real de la Flete Finder** entre las estaciones de la empresa en Centroamérica. Permite consultar qué unidades están libres en cualquier país —hoy, mañana o la próxima semana—, gestionar reservas y movimientos, aprovechar **retornos** para que ningún contenedor viaje vacío, y mantener el **inventario vehicular** completo de la organización.
 
 > 💡 **La idea en una frase:** usar la flota de la empresa hermana antes que contratar terceros, y llenar los retornos en vez de regresar vacíos.
 

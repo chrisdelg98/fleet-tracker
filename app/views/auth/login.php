@@ -10,7 +10,7 @@
     <aside class="auth-visual">
         <div class="auth-visual__brand">
             <img src="/assets/img/logo-small.png" alt="EFL" class="auth-visual__brand-mark">
-            <strong>Disponibilidad de Flota</strong>
+            <strong>Flete Finder</strong>
             <span>Plataforma operativa regional</span>
         </div>
     </aside>

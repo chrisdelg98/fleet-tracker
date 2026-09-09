@@ -237,7 +237,7 @@ function page_meta(): array
  * @param string $template Ruta relativa sin extensión, ej. "auth/login".
  * @param array  $data     Variables disponibles en la plantilla.
  */
-function render(string $template, array $data = [], string $title = 'Disponibilidad de Flota'): void
+function render(string $template, array $data = [], string $title = 'Flete Finder'): void
 {
     extract($data, EXTR_SKIP);
 

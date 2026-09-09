@@ -48,7 +48,7 @@ final class UnidadController
             'estaciones' => $this->catalogos->activos('estaciones'),
             'pilotos'    => $this->pilotosParaSelect($user),
             'estados'    => EstadoVehiculo::values(),
-        ], 'Flota · Disponibilidad de Flota');
+        ], 'Flota · Flete Finder');
     }
 
     /** GET /api/unidades */

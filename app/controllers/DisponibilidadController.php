@@ -43,7 +43,7 @@ final class DisponibilidadController
             'listasCorreo' => $this->listasNotificacion->listar($user),
             'pilotos'     => $this->pilotos->listar($estacionGestion),
             'fechaHoy'    => (new DateTimeImmutable('now'))->format('Y-m-d'),
-        ], 'Dashboard · Disponibilidad de Flota');
+        ], 'Dashboard · Flete Finder');
     }
 
     /** GET /live — pantalla Live (wallboard) en vivo para pantalla de oficina (kiosk). */
@@ -51,7 +51,7 @@ final class DisponibilidadController
     {
         $user = require_login_web();
         $estaciones = $this->catalogos->activos('estaciones', 'codigo');
-        $title = 'Live · Disponibilidad de Flota';
+        $title = 'Live · Flete Finder';
         require BASE_PATH . '/app/views/live.php';
     }
 

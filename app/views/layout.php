@@ -38,8 +38,8 @@
             <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Mostrar u ocultar el menú" title="Menú" aria-controls="app-sidebar" aria-expanded="false">
                 <span class="nav-toggle__bars" aria-hidden="true"></span>
             </button>
-            <a class="topbar__brand" href="/" title="Disponibilidad de Flota">
-                <img src="/assets/img/logo-small.png" alt="Disponibilidad de Flota" class="topbar__logo">
+            <a class="topbar__brand" href="/" title="Flete Finder">
+                <img src="/assets/img/logo-small.png" alt="Flete Finder" class="topbar__logo">
             </a>
             <?php if ($meta['titulo'] !== ''): ?>
                 <div class="topbar__page">

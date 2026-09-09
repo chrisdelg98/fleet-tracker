@@ -19,7 +19,7 @@ final class AuthController
             header('Location: /');
             exit;
         }
-        render('auth/login', ['error' => null], 'Ingresar · Disponibilidad de Flota');
+        render('auth/login', ['error' => null], 'Ingresar · Flete Finder');
     }
 
     /** POST /login — valida credenciales y crea la sesión. */
@@ -27,7 +27,7 @@ final class AuthController
     {
         if (!csrf_valid($_POST['_csrf'] ?? null)) {
             http_response_code(419);
-            render('auth/login', ['error' => 'La sesión expiró. Intenta de nuevo.'], 'Ingresar · Disponibilidad de Flota');
+            render('auth/login', ['error' => 'La sesión expiró. Intenta de nuevo.'], 'Ingresar · Flete Finder');
             return;
         }
 
@@ -38,7 +38,7 @@ final class AuthController
 
         if ($usuario === null) {
             http_response_code(401);
-            render('auth/login', ['error' => 'Credenciales inválidas.', 'email' => $email], 'Ingresar · Disponibilidad de Flota');
+            render('auth/login', ['error' => 'Credenciales inválidas.', 'email' => $email], 'Ingresar · Flete Finder');
             return;
         }
 

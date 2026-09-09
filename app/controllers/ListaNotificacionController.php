@@ -35,7 +35,7 @@ final class ListaNotificacionController
             'q'          => $q,
             'esAdmin'    => $user['rol'] === Rol::ADMIN_GLOBAL,
             'estaciones' => $this->catalogos->activos('estaciones', 'codigo'),
-        ], 'Contactos · Disponibilidad de Flota');
+        ], 'Contactos · Flete Finder');
     }
 
     public function apiShow(array $params): void
