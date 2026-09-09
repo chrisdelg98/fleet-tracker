@@ -197,46 +197,95 @@ function rowHtml(u) {
 
 const KEBAB = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 6.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm0 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm0 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" fill="currentColor"/></svg>';
 
-function accionesHtml(u) {
+/**
+ * Orden del menú de una unidad, decidido una vez y de arriba abajo:
+ *
+ *   1. devolverla a la operación   — si está bloqueada, es lo único que se puede hacer
+ *   2. avanzar el viaje            — confirmar, salir, llegar: el camino normal
+ *   3. corregir lo que ya existe   — editar, mover la fecha, sacar un activo
+ *   4. lo que deriva del viaje     — retorno y reenvío del aviso
+ *   5. empezar algo nuevo          — otra reserva, o bloquear
+ *   6. cancelar                    — al final y aparte: es lo único que no se deshace
+ *
+ * Que la lista sea única importa más que el orden concreto: cada estado muestra un
+ * subconjunto, pero dos acciones nunca se intercambian entre sí. Antes cada acción nueva se
+ * empujaba al final, así que "Editar" saltaba de tercera a quinta según la unidad tuviera
+ * retorno o acompañantes, y no había dónde acostumbrar la mano.
+ */
+const ORDEN_ACCIONES = [
+    'desbloquear',
+    'confirmar', 'salida', 'llegada',
+    'editar', 'reprogramar', 'liberar',
+    'apartar-retorno', 'reenviar-aviso',
+    'reservar', 'bloquear',
+    'cancelar',
+];
+
+const ETIQUETA_ACCION = {
+    desbloquear: 'Desbloquear',
+    confirmar: 'Confirmar',
+    salida: 'Marcar salida',
+    llegada: 'Marcar llegada',
+    editar: 'Editar reserva',
+    reprogramar: 'Cambiar fecha de fin',
+    liberar: 'Liberar de este viaje',
+    'apartar-retorno': 'Apartar retorno',
+    'reenviar-aviso': 'Reenviar aviso por correo',
+    bloquear: 'Bloquear',
+    cancelar: 'Cancelar movimiento',
+};
+
+/**
+ * Qué admite la unidad ahora mismo, ya ordenado. Lo comparten el menú de la fila y el panel:
+ * cuando cada uno armaba su lista, al panel se le habían quedado dos acciones por el camino.
+ *
+ * @returns {Array<{accion: string, etiqueta: string, peligro: boolean}>}
+ */
+function accionesDe(u) {
     const m = u.movimiento;
-    const item = (accion, txt, danger = false) => `<button type="button" role="menuitem" class="rowmenu__item${danger ? ' rowmenu__item--danger' : ''}" data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${txt}</button>`;
-    const acc = [];
-    let cancelar = null; // Cancelar siempre va al final del menú.
+    const enCurso = m && !['COMPLETADO', 'CANCELADO'].includes(m.estado);
+    const puede = new Set();
+
+    // Reservar siempre se puede intentar: el traslape lo decide el guardado con las fechas
+    // exactas, no el periodo que se está mirando.
+    puede.add('reservar');
     if (u.estado === 'DISPONIBLE') {
-        acc.push(item('reservar', 'Reservar'), item('bloquear', 'Bloquear'));
-    } else if (u.override && u.override.tipo === 'BLOQUEADA') {
-        acc.push(item('desbloquear', 'Desbloquear'));
-    } else if (m && m.estado === 'RESERVADO') {
+        puede.add('bloquear');
+    }
+    if (u.override && u.override.tipo === 'BLOQUEADA') {
+        puede.add('desbloquear');
+    }
+
+    if (enCurso) {
         // Marcar salida no exige confirmar antes: la unidad que ya se fue está más que
         // confirmada, y pedir los dos pasos solo agregaba un clic.
-        acc.push(item('confirmar', 'Confirmar'), item('salida', 'Marcar salida'));
-        cancelar = item('cancelar', 'Cancelar', true);
-    } else if (m && m.estado === 'PROGRAMADO') {
-        acc.push(item('salida', 'Marcar salida'), item('reprogramar', 'Cambiar fecha de fin'));
-        cancelar = item('cancelar', 'Cancelar', true);
-    } else if (m && m.estado === 'EN_TRANSITO') {
-        acc.push(item('llegada', 'Marcar llegada'), item('reprogramar', 'Cambiar fecha de fin'));
-        cancelar = item('cancelar', 'Cancelar', true);
+        if (m.estado === 'RESERVADO') { puede.add('confirmar'); puede.add('salida'); }
+        if (m.estado === 'PROGRAMADO') { puede.add('salida'); puede.add('reprogramar'); }
+        if (m.estado === 'EN_TRANSITO') { puede.add('llegada'); puede.add('reprogramar'); }
+        puede.add('editar');
+        puede.add('cancelar');
+        if ((m.acompanantes || []).length && m.unidad_id !== u.unidad_id) puede.add('liberar');
+        if (m.retorno_disponible && !m.regreso_id) puede.add('apartar-retorno');
+        if (m.contactos_aviso > 0) puede.add('reenviar-aviso');
     }
-    if (m && (m.acompanantes || []).length && m.unidad_id !== u.unidad_id) {
-        acc.push(item('liberar', 'Liberar de este viaje'));
-    }
-    if (m && m.retorno_disponible && !m.regreso_id) {
-        acc.push(item('apartar-retorno', 'Apartar retorno'));
-    }
-    if (m && !['COMPLETADO', 'CANCELADO'].includes(m.estado)) {
-        acc.push(item('editar', 'Editar reserva'));
-    }
-    if (m && m.contactos_aviso > 0) {
-        acc.push(item('reenviar-aviso', 'Reenviar aviso por correo'));
-    }
-    // El tablero mide la disponibilidad del periodo que se está viendo: que hoy esté ocupada
-    // no dice nada de la semana que viene. El traslape lo decide el guardado con las fechas
-    // exactas, así que apartarla para otro periodo tiene que poder intentarse desde aquí.
-    if (u.estado !== 'DISPONIBLE') {
-        acc.push(item('reservar', 'Reservar otro periodo'));
-    }
-    if (cancelar) acc.push(cancelar);
+
+    return ORDEN_ACCIONES.filter((a) => puede.has(a)).map((accion) => ({
+        accion,
+        // En una unidad libre es la acción principal; en una ocupada hay que decir que es
+        // para otras fechas, o se lee como una contradicción.
+        etiqueta: accion === 'reservar'
+            ? (u.estado === 'DISPONIBLE' ? 'Reservar' : 'Reservar otro periodo')
+            : ETIQUETA_ACCION[accion],
+        peligro: accion === 'cancelar',
+    }));
+}
+
+function accionesHtml(u) {
+    const m = u.movimiento;
+    const acc = accionesDe(u).map(({ accion, etiqueta, peligro }) =>
+        `<button type="button" role="menuitem" class="rowmenu__item${peligro ? ' rowmenu__item--danger' : ''}"`
+        + ` data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${etiqueta}</button>`);
+
     if (!acc.length) return '<span class="muted">—</span>';
     return `<div class="rowmenu" data-rowmenu>
         <button type="button" class="rowmenu__trigger" data-rowmenu-trigger aria-haspopup="true" aria-expanded="false" aria-label="Acciones">${KEBAB}</button>
@@ -772,26 +821,13 @@ const cuerpoUnidad = document.getElementById('panel-unidad-cuerpo');
 /** Acciones posibles según el estado, con verbo claro. Reusa los mismos data-mov del menú. */
 function accionesPanel(u) {
     const m = u.movimiento;
-    const btn = (accion, txt, tono = '') =>
-        `<button type="button" class="btn btn--linea ${tono}" data-mov="${accion}" data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${txt}</button>`;
-    const acc = [];
-
-    if (u.estado === 'DISPONIBLE') {
-        acc.push(btn('reservar', 'Reservar', 'btn--linea-principal'), btn('bloquear', 'Bloquear'));
-    } else if (u.override && u.override.tipo === 'BLOQUEADA') {
-        acc.push(btn('desbloquear', 'Desbloquear', 'btn--linea-principal'));
-    } else if (m && m.estado === 'RESERVADO') {
-        acc.push(btn('confirmar', 'Confirmar', 'btn--linea-principal'), btn('salida', 'Marcar salida'));
-    } else if (m && m.estado === 'PROGRAMADO') {
-        acc.push(btn('salida', 'Marcar salida', 'btn--linea-principal'), btn('reprogramar', 'Cambiar fecha de fin'));
-    } else if (m && m.estado === 'EN_TRANSITO') {
-        acc.push(btn('llegada', 'Marcar llegada', 'btn--linea-principal'), btn('reprogramar', 'Cambiar fecha de fin'));
-    }
-    if (m && !['COMPLETADO', 'CANCELADO'].includes(m.estado)) acc.push(btn('editar', 'Editar reserva'));
-    if (m && m.retorno_disponible && !m.regreso_id) acc.push(btn('apartar-retorno', 'Apartar retorno'));
-    if (u.estado !== 'DISPONIBLE') acc.push(btn('reservar', 'Reservar otro periodo'));
-    if (m && m.estado !== 'EN_TRANSITO') acc.push(btn('cancelar', 'Cancelar movimiento', 'btn--linea-peligro'));
-    return acc;
+    // La primera de la lista es la principal: al estar el orden decidido, no hay que volver
+    // a elegir cuál destacar en cada estado.
+    return accionesDe(u).map(({ accion, etiqueta, peligro }, i) => {
+        const tono = peligro ? 'btn--linea-peligro' : (i === 0 ? 'btn--linea-principal' : '');
+        return `<button type="button" class="btn btn--linea ${tono}" data-mov="${accion}"`
+            + ` data-unidad="${u.unidad_id}"${m ? ` data-id="${m.id}"` : ''}>${etiqueta}</button>`;
+    });
 }
 
 function abrirPanelUnidad(u) {
