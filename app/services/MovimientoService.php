@@ -77,11 +77,8 @@ final class MovimientoService
             'estado'         => $estado,
             'piloto_id'      => $unidad !== null ? $this->pilotoOpcional($input, $unidad) : null,
         ];
-        // Sin elección, la clase sale de la ruta y la operación nace en el caso más frecuente:
-        // dos campos que en el uso normal nadie tiene que tocar.
-        $data['clase'] = $this->claseValida($input['clase'] ?? null)
-            ?? ClaseMovimiento::proponer((int) $data['pais_origen_id'], (int) $data['pais_destino_id']);
-        $data['servicio_a_tercero'] = (int) (bool) ($input['servicio_a_tercero'] ?? 0);
+        // Nace en el caso mayoritario, así que en el uso normal nadie la toca.
+        $data['operacion'] = $this->operacionElegida($input) ?? OperacionMovimiento::INTERNO;
 
         if ($unidad !== null) {
             $this->assertAlcanceInternacional((int) $unidad['id'], $data);
@@ -237,12 +234,9 @@ final class MovimientoService
                 : ($mov['piloto_id'] !== null ? (int) $mov['piloto_id'] : null),
         ];
 
-        // Clase y operación se conservan si no vienen: son clasificaciones del movimiento, y
-        // una edición de ruta o de piloto no tiene por qué reclasificarlo.
-        $data['clase'] = $this->claseValida($input['clase'] ?? null) ?? (string) $mov['clase'];
-        $data['servicio_a_tercero'] = array_key_exists('servicio_a_tercero', $input)
-            ? (int) (bool) $input['servicio_a_tercero']
-            : (int) $mov['servicio_a_tercero'];
+        // La operación se conserva si no viene: una edición de ruta o de piloto no tiene por
+        // qué reclasificar el movimiento.
+        $data['operacion'] = $this->operacionElegida($input) ?? (string) $mov['operacion'];
 
         // Con la reserva ya confirmada, mover la liberación exige un motivo y va por
         // reprogramarFin (regla del plan §6). Editar no puede saltarse eso, así que a partir
@@ -257,7 +251,7 @@ final class MovimientoService
         }
 
         $tocaTercero = array_intersect_key($input, array_flip([
-            'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+            'proveedor', 'contratacion', 'placa_motriz', 'placa_arrastre', 'piloto',
             'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional',
         ])) !== [];
         $tercero = $tocaTercero ? $this->terceroValidado($input) : null;
@@ -819,14 +813,19 @@ final class MovimientoService
         if (!isset($datos['proveedor'])) {
             json_unprocessable(['proveedor' => 'Indica de qué proveedor es la unidad.']);
         }
+        // Qué se le compró. Por omisión, la ida: es lo que se contrata la mayoría de las veces.
+        $contratacion = strtoupper(trim((string) ($input['contratacion'] ?? '')));
+        $datos['contratacion'] = in_array($contratacion, ContratacionExterna::values(), true)
+            ? $contratacion
+            : ContratacionExterna::IDA;
         return $datos;
     }
 
-    /** Clase pedida, si es una de las válidas; null para que decida quien llame. */
-    private function claseValida($valor): ?string
+    /** Operación pedida (IN/EX), o null si no se pidió ninguna. */
+    private function operacionElegida(array $input): ?string
     {
-        $valor = is_string($valor) ? trim($valor) : '';
-        return in_array($valor, ClaseMovimiento::values(), true) ? $valor : null;
+        $valor = is_string($input['operacion'] ?? null) ? strtoupper(trim($input['operacion'])) : '';
+        return in_array($valor, OperacionMovimiento::values(), true) ? $valor : null;
     }
 
     /**

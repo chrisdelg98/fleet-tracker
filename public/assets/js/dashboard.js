@@ -576,17 +576,16 @@ async function abrirEdicion(id) {
     v('reservado_para', m.reservado_para);
     v('referencia_cw', m.referencia_cw);
     v('notificar_a', m.notificar_a);
-    v('clase', m.clase);
     for (const campo of CAMPOS_TERCERO) v(campo, m[campo]);
     formReserva.elements['retorno_disponible'].checked = Number(m.retorno_disponible) === 1;
     formReserva.elements['queda_con_cliente'].checked = Number(m.queda_con_cliente) === 1;
-    formReserva.elements['servicio_a_tercero'].checked = Number(m.servicio_a_tercero) === 1;
+    // Los radios se seleccionan por valor: elements['operacion'] es la lista de los dos.
+    for (const radio of formReserva.elements['operacion']) radio.checked = radio.value === (m.operacion || 'IN');
+    for (const radio of formReserva.elements['contratacion']) radio.checked = radio.value === (m.contratacion || 'IDA');
 
     formReserva.querySelectorAll('select').forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
     toggleRutaCustom();
     syncAvisoLicencia();
-    // La clase ya viene decidida del movimiento: proponerla otra vez la pisaría.
-    claseTocadaManual = true;
     sincronizarTercero();
     cargarTerceros();
     for (const [nombre, motivo] of Object.entries(NO_EDITABLE)) bloquear(formReserva.elements[nombre], motivo);
@@ -653,22 +652,6 @@ function sincronizarTercero() {
     if (conDatos) bloque.open = true;
 }
 
-/**
- * La clase se propone desde la ruta: mismo país es local. Se propone y no se impone —un viaje
- * largo dentro del mismo país no es local— y deja de proponerse en cuanto alguien la elige.
- */
-let claseTocadaManual = false;
-
-function sugerirClase() {
-    const sel = formReserva.elements['clase'];
-    if (!sel || claseTocadaManual) return;
-    const origen = formReserva.elements['pais_origen_id']?.value;
-    const destino = formReserva.elements['pais_destino_id']?.value;
-    if (!origen || !destino) return;
-    sel.value = origen === destino ? 'LOCAL' : 'VIAJE';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
 function abrirReserva(unidadId) {
     if (!formReserva) return;
     formReserva.reset();
@@ -692,8 +675,6 @@ function abrirReserva(unidadId) {
     sincronizarApoyos();
     syncAvisoUnidad();
     sincronizarAlcance();
-    claseTocadaManual = false;
-    sugerirClase();
     sincronizarTercero();
     cargarTerceros();
     tipoTocadoManual = false;
@@ -734,12 +715,6 @@ if (formReserva) {
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarApoyos);
     formReserva.elements['unidad_id'].addEventListener('change', syncAvisoUnidad);
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarAlcance);
-    for (const campo of ['pais_origen_id', 'pais_destino_id', 'ruta_id']) {
-        formReserva.elements[campo]?.addEventListener('change', sugerirClase);
-    }
-    formReserva.elements['clase']?.addEventListener('change', (e) => {
-        if (e.isTrusted) claseTocadaManual = true;   // solo cuenta si lo eligió una persona
-    });
     formReserva.elements['placa_motriz']?.addEventListener('change', completarTercero);
     formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
@@ -762,6 +737,9 @@ if (formReserva) {
         for (const el of formReserva.elements) {
             if (!el.name) continue;
             if (el.type === 'checkbox') { p[el.name] = el.checked ? 1 : 0; continue; }
+            // Un grupo de radios comparte nombre: sin mirar cuál está marcado, el último de la
+            // lista pisaría al elegido y el campo guardaría siempre el mismo valor.
+            if (el.type === 'radio') { if (el.checked) p[el.name] = el.value; continue; }
             if (el.value !== '') p[el.name] = el.value;
         }
         const editando = formReserva.dataset.movimiento;
@@ -770,7 +748,7 @@ if (formReserva) {
             // contactos sería indistinguible de no haberlos tocado, y no se podrían borrar.
             for (const name of ['piloto_id', 'ruta_id', 'ruta_custom_origen', 'ruta_custom_destino',
                 'reservado_para', 'referencia_cw', 'notificar_a', 'fecha_salida', 'fecha_fin_estimada',
-                'pais_origen_id', 'pais_destino_id', 'clase', ...CAMPOS_TERCERO]) {
+                'pais_origen_id', 'pais_destino_id', ...CAMPOS_TERCERO]) {
                 const el = formReserva.elements[name];
                 if (el) p[name] = el.value;
             }

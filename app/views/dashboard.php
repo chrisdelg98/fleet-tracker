@@ -196,14 +196,6 @@ set_page_meta(
                     <option value="RESERVADO">Reserva (apartado)</option>
                     <option value="PROGRAMADO">Programado (confirmado)</option>
                 </select></label>
-            <!-- Se propone sola según la ruta; queda editable porque un viaje largo dentro del
-                 mismo país no es local, y eso solo lo sabe quien registra. -->
-            <label class="field"><span class="field__label">Clase</span>
-                <select name="clase" id="mov-clase">
-                    <?php foreach (ClaseMovimiento::values() as $c): ?>
-                        <option value="<?= e($c) ?>"><?= e(ClaseMovimiento::label($c)) ?></option>
-                    <?php endforeach; ?>
-                </select></label>
             <label class="field"><span class="field__label">Cabezal</span>
                 <select name="apoyo_motriz_id" data-apoyo="motriz">
                     <option value="">— Ninguno / del cliente —</option>
@@ -278,10 +270,20 @@ set_page_meta(
 
             <label class="check check--box grid-4__2"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label>
             <label class="check check--box grid-4__2"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente</span></label>
-            <label class="check check--box grid-4__full"><input type="checkbox" name="servicio_a_tercero" value="1">
-                <span>Servicio de flete a otra empresa
-                    <span class="alcance alcance--nac" data-infotip="Márcalo cuando el flete es para otra empresa y la unidad carga en sus instalaciones. Sin marcar, la carga es de nuestra empresa: sale de nuestra bodega o llega a ella.">?</span>
-                </span></label>
+            <!-- Los dos términos a la vista y con su definición debajo: son los del reporte
+                 semanal, y tener que deducir cuál es cuál es lo que descuadra el número. -->
+            <fieldset class="opcion-par grid-4__2">
+                <legend class="field__label">Operación</legend>
+                <?php foreach (OperacionMovimiento::values() as $op): ?>
+                    <label class="check check--box">
+                        <input type="radio" name="operacion" value="<?= e($op) ?>" <?= $op === OperacionMovimiento::INTERNO ? 'checked' : '' ?>>
+                        <span><?= e(OperacionMovimiento::label($op)) ?> <span class="muted">(<?= e($op) ?>)</span>
+                            <small class="block muted"><?= e(OperacionMovimiento::ayuda($op)) ?></small>
+                        </span>
+                    </label>
+                <?php endforeach; ?>
+            </fieldset>
+
         </div>
 
         <!-- Colapsado y sin casilla que lo anuncie: lo que declara que el movimiento va con un
@@ -291,6 +293,19 @@ set_page_meta(
             <div class="grid-4">
                 <label class="field"><span class="field__label">Proveedor</span>
                     <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…"></label>
+                <fieldset class="opcion-par grid-4__3">
+                    <legend class="field__label">Qué se le contrató</legend>
+                    <div class="opcion-par__fila">
+                        <?php foreach (ContratacionExterna::values() as $c): ?>
+                            <label class="check check--box">
+                                <input type="radio" name="contratacion" value="<?= e($c) ?>" <?= $c === ContratacionExterna::IDA ? 'checked' : '' ?>>
+                                <span><?= e(ContratacionExterna::label($c)) ?>
+                                    <small class="block muted"><?= e(ContratacionExterna::ayuda($c)) ?></small>
+                                </span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </fieldset>
                 <label class="field"><span class="field__label">Placa cabezal</span>
                     <input type="text" name="placa_motriz" maxlength="30" list="terceros-placas" data-mayusculas autocomplete="off"></label>
                 <label class="field"><span class="field__label">Placa furgón</span>
@@ -306,7 +321,8 @@ set_page_meta(
                 <label class="field"><span class="field__label">Teléfono</span>
                     <input type="text" name="telefonos" maxlength="255"></label>
             </div>
-            <p class="muted">Escribe la placa y el resto se completa con lo de la última vez. Solo el proveedor es obligatorio.</p>
+            <p class="muted">Escribe la placa y el resto se completa con lo de la última vez. Solo el proveedor es obligatorio.
+               Si el proveedor ofrece retorno, marcá «Retorno disponible» arriba: así aparece en el tablero para que alguien lo tome.</p>
             <datalist id="terceros-placas"></datalist>
             <datalist id="terceros-proveedores"></datalist>
         </details>

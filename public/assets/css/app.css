@@ -2749,3 +2749,22 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 @media (prefers-reduced-motion: reduce) {
     .tercero > summary::before { transition: none; }
 }
+
+/* ── Par de opciones excluyentes con su definición debajo ─────────────────────────────────
+   Para conceptos que la empresa nombra —Interno/Externo— y que se llenan mal si hay que
+   deducir cuál es cuál: se ven los dos, con lo que significa cada uno a la vista. */
+.opcion-par {
+    display: grid;
+    gap: var(--sp-2);
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+.opcion-par > legend { padding: 0; margin-bottom: var(--sp-1); }
+.opcion-par .check--box { align-items: flex-start; }
+.opcion-par small { margin-top: 2px; font-size: var(--fs-xs); line-height: 1.35; }
+
+/* Tres opciones en fila cuando caben; apiladas en pantalla angosta. */
+.opcion-par__fila { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.opcion-par__fila > .check { flex: 1 1 12rem; }

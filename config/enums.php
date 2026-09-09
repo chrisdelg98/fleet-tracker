@@ -147,35 +147,76 @@ final class EstadoMovimiento
 }
 
 /**
- * Clase de trabajo de un movimiento.
+ * Qué se le contrató al proveedor en un flete externo.
  *
- * LOCAL no sale en el tablero de disponibilidad —una carrera de la bodega a la fábrica no es
- * lo que se mira al buscar un camión para el jueves— pero sigue ocupando la unidad: ocultarlo
- * del cálculo permitiría reservarla dos veces.
+ * Dice qué se compró, no si hay retorno: eso último se marca aparte, porque un proveedor puede
+ * avisar que vuelve vacío y entonces sí hay capacidad que ofertar. Sirve sobre todo para contar
+ * qué clase de compra se le hace a cada proveedor.
  */
-final class ClaseMovimiento
+final class ContratacionExterna
 {
-    public const VIAJE = 'VIAJE';
-    public const LOCAL = 'LOCAL';
+    /** Se le compró el viaje de ida y nada más. */
+    public const IDA = 'IDA';
+    /** Se le compró su vuelta: venía de regreso y se aprovechó. */
+    public const RETORNO = 'RETORNO';
+    /** Ida y vuelta contratadas. */
+    public const REDONDO = 'REDONDO';
 
     public static function values(): array
     {
-        return [self::VIAJE, self::LOCAL];
+        return [self::IDA, self::RETORNO, self::REDONDO];
     }
 
-    public static function label(string $clase): string
+    public static function label(string $tipo): string
     {
-        return [self::VIAJE => 'Viaje', self::LOCAL => 'Local'][$clase] ?? $clase;
+        return [
+            self::IDA     => 'Solo la ida',
+            self::RETORNO => 'Solo su retorno',
+            self::REDONDO => 'Ida y vuelta',
+        ][$tipo] ?? $tipo;
     }
 
-    /**
-     * Clase propuesta según la ruta. Se propone, no se impone: acierta con el caso real del
-     * negocio —puerto a bodega del cliente, mismo país, ciudades distintas— y donde falla
-     * (un viaje largo dentro del mismo país) se corrige con un clic.
-     */
-    public static function proponer(int $paisOrigen, int $paisDestino): string
+    /** Lo que explica cada opción, con el caso concreto que la motiva. */
+    public static function ayuda(string $tipo): string
     {
-        return $paisOrigen === $paisDestino ? self::LOCAL : self::VIAJE;
+        return [
+            self::IDA     => 'Se le pagó llevar la carga, nada más.',
+            self::RETORNO => 'Venía de vuelta vacío y se le compró ese regreso.',
+            self::REDONDO => 'Se le contrataron los dos tramos.',
+        ][$tipo] ?? '';
+    }
+}
+
+/**
+ * Operación del movimiento, tal como la nombra la empresa y el reporte semanal.
+ *
+ * No es "de quién es el camión": un interno se puede hacer con una unidad contratada y un
+ * externo con flota propia. Es de quién es la carga y en qué bodega se carga.
+ */
+final class OperacionMovimiento
+{
+    /** La carga sale de nuestra bodega, pasa por ella o llega a ella. */
+    public const INTERNO = 'IN';
+    /** Flete para otra empresa: la unidad carga en las instalaciones del cliente. */
+    public const EXTERNO = 'EX';
+
+    public static function values(): array
+    {
+        return [self::INTERNO, self::EXTERNO];
+    }
+
+    public static function label(string $operacion): string
+    {
+        return [self::INTERNO => 'Interno', self::EXTERNO => 'Externo'][$operacion] ?? $operacion;
+    }
+
+    /** Lo que explica cada opción en el formulario, con las palabras de la operación. */
+    public static function ayuda(string $operacion): string
+    {
+        return [
+            self::INTERNO => 'La carga sale de nuestra bodega, pasa por ella o llega a ella.',
+            self::EXTERNO => 'Es un flete para otra empresa y la unidad carga en sus instalaciones.',
+        ][$operacion] ?? '';
     }
 }
 

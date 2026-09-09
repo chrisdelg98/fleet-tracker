@@ -13,7 +13,7 @@ declare(strict_types=1);
 final class MovimientoTerceroModel
 {
     private const CAMPOS = [
-        'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+        'proveedor', 'contratacion', 'placa_motriz', 'placa_arrastre', 'piloto',
         'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional',
     ];
 

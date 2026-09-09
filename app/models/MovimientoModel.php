@@ -14,7 +14,7 @@ final class MovimientoModel
         'pais_origen_id', 'pais_destino_id', 'tipo_ruta', 'fecha_salida', 'fecha_fin_estimada',
         'referencia_cw', 'retorno_disponible', 'queda_con_cliente', 'reservado_para',
         'notificar_a', 'notas', 'estado',
-        'estacion_id', 'clase', 'servicio_a_tercero',
+        'estacion_id', 'operacion',
     ];
 
     public function __construct(private PDO $pdo)
