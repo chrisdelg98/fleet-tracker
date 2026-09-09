@@ -251,7 +251,7 @@ final class MovimientoService
         }
 
         $tocaTercero = array_intersect_key($input, array_flip([
-            'proveedor', 'contratacion', 'placa_motriz', 'placa_arrastre', 'piloto',
+            'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
             'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional',
         ])) !== [];
         $tercero = $tocaTercero ? $this->terceroValidado($input) : null;
@@ -813,11 +813,6 @@ final class MovimientoService
         if (!isset($datos['proveedor'])) {
             json_unprocessable(['proveedor' => 'Indica de qué proveedor es la unidad.']);
         }
-        // Qué se le compró. Por omisión, la ida: es lo que se contrata la mayoría de las veces.
-        $contratacion = strtoupper(trim((string) ($input['contratacion'] ?? '')));
-        $datos['contratacion'] = in_array($contratacion, ContratacionExterna::values(), true)
-            ? $contratacion
-            : ContratacionExterna::IDA;
         return $datos;
     }
 

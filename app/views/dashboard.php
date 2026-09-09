@@ -272,16 +272,18 @@ set_page_meta(
             <label class="check check--box grid-4__2"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente</span></label>
             <!-- Los dos términos a la vista y con su definición debajo: son los del reporte
                  semanal, y tener que deducir cuál es cuál es lo que descuadra el número. -->
-            <fieldset class="opcion-par grid-4__2">
-                <legend class="field__label">Operación</legend>
-                <?php foreach (OperacionMovimiento::values() as $op): ?>
-                    <label class="check check--box">
-                        <input type="radio" name="operacion" value="<?= e($op) ?>" <?= $op === OperacionMovimiento::INTERNO ? 'checked' : '' ?>>
-                        <span><?= e(OperacionMovimiento::label($op)) ?> <span class="muted">(<?= e($op) ?>)</span>
-                            <small class="block muted"><?= e(OperacionMovimiento::ayuda($op)) ?></small>
-                        </span>
-                    </label>
-                <?php endforeach; ?>
+            <fieldset class="opcion-par grid-4__full">
+                <legend>Operación</legend>
+                <div class="opcion-par__fila">
+                    <?php foreach (OperacionMovimiento::values() as $op): ?>
+                        <label class="check check--box">
+                            <input type="radio" name="operacion" value="<?= e($op) ?>" <?= $op === OperacionMovimiento::INTERNO ? 'checked' : '' ?>>
+                            <span><?= e(OperacionMovimiento::label($op)) ?> <span class="muted">(<?= e($op) ?>)</span>
+                                <small class="block muted"><?= e(OperacionMovimiento::ayuda($op)) ?></small>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
             </fieldset>
 
         </div>
@@ -293,19 +295,6 @@ set_page_meta(
             <div class="grid-4">
                 <label class="field"><span class="field__label">Proveedor</span>
                     <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…"></label>
-                <fieldset class="opcion-par grid-4__3">
-                    <legend class="field__label">Qué se le contrató</legend>
-                    <div class="opcion-par__fila">
-                        <?php foreach (ContratacionExterna::values() as $c): ?>
-                            <label class="check check--box">
-                                <input type="radio" name="contratacion" value="<?= e($c) ?>" <?= $c === ContratacionExterna::IDA ? 'checked' : '' ?>>
-                                <span><?= e(ContratacionExterna::label($c)) ?>
-                                    <small class="block muted"><?= e(ContratacionExterna::ayuda($c)) ?></small>
-                                </span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                </fieldset>
                 <label class="field"><span class="field__label">Placa cabezal</span>
                     <input type="text" name="placa_motriz" maxlength="30" list="terceros-placas" data-mayusculas autocomplete="off"></label>
                 <label class="field"><span class="field__label">Placa furgón</span>

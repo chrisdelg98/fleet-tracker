@@ -147,47 +147,6 @@ final class EstadoMovimiento
 }
 
 /**
- * Qué se le contrató al proveedor en un flete externo.
- *
- * Dice qué se compró, no si hay retorno: eso último se marca aparte, porque un proveedor puede
- * avisar que vuelve vacío y entonces sí hay capacidad que ofertar. Sirve sobre todo para contar
- * qué clase de compra se le hace a cada proveedor.
- */
-final class ContratacionExterna
-{
-    /** Se le compró el viaje de ida y nada más. */
-    public const IDA = 'IDA';
-    /** Se le compró su vuelta: venía de regreso y se aprovechó. */
-    public const RETORNO = 'RETORNO';
-    /** Ida y vuelta contratadas. */
-    public const REDONDO = 'REDONDO';
-
-    public static function values(): array
-    {
-        return [self::IDA, self::RETORNO, self::REDONDO];
-    }
-
-    public static function label(string $tipo): string
-    {
-        return [
-            self::IDA     => 'Solo la ida',
-            self::RETORNO => 'Solo su retorno',
-            self::REDONDO => 'Ida y vuelta',
-        ][$tipo] ?? $tipo;
-    }
-
-    /** Lo que explica cada opción, con el caso concreto que la motiva. */
-    public static function ayuda(string $tipo): string
-    {
-        return [
-            self::IDA     => 'Se le pagó llevar la carga, nada más.',
-            self::RETORNO => 'Venía de vuelta vacío y se le compró ese regreso.',
-            self::REDONDO => 'Se le contrataron los dos tramos.',
-        ][$tipo] ?? '';
-    }
-}
-
-/**
  * Operación del movimiento, tal como la nombra la empresa y el reporte semanal.
  *
  * No es "de quién es el camión": un interno se puede hacer con una unidad contratada y un

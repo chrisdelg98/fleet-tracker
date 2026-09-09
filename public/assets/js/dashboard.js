@@ -581,7 +581,6 @@ async function abrirEdicion(id) {
     formReserva.elements['queda_con_cliente'].checked = Number(m.queda_con_cliente) === 1;
     // Los radios se seleccionan por valor: elements['operacion'] es la lista de los dos.
     for (const radio of formReserva.elements['operacion']) radio.checked = radio.value === (m.operacion || 'IN');
-    for (const radio of formReserva.elements['contratacion']) radio.checked = radio.value === (m.contratacion || 'IDA');
 
     formReserva.querySelectorAll('select').forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
     toggleRutaCustom();
