@@ -199,7 +199,7 @@ final class MovimientoService
         if ($mov === null) {
             json_error('Movimiento no encontrado', 404);
         }
-        $this->assertPuedeEscribir($user, $this->unidadEstacion((int) $mov['unidad_id']));
+        $this->assertPuedeEscribir($user, $this->estacionDelMovimiento($mov));
 
         $contactos = CatalogoAdminService::correos((string) ($mov['notificar_a'] ?? ''));
         if ($contactos === []) {
@@ -221,8 +221,10 @@ final class MovimientoService
     public function editar(int $id, array $input, array $user): void
     {
         $mov = $this->cargarActivo($id, $user);
-        $unidad = $this->unidades->find((int) $mov['unidad_id']);
-        $tz = $this->estacionTz((int) $unidad['estacion_id']);
+        // Puede no haber unidad nuestra: la zona horaria sale de la estación del movimiento,
+        // que existe siempre, y el piloto solo se valida cuando hay unidad contra la que hacerlo.
+        $unidad = $mov['unidad_id'] !== null ? $this->unidades->find((int) $mov['unidad_id']) : null;
+        $tz = $this->estacionTz($this->estacionDelMovimiento($mov));
 
         $data = $this->validarPlan($input, $tz) + [
             // El estado no se edita: se mueve por la máquina de estados (confirmar, salida,
@@ -230,7 +232,7 @@ final class MovimientoService
             'estado'    => $mov['estado'],
             // Ausente la clave, se conserva el piloto; presente y vacía, se quita. Son cosas
             // distintas: "no me toques esto" y "quítalo".
-            'piloto_id' => array_key_exists('piloto_id', $input)
+            'piloto_id' => array_key_exists('piloto_id', $input) && $unidad !== null
                 ? $this->pilotoOpcional($input, $unidad)
                 : ($mov['piloto_id'] !== null ? (int) $mov['piloto_id'] : null),
         ];
@@ -250,10 +252,20 @@ final class MovimientoService
             $data['fecha_fin_estimada'] = $mov['fecha_fin_estimada'];
         }
 
-        $this->assertAlcanceInternacional((int) $mov['unidad_id'], $data);
+        if ($mov['unidad_id'] !== null) {
+            $this->assertAlcanceInternacional((int) $mov['unidad_id'], $data);
+        }
 
-        tx($this->pdo, function () use ($id, $mov, $data, $tz, $user): void {
-            $this->assertSinTraslape((int) $mov['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], $id, $tz);
+        $tocaTercero = array_intersect_key($input, array_flip([
+            'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+            'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional',
+        ])) !== [];
+        $tercero = $tocaTercero ? $this->terceroValidado($input) : null;
+
+        tx($this->pdo, function () use ($id, $mov, $data, $tercero, $tocaTercero, $tz, $user): void {
+            if ($mov['unidad_id'] !== null) {
+                $this->assertSinTraslape((int) $mov['unidad_id'], $data['fecha_salida'], $data['fecha_fin_estimada'], $id, $tz);
+            }
             $this->assertPilotoSinTraslape(
                 $data['piloto_id'] !== null ? (int) $data['piloto_id'] : null,
                 $data['fecha_salida'],
@@ -262,6 +274,11 @@ final class MovimientoService
                 $tz
             );
             $this->movimientos->actualizarPlan($id, $data);
+            // Solo se toca el tercero si el formulario habló de él. Que no venga la clave y que
+            // venga vacía son cosas distintas: la primera es "no lo toques", la segunda "quítalo".
+            if ($tocaTercero) {
+                $tercero === null ? $this->terceros?->eliminar($id) : $this->terceros?->guardar($id, $tercero);
+            }
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::EDITAR, [
                 'antes'   => $this->snapshot($mov),
                 'despues' => $data,
@@ -295,7 +312,7 @@ final class MovimientoService
         }
 
         $pilotoId = $mov['piloto_id'] ?? ($input['piloto_id'] ?? null);
-        $estacion = $this->unidadEstacion((int) $mov['unidad_id']);
+        $estacion = $this->estacionDelMovimiento($mov);
 
         // Un furgón o un contenedor no lleva piloto: lo conduce quien va en el cabezal. Solo
         // se exige piloto si en el viaje va un motorizado nuestro (plan §6, regla 11).
@@ -382,7 +399,7 @@ final class MovimientoService
             json_unprocessable(['motivo' => 'El motivo del cambio de fecha es obligatorio.']);
         }
 
-        $tz = $this->estacionTz($this->unidadEstacion((int) $mov['unidad_id']));
+        $tz = $this->estacionTz($this->estacionDelMovimiento($mov));
         $finUtc = $this->aUtc($input['fecha_fin_estimada'] ?? null, $tz, 'fecha_fin_estimada');
         if ($finUtc <= $mov['fecha_salida']) {
             json_unprocessable(['fecha_fin_estimada' => 'El fin estimado debe ser posterior a la salida.']);
@@ -525,7 +542,7 @@ final class MovimientoService
         if (in_array($mov['estado'], EstadoMovimiento::FINALES, true)) {
             json_error('El movimiento está en un estado final e inmutable.', 409);
         }
-        $this->assertPuedeEscribir($user, $this->unidadEstacion((int) $mov['unidad_id']));
+        $this->assertPuedeEscribir($user, $this->estacionDelMovimiento($mov));
         return $mov;
     }
 
@@ -864,6 +881,19 @@ final class MovimientoService
         $stmt = $this->pdo->prepare('SELECT timezone FROM estaciones WHERE id = :id');
         $stmt->execute([':id' => $estacionId]);
         return (string) ($stmt->fetchColumn() ?: 'UTC');
+    }
+
+    /**
+     * Estación a la que pertenece un movimiento.
+     *
+     * Se lee de la columna del propio movimiento: un flete hecho enteramente por un tercero no
+     * tiene unidad de la que deducirla. La unidad queda como respaldo por si alguna fila vieja
+     * se quedara sin rellenar.
+     */
+    private function estacionDelMovimiento(array $mov): int
+    {
+        $propia = (int) ($mov['estacion_id'] ?? 0);
+        return $propia > 0 ? $propia : $this->unidadEstacion((int) ($mov['unidad_id'] ?? 0));
     }
 
     private function unidadEstacion(int $unidadId): int

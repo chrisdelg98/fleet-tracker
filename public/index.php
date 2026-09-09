@@ -157,7 +157,7 @@ $movimientoUnidadModel = new MovimientoUnidadModel($pdo);
 $movimientoTerceroModel = new MovimientoTerceroModel($pdo);
 $movimientoService = new MovimientoService($pdo, $movimientoModel, $movimientoUnidadModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService, $movimientoTerceroModel);
 $overrideService = new OverrideService($pdo, $overrideModel, $unidadModel, $notificacionService);
-$movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService);
+$movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService, $movimientoTerceroModel);
 $disponibilidadController = new DisponibilidadController(
     new DisponibilidadService($pdo),
     $catalogoModel,
@@ -175,6 +175,7 @@ $router->get('/api/disponibilidad', fn() => $disponibilidadController->apiDispon
 // Movimientos y máquina de estados
 $router->post('/api/movimientos', fn() => $movimientoController->apiCreate());
 $router->get('/api/movimientos/conflictos', fn() => $movimientoController->apiConflictos());
+$router->get('/api/movimientos/terceros', fn() => $movimientoController->apiTerceros());
 $router->get('/api/movimientos/{id}', fn($p) => $movimientoController->apiShow($p));
 $router->put('/api/movimientos/{id}', fn($p) => $movimientoController->apiUpdate($p));
 $router->post('/api/movimientos/{id}/confirmar', fn($p) => $movimientoController->apiConfirmar($p));

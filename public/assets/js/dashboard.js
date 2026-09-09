@@ -576,12 +576,19 @@ async function abrirEdicion(id) {
     v('reservado_para', m.reservado_para);
     v('referencia_cw', m.referencia_cw);
     v('notificar_a', m.notificar_a);
+    v('clase', m.clase);
+    for (const campo of CAMPOS_TERCERO) v(campo, m[campo]);
     formReserva.elements['retorno_disponible'].checked = Number(m.retorno_disponible) === 1;
     formReserva.elements['queda_con_cliente'].checked = Number(m.queda_con_cliente) === 1;
+    formReserva.elements['servicio_a_tercero'].checked = Number(m.servicio_a_tercero) === 1;
 
     formReserva.querySelectorAll('select').forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
     toggleRutaCustom();
     syncAvisoLicencia();
+    // La clase ya viene decidida del movimiento: proponerla otra vez la pisaría.
+    claseTocadaManual = true;
+    sincronizarTercero();
+    cargarTerceros();
     for (const [nombre, motivo] of Object.entries(NO_EDITABLE)) bloquear(formReserva.elements[nombre], motivo);
 
     // Confirmada la reserva, la liberación se mueve con «Cambiar fecha de fin», que pide un
@@ -597,6 +604,69 @@ async function abrirEdicion(id) {
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
     dlgReserva.showModal();
+}
+
+// ── Unidad de un proveedor ──
+// Lo que declara que el movimiento va con un tercero es que estos campos tengan algo: no hay
+// casilla que marcar, un control menos que decidir.
+const CAMPOS_TERCERO = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+    'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional'];
+
+/** Camiones de proveedor ya usados. Se pide una vez y se reutiliza mientras dure la página. */
+let tercerosUsados = null;
+
+async function cargarTerceros() {
+    if (tercerosUsados !== null) return tercerosUsados;
+    const r = await api('GET', '/api/movimientos/terceros');
+    tercerosUsados = (r.ok && Array.isArray(r.data)) ? r.data : [];
+
+    const opciones = (id, valores) => {
+        const dl = document.getElementById(id);
+        if (dl) dl.innerHTML = [...new Set(valores.filter(Boolean))].map((v) => `<option value="${esc(v)}">`).join('');
+    };
+    opciones('terceros-placas', tercerosUsados.map((t) => t.placa_motriz));
+    opciones('terceros-proveedores', tercerosUsados.map((t) => t.proveedor));
+    return tercerosUsados;
+}
+
+/**
+ * Al escribir una placa ya conocida, se completa el resto con lo de la última vez.
+ *
+ * Solo rellena lo que esté vacío: si alguien ya escribió otro motorista —que es lo que más
+ * cambia entre viajes— no se le pisa lo que acaba de teclear.
+ */
+function completarTercero() {
+    const placa = (formReserva.elements['placa_motriz']?.value || '').trim().toUpperCase();
+    const previo = (tercerosUsados || []).find((t) => (t.placa_motriz || '').toUpperCase() === placa);
+    if (!previo) return;
+    for (const campo of CAMPOS_TERCERO) {
+        const el = formReserva.elements[campo];
+        if (el && el.value.trim() === '' && previo[campo]) el.value = previo[campo];
+    }
+}
+
+/** El bloque se abre solo si ya trae datos: al editar un movimiento que fue con tercero. */
+function sincronizarTercero() {
+    const bloque = document.getElementById('bloque-tercero');
+    if (!bloque) return;
+    const conDatos = CAMPOS_TERCERO.some((c) => (formReserva.elements[c]?.value || '').trim() !== '');
+    if (conDatos) bloque.open = true;
+}
+
+/**
+ * La clase se propone desde la ruta: mismo país es local. Se propone y no se impone —un viaje
+ * largo dentro del mismo país no es local— y deja de proponerse en cuanto alguien la elige.
+ */
+let claseTocadaManual = false;
+
+function sugerirClase() {
+    const sel = formReserva.elements['clase'];
+    if (!sel || claseTocadaManual) return;
+    const origen = formReserva.elements['pais_origen_id']?.value;
+    const destino = formReserva.elements['pais_destino_id']?.value;
+    if (!origen || !destino) return;
+    sel.value = origen === destino ? 'LOCAL' : 'VIAJE';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function abrirReserva(unidadId) {
@@ -622,6 +692,10 @@ function abrirReserva(unidadId) {
     sincronizarApoyos();
     syncAvisoUnidad();
     sincronizarAlcance();
+    claseTocadaManual = false;
+    sugerirClase();
+    sincronizarTercero();
+    cargarTerceros();
     tipoTocadoManual = false;
     errReserva.hidden = true;
     if (warnReserva) warnReserva.hidden = true;
@@ -660,6 +734,13 @@ if (formReserva) {
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarApoyos);
     formReserva.elements['unidad_id'].addEventListener('change', syncAvisoUnidad);
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarAlcance);
+    for (const campo of ['pais_origen_id', 'pais_destino_id', 'ruta_id']) {
+        formReserva.elements[campo]?.addEventListener('change', sugerirClase);
+    }
+    formReserva.elements['clase']?.addEventListener('change', (e) => {
+        if (e.isTrusted) claseTocadaManual = true;   // solo cuenta si lo eligió una persona
+    });
+    formReserva.elements['placa_motriz']?.addEventListener('change', completarTercero);
     formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
 
@@ -689,7 +770,7 @@ if (formReserva) {
             // contactos sería indistinguible de no haberlos tocado, y no se podrían borrar.
             for (const name of ['piloto_id', 'ruta_id', 'ruta_custom_origen', 'ruta_custom_destino',
                 'reservado_para', 'referencia_cw', 'notificar_a', 'fecha_salida', 'fecha_fin_estimada',
-                'pais_origen_id', 'pais_destino_id']) {
+                'pais_origen_id', 'pais_destino_id', 'clase', ...CAMPOS_TERCERO]) {
                 const el = formReserva.elements[name];
                 if (el) p[name] = el.value;
             }

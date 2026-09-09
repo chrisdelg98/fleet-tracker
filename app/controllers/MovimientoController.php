@@ -11,7 +11,8 @@ final class MovimientoController
     public function __construct(
         private MovimientoService $service,
         private MovimientoModel $movimientos,
-        private OverrideService $overrides
+        private OverrideService $overrides,
+        private ?MovimientoTerceroModel $terceros = null
     ) {
     }
 
@@ -21,7 +22,12 @@ final class MovimientoController
     {
         require_role_api(self::ESCRITURA);
         $mov = $this->movimientos->find((int) $p['id']);
-        $mov === null ? json_error('Movimiento no encontrado', 404) : json_ok($mov);
+        if ($mov === null) {
+            json_error('Movimiento no encontrado', 404);
+        }
+        // Los datos del tercero viajan planos junto al movimiento: el formulario es uno solo y
+        // así se rellena de una sola respuesta.
+        json_ok($mov + ($this->terceros?->find((int) $p['id']) ?? []));
     }
 
     public function apiPorUnidad(array $p): void
@@ -38,6 +44,19 @@ final class MovimientoController
         // lo avise en pantalla en vez de que quede solo en el log del servidor.
         $aviso = $this->service->avisoCorreo();
         json_ok(['id' => $id, 'aviso' => $aviso], 'Movimiento creado.', 201);
+    }
+
+    /**
+     * GET /api/movimientos/terceros — camiones de proveedor ya usados, para el autocompletado.
+     *
+     * Es la "base de datos de flota externa" que emerge del uso: nadie la mantiene, son las
+     * placas con las que ya se trabajó.
+     */
+    public function apiTerceros(): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $alcance = $user['rol'] === Rol::ADMIN_GLOBAL ? null : (int) $user['estacion_id'];
+        json_ok($this->terceros?->usados($alcance) ?? []);
     }
 
     /** POST /api/movimientos/{id}/reenviar-aviso — repite el correo de una reserva existente. */

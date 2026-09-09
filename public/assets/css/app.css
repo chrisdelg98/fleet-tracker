@@ -2712,3 +2712,40 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .toast { transition: none; transform: none; }
     .toast.is-yendose { transform: none; }
 }
+
+/* ── Unidad de un proveedor: bloque plegado dentro del formulario de reserva ──────────────
+   Va cerrado porque la mayoría de los movimientos son con flota propia; abrirlo es la señal
+   de que este no lo es, así no hace falta una casilla aparte que lo anuncie. */
+.tercero {
+    grid-column: 1 / -1;
+    margin-top: var(--sp-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-soft);
+}
+
+.tercero > summary {
+    padding: var(--sp-3) var(--sp-4);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    list-style: none;
+}
+
+/* El triángulo propio, para que se vea igual en todos los navegadores. */
+.tercero > summary::-webkit-details-marker { display: none; }
+.tercero > summary::before {
+    content: '▸';
+    display: inline-block;
+    width: 1em;
+    color: var(--color-ink-soft);
+    transition: transform 0.15s ease;
+}
+.tercero[open] > summary::before { transform: rotate(90deg); }
+
+.tercero > .grid-4 { padding: 0 var(--sp-4) var(--sp-2); }
+.tercero > p { padding: 0 var(--sp-4) var(--sp-3); margin: 0; font-size: var(--fs-sm); }
+
+@media (prefers-reduced-motion: reduce) {
+    .tercero > summary::before { transition: none; }
+}

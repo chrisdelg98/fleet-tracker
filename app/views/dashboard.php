@@ -181,9 +181,9 @@ set_page_meta(
                 );
             };
             ?>
-            <label class="field"><span class="field__label">Unidad * <span class="field__warn" id="unidad-warn" hidden></span></span>
-                <select name="unidad_id" required>
-                    <option value="">Selecciona…</option>
+            <label class="field"><span class="field__label">Unidad <span class="field__warn" id="unidad-warn" hidden></span></span>
+                <select name="unidad_id">
+                    <option value="">Sin unidad propia…</option>
                     <?php foreach ($unidadesOperativas as $u) echo $opcionUnidad($u); ?>
                     <?php if ($unidadesFueraDeServicio !== []): ?>
                         <optgroup label="En taller o fuera de servicio">
@@ -195,6 +195,14 @@ set_page_meta(
                 <select name="estado">
                     <option value="RESERVADO">Reserva (apartado)</option>
                     <option value="PROGRAMADO">Programado (confirmado)</option>
+                </select></label>
+            <!-- Se propone sola según la ruta; queda editable porque un viaje largo dentro del
+                 mismo país no es local, y eso solo lo sabe quien registra. -->
+            <label class="field"><span class="field__label">Clase</span>
+                <select name="clase" id="mov-clase">
+                    <?php foreach (ClaseMovimiento::values() as $c): ?>
+                        <option value="<?= e($c) ?>"><?= e(ClaseMovimiento::label($c)) ?></option>
+                    <?php endforeach; ?>
                 </select></label>
             <label class="field"><span class="field__label">Cabezal</span>
                 <select name="apoyo_motriz_id" data-apoyo="motriz">
@@ -270,7 +278,38 @@ set_page_meta(
 
             <label class="check check--box grid-4__2"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label>
             <label class="check check--box grid-4__2"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente</span></label>
+            <label class="check check--box grid-4__full"><input type="checkbox" name="servicio_a_tercero" value="1">
+                <span>Servicio de flete a otra empresa
+                    <span class="alcance alcance--nac" data-infotip="Márcalo cuando el flete es para otra empresa y la unidad carga en sus instalaciones. Sin marcar, la carga es de nuestra empresa: sale de nuestra bodega o llega a ella.">?</span>
+                </span></label>
         </div>
+
+        <!-- Colapsado y sin casilla que lo anuncie: lo que declara que el movimiento va con un
+             tercero es que estos campos tengan algo. Un control menos que decidir. -->
+        <details class="tercero" id="bloque-tercero">
+            <summary>Unidad de un proveedor <span class="muted">— solo si el movimiento lo hace un tercero</span></summary>
+            <div class="grid-4">
+                <label class="field"><span class="field__label">Proveedor</span>
+                    <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…"></label>
+                <label class="field"><span class="field__label">Placa cabezal</span>
+                    <input type="text" name="placa_motriz" maxlength="30" list="terceros-placas" data-mayusculas autocomplete="off"></label>
+                <label class="field"><span class="field__label">Placa furgón</span>
+                    <input type="text" name="placa_arrastre" maxlength="30" data-mayusculas autocomplete="off"></label>
+                <label class="field"><span class="field__label">Motorista</span>
+                    <input type="text" name="piloto" maxlength="150" data-mayusculas></label>
+                <label class="field"><span class="field__label" data-etiqueta-codigo="nacional">Código de transporte nacional</span>
+                    <input type="text" name="codigo_nacional" maxlength="40"></label>
+                <label class="field"><span class="field__label" data-etiqueta-codigo="internacional">Código de transporte internacional</span>
+                    <input type="text" name="codigo_internacional" maxlength="40"></label>
+                <label class="field"><span class="field__label">Documento</span>
+                    <input type="text" name="documento" maxlength="40"></label>
+                <label class="field"><span class="field__label">Teléfono</span>
+                    <input type="text" name="telefonos" maxlength="255"></label>
+            </div>
+            <p class="muted">Escribe la placa y el resto se completa con lo de la última vez. Solo el proveedor es obligatorio.</p>
+            <datalist id="terceros-placas"></datalist>
+            <datalist id="terceros-proveedores"></datalist>
+        </details>
         </div>
         <p class="form__warn" id="reserva-conflicto" hidden></p>
         <p class="form__error" id="form-reserva-error" hidden></p>
