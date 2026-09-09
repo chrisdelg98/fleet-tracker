@@ -844,6 +844,7 @@ final class MovimientoService
             return $propia;
         }
         json_unprocessable(['estacion_id' => 'Indica a qué estación corresponde el movimiento.']);
+        return 0;   // json_unprocessable corta la petición; esto es solo para el analizador
     }
 
     /** Con qué nombre queda en la bitácora quien disparó un aviso. */
