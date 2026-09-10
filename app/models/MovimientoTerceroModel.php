@@ -13,7 +13,7 @@ declare(strict_types=1);
 final class MovimientoTerceroModel
 {
     private const CAMPOS = [
-        'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+        'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto', 'licencia',
         'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional',
     ];
 
@@ -91,7 +91,7 @@ final class MovimientoTerceroModel
     {
         // De cada placa, su registro más reciente: el subselect elige el último movimiento en
         // que apareció, y el JOIN trae esa fila entera.
-        $sql = 'SELECT t.placa_motriz, t.proveedor, t.placa_arrastre, t.piloto,
+        $sql = 'SELECT t.placa_motriz, t.proveedor, t.placa_arrastre, t.piloto, t.licencia,
                        t.documento, t.telefonos, t.codigo_nacional, t.codigo_internacional
                   FROM movimiento_tercero t
                   JOIN movimientos m ON m.id = t.movimiento_id

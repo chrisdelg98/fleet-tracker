@@ -102,6 +102,8 @@ final class NotificacionService
         $error = $this->safe(function () use ($movimientoId, $correos, $correoUsuario, &$enviados): void {
             // El aviso lo lee quien recibe la unidad: necesita saber qué llega y quién la trae,
             // con los datos con que se identifica al motorista en la frontera y en la báscula.
+            // La unidad propia es opcional: sin ella el viaje lo hace un proveedor, la estación
+            // sale del propio movimiento y los datos del camión, de lo anotado en la reserva.
             $stmt = $this->pdo->prepare(
                 'SELECT m.id, m.estado, m.fecha_salida, m.fecha_fin_estimada, m.reservado_para,
                         m.referencia_cw, m.ruta_custom_origen, m.ruta_custom_destino,
@@ -111,12 +113,18 @@ final class NotificacionService
                         p.nombre AS piloto, p.no_licencia, p.documento_identidad, p.telefonos,
                         p.codigo_nacional, p.codigo_internacional,
                         pais_e.etiqueta_codigo_nacional, pais_e.etiqueta_codigo_internacional,
+                        t.placa_motriz AS tercero_placa_motriz, t.placa_arrastre AS tercero_placa_arrastre,
+                        t.piloto AS tercero_piloto, t.licencia AS tercero_licencia,
+                        t.documento AS tercero_documento, t.telefonos AS tercero_telefonos,
+                        t.codigo_nacional AS tercero_codigo_nacional,
+                        t.codigo_internacional AS tercero_codigo_internacional,
                         po.codigo_iso AS origen, pd.codigo_iso AS destino
                    FROM movimientos m
-                   JOIN unidades u ON u.id = m.unidad_id
-                   JOIN categorias_vehiculo cu ON cu.id = u.categoria_vehiculo_id
-                   JOIN estaciones e ON e.id = u.estacion_id
+                   LEFT JOIN unidades u ON u.id = m.unidad_id
+                   LEFT JOIN categorias_vehiculo cu ON cu.id = u.categoria_vehiculo_id
+                   JOIN estaciones e ON e.id = COALESCE(m.estacion_id, u.estacion_id)
                    JOIN paises pais_e ON pais_e.id = e.pais_id
+                   LEFT JOIN movimiento_tercero t ON t.movimiento_id = m.id
                    LEFT JOIN rutas r ON r.id = m.ruta_id
                    LEFT JOIN pilotos p ON p.id = m.piloto_id
                    LEFT JOIN paises po ON po.id = m.pais_origen_id
@@ -146,17 +154,33 @@ final class NotificacionService
             // Cabezal y furgón salen de los papeles del viaje: la unidad reservada es uno de los
             // dos según su categoría, y el acompañante es el otro.
             [$cabezal, $furgon] = $this->placasDelViaje($movimientoId, $m);
+            // Lo que no ponga la flota propia lo pone el camión del proveedor, en las mismas filas:
+            // quien recibe necesita lo mismo para identificar la unidad, y el correo no tiene por
+            // qué contar que es contratada.
+            $cabezal = $cabezal ?: (string) $m['tercero_placa_motriz'];
+            $furgon  = $furgon ?: (string) $m['tercero_placa_arrastre'];
+            // Los datos personales van juntos con su motorista: los de la ficha si es piloto
+            // propio, los del proveedor si no. Mezclar la licencia de uno con el documento del
+            // otro describiría a alguien que no existe.
+            $motorista = $m['piloto'] !== null ? $m : [
+                'piloto'               => $m['tercero_piloto'],
+                'no_licencia'          => $m['tercero_licencia'],
+                'documento_identidad'  => $m['tercero_documento'],
+                'telefonos'            => $m['tercero_telefonos'],
+                'codigo_nacional'      => $m['tercero_codigo_nacional'],
+                'codigo_internacional' => $m['tercero_codigo_internacional'],
+            ];
 
             $filas = array_filter([
                 'Placa cabezal' => $cabezal,
                 'Placa furgón'  => $furgon,
-                'Motorista'     => $m['piloto'] ?: 'Por asignar',
+                'Motorista'     => $motorista['piloto'] ?: 'Por asignar',
                 // Cada país llama distinto a sus dos códigos de transporte.
-                ($m['etiqueta_codigo_nacional'] ?: 'Código nacional')           => $m['codigo_nacional'],
-                ($m['etiqueta_codigo_internacional'] ?: 'Código internacional') => $m['codigo_internacional'],
-                'Licencia'      => $m['no_licencia'],
-                'Documento'     => $m['documento_identidad'],
-                'Teléfono'      => $m['telefonos'],
+                ($m['etiqueta_codigo_nacional'] ?: 'Código nacional')           => $motorista['codigo_nacional'],
+                ($m['etiqueta_codigo_internacional'] ?: 'Código internacional') => $motorista['codigo_internacional'],
+                'Licencia'      => $motorista['no_licencia'],
+                'Documento'     => $motorista['documento_identidad'],
+                'Teléfono'      => $motorista['telefonos'],
                 'Ruta'          => $ruta,
                 'Salida estimada' => $salida,
                 // No es cuándo se entrega la carga —eso puede ocurrir bastante antes— sino

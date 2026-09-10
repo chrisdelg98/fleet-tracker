@@ -16,8 +16,8 @@
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/img/logo-small.png">
     <link rel="apple-touch-icon" href="/assets/img/logo-small.png">
-    <link rel="stylesheet" href="/assets/css/app.css">
-    <link rel="stylesheet" href="/assets/css/palette.css">
+    <link rel="stylesheet" href="<?= e(asset('/assets/css/app.css')) ?>">
+    <link rel="stylesheet" href="<?= e(asset('/assets/css/palette.css')) ?>">
 </head>
 <body class="<?= is_logged_in() ? 'app-shell' : 'auth-page' ?>">
 <?php if (is_logged_in()): $u = current_user(); $ruta = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH); ?>
@@ -172,14 +172,14 @@
 <?php else: ?>
     <?= $content ?>
 <?php endif; ?>
-    <script src="/assets/js/nav.js" type="module"></script>
-    <script src="/assets/js/palette.js" type="module"></script>
-    <script src="/assets/js/atajos.js" type="module"></script>
-    <script src="/assets/js/filter-panel.js" type="module"></script>
-    <script src="/assets/js/searchable-select.js" type="module"></script>
-    <script src="/assets/js/rowmenu.js" type="module"></script>
-    <script src="/assets/js/infotip.js" type="module"></script>
-    <script src="/assets/js/responsive-table.js" type="module"></script>
-    <script src="/assets/js/mayusculas.js" type="module"></script>
+    <script src="<?= e(asset('/assets/js/nav.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/palette.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/atajos.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/filter-panel.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/searchable-select.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/rowmenu.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/infotip.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/responsive-table.js')) ?>" type="module"></script>
+    <script src="<?= e(asset('/assets/js/mayusculas.js')) ?>" type="module"></script>
 </body>
 </html>

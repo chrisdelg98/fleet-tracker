@@ -477,7 +477,7 @@ function sincronizarAlcance() {
 /**
  * Los apoyos dependen de la categoría de la unidad: un camión anda solo y no engancha nada,
  * un cabezal jala pero no necesita otro cabezal. Se bloquean en vez de ocultarse para que la
- * grilla de cuatro columnas no se reacomode cada vez que se cambia de unidad.
+ * grilla no se reacomode cada vez que se cambia de unidad.
  */
 function sincronizarApoyos() {
     const opt = formReserva.elements['unidad_id'].selectedOptions[0];
@@ -570,7 +570,8 @@ async function abrirEdicion(id) {
     v('unidad_id', m.unidad_id);
     v('estado', m.estado);
     v('piloto_id', m.piloto_id);
-    v('ruta_id', m.ruta_id);
+    // Sin ruta del catálogo, el movimiento se armó escribiendo países y ciudades.
+    v('ruta_id', m.ruta_id || 'otra');
     v('pais_origen_id', m.pais_origen_id);
     v('pais_destino_id', m.pais_destino_id);
     v('ruta_custom_origen', m.ruta_custom_origen);
@@ -587,7 +588,7 @@ async function abrirEdicion(id) {
     for (const radio of formReserva.elements['operacion']) radio.checked = radio.value === (m.operacion || 'EX');
 
     aplicarModo(m.unidad_id ? 'propia' : 'proveedor');
-    fijarModo(true);
+    fijarModo('Al editar no se cambia: con otro equipo es otra reserva.');
     formReserva.querySelectorAll('select').forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
     toggleRutaCustom();
     syncAvisoLicencia();
@@ -612,7 +613,7 @@ async function abrirEdicion(id) {
 // ── Unidad de un proveedor ──
 // Lo que declara que el movimiento va con un tercero es que estos campos tengan algo: no hay
 // casilla que marcar, un control menos que decidir.
-const CAMPOS_TERCERO = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+const CAMPOS_TERCERO = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto', 'licencia',
     'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional'];
 
 /** Camiones de proveedor ya usados. Se pide una vez y se reutiliza mientras dure la página. */
@@ -674,9 +675,16 @@ function aplicarModo(modo) {
     scheduleConflicto();
 }
 
-/** Al editar, el modo sale del movimiento y no se cambia: pasar de propio a tercero es otra reserva. */
-function fijarModo(bloqueado) {
-    formReserva.querySelectorAll('input[name="modo_equipo"]').forEach((r) => { r.disabled = bloqueado; });
+/**
+ * Deja fija la pestaña, con el motivo al pasar el mouse; null la libera. Se fija al editar
+ * —pasar de propio a tercero es otra reserva— y al reservar desde una unidad propia, donde
+ * cambiar a proveedor dejaría atrás la unidad que se eligió.
+ */
+function fijarModo(motivo) {
+    formReserva.querySelectorAll('input[name="modo_equipo"]').forEach((r) => {
+        r.disabled = motivo !== null;
+        r.closest('label').title = motivo ?? '';
+    });
 }
 
 function abrirReserva(unidadId) {
@@ -684,8 +692,8 @@ function abrirReserva(unidadId) {
     formReserva.reset();
     delete formReserva.dataset.movimiento;
     document.getElementById('dlg-reserva-title').textContent = 'Nueva reserva';
-    document.getElementById('dlg-reserva-lede').textContent =
-        'Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.';
+    // Al crear, el formulario se explica solo; al editar sí hace falta decir qué no se cambia.
+    document.getElementById('dlg-reserva-lede').textContent = '';
     document.getElementById('dlg-reserva-guardar').textContent = 'Guardar reserva';
     // Lo que el modo edición hubiera bloqueado vuelve a estar disponible.
     for (const nombre of Object.keys(NO_EDITABLE)) bloquear(formReserva.elements[nombre], null);
@@ -696,9 +704,11 @@ function abrirReserva(unidadId) {
         el.closest('.field')?.classList.remove('is-disabled');
     }
     if (unidadId) formReserva.elements['unidad_id'].value = unidadId;
-    // Desde la fila de una unidad es flota propia; una estación sin flota empieza en proveedor.
-    fijarModo(false);
+    // Desde la fila de una unidad es flota propia y se queda así; una estación sin flota
+    // empieza en proveedor.
+    fijarModo(null);
     aplicarModo(unidadId || formReserva.dataset.sinFlota !== '1' ? 'propia' : 'proveedor');
+    if (unidadId) fijarModo('La reserva empezó desde una unidad propia.');
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     aplicarPilotoAsignado();
@@ -734,8 +744,10 @@ function sugerirTipo() {
 }
 
 function toggleRutaCustom() {
-    const usaCatalogo = formReserva.elements['ruta_id'].value !== '';
-    formReserva.querySelectorAll('.ruta-custom').forEach((el) => { el.style.display = usaCatalogo ? 'none' : ''; });
+    // Países y ciudades solo con «Otra ruta…»: una ruta del catálogo ya los trae, y sin ruta
+    // elegida todavía no hay nada que escribir.
+    const otra = formReserva.elements['ruta_id'].value === 'otra';
+    formReserva.querySelectorAll('.ruta-custom').forEach((el) => { el.style.display = otra ? '' : 'none'; });
 }
 
 if (formReserva) {
@@ -765,6 +777,13 @@ if (formReserva) {
 
     formReserva.addEventListener('submit', async (ev) => {
         ev.preventDefault();
+        // Sin ruta elegida los países están ocultos: el error del servidor hablaría de campos
+        // que no se ven, así que se avisa aquí con lo que sí hay en pantalla.
+        if (formReserva.elements['ruta_id'].value === '') {
+            errReserva.textContent = 'Elige la ruta del catálogo, o «Otra ruta…» para escribir países y ciudades.';
+            errReserva.hidden = false;
+            return;
+        }
         const p = {};
         for (const el of formReserva.elements) {
             if (!el.name || el.name === 'modo_equipo' || !enModoActivo(el)) continue;
@@ -787,6 +806,9 @@ if (formReserva) {
                 if (el && enModoActivo(el)) p[name] = el.value;
             }
         }
+
+        // «Otra ruta…» solo abre los campos de país: al servidor le llega como ruta sin catálogo.
+        if (p.ruta_id === 'otra') p.ruta_id = '';
 
         const r = editando
             ? await api('PUT', `/api/movimientos/${editando}`, p)

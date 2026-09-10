@@ -251,7 +251,7 @@ final class MovimientoService
         }
 
         $tocaTercero = array_intersect_key($input, array_flip([
-            'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+            'proveedor', 'placa_motriz', 'placa_arrastre', 'piloto', 'licencia',
             'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional',
         ])) !== [];
         $tercero = $tocaTercero ? $this->terceroValidado($input) : null;
@@ -793,7 +793,7 @@ final class MovimientoService
      */
     private function terceroValidado(array $input): ?array
     {
-        $campos = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto',
+        $campos = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto', 'licencia',
                    'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional'];
 
         $datos = [];

@@ -2729,42 +2729,96 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     color: var(--color-ink-soft);
 }
 
-.form-seccion__nota { margin: var(--sp-2) 0 0; font-size: var(--fs-xs); line-height: 1.4; }
-
-/* Selector Flota propia / Proveedor: dos segmentos, el activo en blanco. Es lo primero que
-   se decide, así que se ve como un interruptor y no como otro campo más. */
+/* Flota propia / Proveedor: dos tarjetas con una línea que dice qué es cada una. Es lo primero
+   que se decide y cambia medio formulario, así que ocupa todo el ancho y no parece un filtro. */
 .modo-equipo {
-    display: inline-flex;
-    justify-self: start;
-    gap: 2px;
-    padding: 3px;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: var(--color-surface-soft);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
 }
 .modo-equipo label { position: relative; }
-.modo-equipo input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.modo-equipo input { position: absolute; inset: 0; z-index: 1; margin: 0; opacity: 0; cursor: pointer; }
 .modo-equipo span {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 18px;
-    border-radius: 999px;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    color: var(--color-ink-soft);
-    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-}
-.modo-equipo input:checked + span {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--sp-2);
+    row-gap: 2px;
+    padding: 10px 14px 10px 40px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
     background: #fff;
-    color: var(--color-ink);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 0 0 1px var(--primary-border);
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
+/* El círculo dice "se elige uno" sin mostrar el radio nativo, que no se deja estilizar. */
+.modo-equipo span::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    box-sizing: border-box;
+    border: 2px solid var(--color-border);
+    border-radius: 50%;
+    background: #fff;
+    transition: border-width 0.15s ease, border-color 0.15s ease;
+}
+.modo-equipo strong { font-size: var(--fs-sm); color: var(--color-ink); }
+.modo-equipo small { font-size: var(--fs-xs); color: var(--color-ink-soft); }
+.modo-equipo label:hover span { border-color: var(--primary-border); }
+.modo-equipo input:checked + span {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary-soft) 55%, #fff);
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+.modo-equipo input:checked + span::before { border-width: 5px; border-color: var(--primary); }
 .modo-equipo input:focus-visible + span { box-shadow: var(--focus-ring); }
 .modo-equipo input:disabled { cursor: not-allowed; }
 .modo-equipo input:disabled:not(:checked) + span { opacity: 0.5; }
 
+/* Reserva en dos columnas: el viaje a la izquierda; lo que se marca y a quién se avisa, a la
+   derecha. Con algo más de alto que un diálogo normal cabe entero sin desplazarse. */
+.dialog--reserva > .form { max-height: min(94vh, 980px); padding-top: var(--sp-5); gap: var(--sp-4); }
+.dialog--reserva .dialog__head { padding-bottom: var(--sp-3); }
+.dialog--reserva .dialog__actions { padding-top: var(--sp-3); }
+.dialog--reserva .grid-2,
+.dialog--reserva .grid-3,
+.dialog--reserva .grid-4 { gap: var(--sp-3); }
+/* Sin texto no ocupa alto: al crear una reserva la cabecera es solo el título. */
+.dialog__lede:empty { display: none; }
+.reserva-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: var(--sp-5);
+    align-items: start;
+}
+.reserva-cols__main,
+.reserva-cols__aside { display: grid; gap: var(--sp-3); align-content: start; min-width: 0; }
+.reserva-cols__aside {
+    padding: var(--sp-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-soft);
+}
+.reserva-cols .form-seccion { gap: var(--sp-2); }
+.reserva-cols .form-seccion + .form-seccion { margin-top: 0; padding-top: var(--sp-3); }
+.reserva-cols .opcion-par__fila { grid-template-columns: 1fr; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
+
+@media (max-width: 980px) {
+    .reserva-cols { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+    .grid-3,
+    .modo-equipo { grid-template-columns: 1fr; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .modo-equipo span { transition: none; }
+    .modo-equipo span,
+    .modo-equipo span::before { transition: none; }
 }
 
 /* ── Opciones excluyentes con su definición al lado ───────────────────────────────────────

@@ -12,6 +12,19 @@ function e(?string $value): string
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Ruta de un archivo de public/ con su fecha de modificación como versión.
+ *
+ * Los archivos se suben uno a uno por FTP y el navegador los guarda en caché: sin versión, una
+ * vista nueva puede quedar corriendo con el JS anterior y fallar sin que nada lo delate. Con la
+ * fecha en la URL, subir el archivo basta para que se descargue de nuevo.
+ */
+function asset(string $ruta): string
+{
+    $archivo = BASE_PATH . '/public' . $ruta;
+    return is_file($archivo) ? $ruta . '?v=' . filemtime($archivo) : $ruta;
+}
+
 /** Renderiza una acción compacta y reutilizable para filas de tabla. */
 function action_chip(string $label, array $options = []): string
 {
