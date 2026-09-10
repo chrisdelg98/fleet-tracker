@@ -139,182 +139,217 @@ set_page_meta(
 <?php if ($puedeReservar): ?>
 <!-- Diálogo de reserva/movimiento -->
 <dialog id="dlg-reserva" class="dialog dialog--ancho">
-    <form method="dialog" class="form" id="form-reserva" novalidate>
+    <form method="dialog" class="form" id="form-reserva" novalidate data-sin-flota="<?= $reservables === [] ? 1 : 0 ?>">
         <div class="dialog__head">
             <h2 id="dlg-reserva-title">Nueva reserva</h2>
             <p class="dialog__lede" id="dlg-reserva-lede">Programa una salida sin romper traslapes y deja definidos ruta, fechas y retorno desde el mismo flujo.</p>
         </div>
-        <div class="dialog__body">
-        <!-- Cuatro columnas y sin secciones: el formulario se lee de un barrido y ninguna
-             fila queda a medias (los tramos completan lo que sobra). -->
-        <div class="grid-4">
-            <?php
-            // Una unidad en taller no se esconde de la lista: desaparecer no explica por qué,
-            // y el encargado la busca justo cuando alguien preguntó por ella. Va agrupada al
-            // final, rotulada, para que el camino normal siga limpio y elegirla sea deliberado.
-            $unidadesOperativas = $unidadesFueraDeServicio = [];
-            foreach ($reservables as $u) {
-                if ($u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO) {
-                    $unidadesOperativas[] = $u;
-                } else {
-                    $unidadesFueraDeServicio[] = $u;
-                }
+        <?php
+        // Una unidad en taller no se esconde de la lista: desaparecer no explica por qué,
+        // y el encargado la busca justo cuando alguien preguntó por ella. Va agrupada al
+        // final, rotulada, para que el camino normal siga limpio y elegirla sea deliberado.
+        $unidadesOperativas = $unidadesFueraDeServicio = [];
+        foreach ($reservables as $u) {
+            if ($u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO) {
+                $unidadesOperativas[] = $u;
+            } else {
+                $unidadesFueraDeServicio[] = $u;
             }
-            // data-estado viaja vacío en las operativas: el aviso del formulario se enciende
-            // justo cuando trae texto, sin repetir aquí la regla de qué estado es normal.
-            $opcionUnidad = static function (array $u): string {
-                $etiqueta = $u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO
-                    ? '' : EstadoVehiculo::label($u['estado_vehiculo']);
-                return sprintf(
-                    '<option value="%d" data-piloto="%d" data-motriz="%d" data-arrastre="%d"'
-                    . ' data-pais="%d" data-internacional="%d" data-estado="%s">%s · %s%s</option>',
-                    (int) $u['id'],
-                    (int) ($u['piloto_asignado_id'] ?? 0),
-                    (int) $u['es_motriz'],
-                    (int) $u['admite_arrastre'],
-                    (int) $u['estacion_pais_id'],
-                    (int) $u['puede_internacional'],
-                    e($etiqueta),
-                    e($u['placa_unidad']),
-                    e($u['estacion_codigo']),
-                    $etiqueta === '' ? '' : ' · ' . e($etiqueta)
-                );
-            };
-            ?>
-            <label class="field"><span class="field__label">Unidad <span class="field__warn" id="unidad-warn" hidden></span></span>
-                <select name="unidad_id">
-                    <option value="">Sin unidad propia…</option>
-                    <?php foreach ($unidadesOperativas as $u) echo $opcionUnidad($u); ?>
-                    <?php if ($unidadesFueraDeServicio !== []): ?>
-                        <optgroup label="En taller o fuera de servicio">
-                            <?php foreach ($unidadesFueraDeServicio as $u) echo $opcionUnidad($u); ?>
-                        </optgroup>
-                    <?php endif; ?>
-                </select></label>
-            <label class="field"><span class="field__label">Tipo</span>
-                <select name="estado">
-                    <option value="RESERVADO">Reserva (apartado)</option>
-                    <option value="PROGRAMADO">Programado (confirmado)</option>
-                </select></label>
-            <label class="field"><span class="field__label">Cabezal</span>
-                <select name="apoyo_motriz_id" data-apoyo="motriz">
-                    <option value="">— Ninguno / del cliente —</option>
-                    <?php foreach ($unidadesOperativas as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
-                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
-                    <?php endforeach; ?>
-                </select></label>
-            <label class="field"><span class="field__label">Chasis o equipo</span>
-                <select name="apoyo_arrastre_id" data-apoyo="arrastre">
-                    <option value="">— Ninguno —</option>
-                    <?php foreach ($unidadesOperativas as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
-                        <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
-                    <?php endforeach; ?>
-                </select></label>
-
-            <label class="field"><span class="field__label">Piloto <span class="field__warn" id="piloto-warn" hidden>Licencia vencida</span></span>
-                <select name="piloto_id">
-                    <option value="">—</option>
-                    <?php
-                    // La licencia vencida no bloquea (el movimiento puede ser de otro piloto),
-                    // pero la marca viaja en la opción para advertirlo al seleccionarla.
-                    $hoyLic = new DateTimeImmutable('today');
-                    foreach ($pilotos as $p):
-                        $vencida = !empty($p['licencia_vence']) && new DateTimeImmutable($p['licencia_vence']) < $hoyLic;
-                    ?>
-                        <option value="<?= (int) $p['id'] ?>"<?= $vencida ? ' data-licencia-vencida="1"' : '' ?>><?= e($p['nombre']) ?></option>
-                    <?php endforeach; ?>
-                </select></label>
-            <label class="field grid-4__3"><span class="field__label">Ruta del catálogo</span>
-                <select name="ruta_id">
-                    <option value="">— Ruta personalizada —</option>
-                    <?php foreach ($rutas as $r): ?>
-                        <option value="<?= (int) $r['id'] ?>" data-origen="<?= (int) $r['pais_origen_id'] ?>" data-destino="<?= (int) $r['pais_destino_id'] ?>" data-horas="<?= e((string) ($r['horas_transito_estimadas'] ?? '')) ?>"><?= e($r['nombre']) ?></option>
-                    <?php endforeach; ?>
-                </select></label>
-
-            <label class="field ruta-custom"><span class="field__label">País de origen *</span>
-                <?= render_paises_select('pais_origen_id', null, false) ?></label>
-            <label class="field ruta-custom"><span class="field__label">Ciudad origen</span>
-                <input type="text" name="ruta_custom_origen" maxlength="150"></label>
-            <label class="field ruta-custom"><span class="field__label">País de destino *</span>
-                <?= render_paises_select('pais_destino_id', null, false) ?></label>
-            <label class="field ruta-custom"><span class="field__label">Ciudad destino</span>
-                <input type="text" name="ruta_custom_destino" maxlength="150"></label>
-
-            <label class="field"><span class="field__label">Salida *</span>
-                <input type="datetime-local" name="fecha_salida" required></label>
-            <label class="field"><span class="field__label">Se libera *</span>
-                <input type="datetime-local" name="fecha_fin_estimada" required></label>
-            <label class="field"><span class="field__label">Reservado para</span>
-                <input type="text" name="reservado_para" maxlength="150" placeholder="Estación / cliente"></label>
-            <label class="field"><span class="field__label">Referencia CW</span>
-                <input type="text" name="referencia_cw" maxlength="120"></label>
-
-            <!-- Avisar al guardar. La lista es un atajo que rellena el campo; lo que se
-                 envía es siempre lo que quede escrito, así se puede añadir o quitar a mano. -->
-            <label class="field"><span class="field__label">Lista de contactos</span>
-                <select id="lista-correo">
-                    <option value="">Escribir a mano…</option>
-                    <?php
-                    // Quien ve varias estaciones puede tener dos listas con el mismo nombre
-                    // (una por país): sin el código no se distinguen en el desplegable.
-                    $codigos = array_filter(array_column($listasCorreo, 'estacion_codigo'));
-                    $variasEstaciones = count(array_unique($codigos)) > 1;
-                    foreach ($listasCorreo as $l):
-                        $sufijo = $variasEstaciones && !empty($l['estacion_codigo']) ? ' · ' . $l['estacion_codigo'] : '';
-                    ?><option value="<?= e($l['correos']) ?>"><?= e($l['nombre'] . $sufijo) ?></option><?php endforeach; ?>
-                </select></label>
-            <label class="field grid-4__3">
-                <span class="field__label">Notificar a <span class="field__label-nota">(vacío: no se envía notificación)</span></span>
-                <input type="text" name="notificar_a" maxlength="500" placeholder="correo@empresa.com, otro@empresa.com"></label>
-
-            <label class="check check--box grid-4__2"><input type="checkbox" name="retorno_disponible" value="1"><span>Retorno disponible</span></label>
-            <label class="check check--box grid-4__2"><input type="checkbox" name="queda_con_cliente" value="1"><span>El equipo queda con el cliente</span></label>
-            <!-- Los dos términos a la vista y con su definición debajo: son los del reporte
-                 semanal, y tener que deducir cuál es cuál es lo que descuadra el número. -->
-            <fieldset class="opcion-par grid-4__full">
-                <legend>Operación</legend>
-                <div class="opcion-par__fila">
-                    <?php foreach (OperacionMovimiento::values() as $op): ?>
-                        <label class="check check--box">
-                            <input type="radio" name="operacion" value="<?= e($op) ?>" <?= $op === OperacionMovimiento::INTERNO ? 'checked' : '' ?>>
-                            <span><?= e(OperacionMovimiento::label($op)) ?> <span class="muted">(<?= e($op) ?>)</span>
-                                <small class="block muted"><?= e(OperacionMovimiento::ayuda($op)) ?></small>
-                            </span>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
-            </fieldset>
-
-        </div>
-
-        <!-- Colapsado y sin casilla que lo anuncie: lo que declara que el movimiento va con un
-             tercero es que estos campos tengan algo. Un control menos que decidir. -->
-        <details class="tercero" id="bloque-tercero">
-            <summary>Unidad de un proveedor <span class="muted">— solo si el movimiento lo hace un tercero</span></summary>
-            <div class="grid-4">
-                <label class="field"><span class="field__label">Proveedor</span>
-                    <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…"></label>
-                <label class="field"><span class="field__label">Placa cabezal</span>
-                    <input type="text" name="placa_motriz" maxlength="30" list="terceros-placas" data-mayusculas autocomplete="off"></label>
-                <label class="field"><span class="field__label">Placa furgón</span>
-                    <input type="text" name="placa_arrastre" maxlength="30" data-mayusculas autocomplete="off"></label>
-                <label class="field"><span class="field__label">Motorista</span>
-                    <input type="text" name="piloto" maxlength="150" data-mayusculas></label>
-                <label class="field"><span class="field__label" data-etiqueta-codigo="nacional">Código de transporte nacional</span>
-                    <input type="text" name="codigo_nacional" maxlength="40"></label>
-                <label class="field"><span class="field__label" data-etiqueta-codigo="internacional">Código de transporte internacional</span>
-                    <input type="text" name="codigo_internacional" maxlength="40"></label>
-                <label class="field"><span class="field__label">Documento</span>
-                    <input type="text" name="documento" maxlength="40"></label>
-                <label class="field"><span class="field__label">Teléfono</span>
-                    <input type="text" name="telefonos" maxlength="255"></label>
+        }
+        // data-estado viaja vacío en las operativas: el aviso del formulario se enciende
+        // justo cuando trae texto, sin repetir aquí la regla de qué estado es normal.
+        $opcionUnidad = static function (array $u): string {
+            $etiqueta = $u['estado_vehiculo'] === EstadoVehiculo::OPERATIVO
+                ? '' : EstadoVehiculo::label($u['estado_vehiculo']);
+            return sprintf(
+                '<option value="%d" data-piloto="%d" data-motriz="%d" data-arrastre="%d"'
+                . ' data-pais="%d" data-internacional="%d" data-estado="%s">%s · %s%s</option>',
+                (int) $u['id'],
+                (int) ($u['piloto_asignado_id'] ?? 0),
+                (int) $u['es_motriz'],
+                (int) $u['admite_arrastre'],
+                (int) $u['estacion_pais_id'],
+                (int) $u['puede_internacional'],
+                e($etiqueta),
+                e($u['placa_unidad']),
+                e($u['estacion_codigo']),
+                $etiqueta === '' ? '' : ' · ' . e($etiqueta)
+            );
+        };
+        ?>
+        <div class="dialog__body">
+            <!-- Primero con qué se hace: en cada reserva aplica uno solo de los dos bloques de
+                 equipo, y mostrarlos juntos duplicaba el formulario. -->
+            <div class="modo-equipo" role="radiogroup" aria-label="Con qué se hace el movimiento">
+                <label><input type="radio" name="modo_equipo" value="propia" checked><span>Flota propia</span></label>
+                <label><input type="radio" name="modo_equipo" value="proveedor"><span>Proveedor</span></label>
             </div>
-            <p class="muted">Escribe la placa y el resto se completa con lo de la última vez. Solo el proveedor es obligatorio.
-               Si el proveedor ofrece retorno, marcá «Retorno disponible» arriba: así aparece en el tablero para que alguien lo tome.</p>
-            <datalist id="terceros-placas"></datalist>
-            <datalist id="terceros-proveedores"></datalist>
-        </details>
+
+            <section class="form-seccion">
+                <h3 class="form-seccion__titulo">Equipo</h3>
+
+                <div data-modo="propia">
+                    <div class="grid-4">
+                        <label class="field"><span class="field__label">Unidad <span class="field__warn" id="unidad-warn" hidden></span></span>
+                            <select name="unidad_id">
+                                <option value="">Selecciona…</option>
+                                <?php foreach ($unidadesOperativas as $u) echo $opcionUnidad($u); ?>
+                                <?php if ($unidadesFueraDeServicio !== []): ?>
+                                    <optgroup label="En taller o fuera de servicio">
+                                        <?php foreach ($unidadesFueraDeServicio as $u) echo $opcionUnidad($u); ?>
+                                    </optgroup>
+                                <?php endif; ?>
+                            </select></label>
+                        <label class="field"><span class="field__label">Cabezal</span>
+                            <select name="apoyo_motriz_id" data-apoyo="motriz">
+                                <option value="">— Ninguno / del cliente —</option>
+                                <?php foreach ($unidadesOperativas as $u): if ((int) $u['es_motriz'] !== 1) continue; ?>
+                                    <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
+                                <?php endforeach; ?>
+                            </select></label>
+                        <label class="field"><span class="field__label">Chasis o equipo</span>
+                            <select name="apoyo_arrastre_id" data-apoyo="arrastre">
+                                <option value="">— Ninguno —</option>
+                                <?php foreach ($unidadesOperativas as $u): if ((int) $u['es_motriz'] === 1) continue; ?>
+                                    <option value="<?= (int) $u['id'] ?>" data-estacion="<?= (int) $u['estacion_id'] ?>"><?= e($u['placa_unidad']) ?> · <?= e($u['categoria']) ?></option>
+                                <?php endforeach; ?>
+                            </select></label>
+                        <label class="field"><span class="field__label">Piloto <span class="field__warn" id="piloto-warn" hidden>Licencia vencida</span></span>
+                            <select name="piloto_id">
+                                <option value="">—</option>
+                                <?php
+                                // La licencia vencida no bloquea (el movimiento puede ser de otro piloto),
+                                // pero la marca viaja en la opción para advertirlo al seleccionarla.
+                                $hoyLic = new DateTimeImmutable('today');
+                                foreach ($pilotos as $p):
+                                    $vencida = !empty($p['licencia_vence']) && new DateTimeImmutable($p['licencia_vence']) < $hoyLic;
+                                ?>
+                                    <option value="<?= (int) $p['id'] ?>"<?= $vencida ? ' data-licencia-vencida="1"' : '' ?>><?= e($p['nombre']) ?></option>
+                                <?php endforeach; ?>
+                            </select></label>
+                    </div>
+                </div>
+
+                <div data-modo="proveedor" hidden>
+                    <div class="grid-4">
+                        <label class="field"><span class="field__label">Proveedor *</span>
+                            <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…"></label>
+                        <label class="field"><span class="field__label">Placa cabezal</span>
+                            <input type="text" name="placa_motriz" maxlength="30" list="terceros-placas" data-mayusculas autocomplete="off"></label>
+                        <label class="field"><span class="field__label">Placa furgón</span>
+                            <input type="text" name="placa_arrastre" maxlength="30" data-mayusculas autocomplete="off"></label>
+                        <label class="field"><span class="field__label">Motorista</span>
+                            <input type="text" name="piloto" maxlength="150" data-mayusculas></label>
+                        <label class="field"><span class="field__label" data-etiqueta-codigo="nacional">Código de transporte nacional</span>
+                            <input type="text" name="codigo_nacional" maxlength="40"></label>
+                        <label class="field"><span class="field__label" data-etiqueta-codigo="internacional">Código de transporte internacional</span>
+                            <input type="text" name="codigo_internacional" maxlength="40"></label>
+                        <label class="field"><span class="field__label">Documento</span>
+                            <input type="text" name="documento" maxlength="40"></label>
+                        <label class="field"><span class="field__label">Teléfono</span>
+                            <input type="text" name="telefonos" maxlength="255"></label>
+                    </div>
+                    <p class="form-seccion__nota muted">Escribe la placa y el resto se completa con lo de la última vez.
+                       Si el proveedor ofrece retorno, marca «Retorno disponible» en Operación.</p>
+                    <datalist id="terceros-placas"></datalist>
+                    <datalist id="terceros-proveedores"></datalist>
+                </div>
+            </section>
+
+            <section class="form-seccion">
+                <h3 class="form-seccion__titulo">Ruta y fechas</h3>
+                <div class="grid-4">
+                    <label class="field grid-4__full"><span class="field__label">Ruta del catálogo</span>
+                        <select name="ruta_id">
+                            <option value="">— Ruta personalizada —</option>
+                            <?php foreach ($rutas as $r): ?>
+                                <option value="<?= (int) $r['id'] ?>" data-origen="<?= (int) $r['pais_origen_id'] ?>" data-destino="<?= (int) $r['pais_destino_id'] ?>" data-horas="<?= e((string) ($r['horas_transito_estimadas'] ?? '')) ?>"><?= e($r['nombre']) ?></option>
+                            <?php endforeach; ?>
+                        </select></label>
+
+                    <label class="field ruta-custom"><span class="field__label">País de origen *</span>
+                        <?= render_paises_select('pais_origen_id', null, false) ?></label>
+                    <label class="field ruta-custom"><span class="field__label">Ciudad origen</span>
+                        <input type="text" name="ruta_custom_origen" maxlength="150"></label>
+                    <label class="field ruta-custom"><span class="field__label">País de destino *</span>
+                        <?= render_paises_select('pais_destino_id', null, false) ?></label>
+                    <label class="field ruta-custom"><span class="field__label">Ciudad destino</span>
+                        <input type="text" name="ruta_custom_destino" maxlength="150"></label>
+
+                    <label class="field"><span class="field__label">Salida *</span>
+                        <input type="datetime-local" name="fecha_salida" required></label>
+                    <label class="field"><span class="field__label">Se libera *</span>
+                        <input type="datetime-local" name="fecha_fin_estimada" required></label>
+                    <!-- Junto a las fechas porque se propone según la salida: una para hoy se
+                         programa, una a futuro se aparta. -->
+                    <label class="field grid-4__2"><span class="field__label">Tipo</span>
+                        <select name="estado">
+                            <option value="RESERVADO">Reserva (apartado)</option>
+                            <option value="PROGRAMADO">Programado (confirmado)</option>
+                        </select></label>
+                </div>
+            </section>
+
+            <section class="form-seccion">
+                <h3 class="form-seccion__titulo">Cliente y avisos</h3>
+                <div class="grid-4">
+                    <label class="field grid-4__2"><span class="field__label">Reservado para</span>
+                        <input type="text" name="reservado_para" maxlength="150" placeholder="Estación / cliente"></label>
+                    <label class="field grid-4__2"><span class="field__label">Referencia interna o CargoWise</span>
+                        <input type="text" name="referencia_cw" maxlength="120"></label>
+                    <!-- La lista es un atajo que rellena el campo; lo que se envía es siempre lo
+                         que quede escrito, así se puede añadir o quitar a mano. -->
+                    <label class="field"><span class="field__label">Lista de contactos</span>
+                        <select id="lista-correo">
+                            <option value="">Escribir a mano…</option>
+                            <?php
+                            // Quien ve varias estaciones puede tener dos listas con el mismo nombre
+                            // (una por país): sin el código no se distinguen en el desplegable.
+                            $codigos = array_filter(array_column($listasCorreo, 'estacion_codigo'));
+                            $variasEstaciones = count(array_unique($codigos)) > 1;
+                            foreach ($listasCorreo as $l):
+                                $sufijo = $variasEstaciones && !empty($l['estacion_codigo']) ? ' · ' . $l['estacion_codigo'] : '';
+                            ?><option value="<?= e($l['correos']) ?>"><?= e($l['nombre'] . $sufijo) ?></option><?php endforeach; ?>
+                        </select></label>
+                    <label class="field grid-4__3">
+                        <span class="field__label">Notificar a <span class="field__label-nota">(vacío: no se envía notificación)</span></span>
+                        <input type="text" name="notificar_a" maxlength="500" placeholder="correo@empresa.com, otro@empresa.com"></label>
+                </div>
+            </section>
+
+            <section class="form-seccion">
+                <h3 class="form-seccion__titulo">Operación</h3>
+                <div class="grid-4">
+                    <!-- Primero lo que afecta al equipo después del viaje, que es lo que más se
+                         consulta al programar; cada casilla dice qué consecuencia tiene. -->
+                    <div class="opcion-par grid-4__full">
+                        <div class="opcion-par__fila">
+                            <label class="check check--box"><input type="checkbox" name="retorno_disponible" value="1">
+                                <span>Retorno disponible
+                                    <small class="block muted">Vuelve con espacio: aparece en el tablero para que alguien tome el retorno.</small>
+                                </span></label>
+                            <label class="check check--box"><input type="checkbox" name="queda_con_cliente" value="1">
+                                <span>El equipo queda con el cliente
+                                    <small class="block muted">Se queda en su poder al terminar: rentado o esperando descarga.</small>
+                                </span></label>
+                        </div>
+                    </div>
+                    <!-- Los dos términos a la vista y con su definición: son los del reporte
+                         semanal, y tener que deducir cuál es cuál es lo que descuadra el número. -->
+                    <div class="opcion-par grid-4__full" role="radiogroup" aria-label="Operación">
+                        <div class="opcion-par__fila">
+                            <?php foreach (OperacionMovimiento::values() as $op): ?>
+                                <label class="check check--box">
+                                    <input type="radio" name="operacion" value="<?= e($op) ?>" <?= $op === OperacionMovimiento::EXTERNO ? 'checked' : '' ?>>
+                                    <span><?= e(OperacionMovimiento::label($op)) ?> <span class="muted">(<?= e($op) ?>)</span>
+                                        <small class="block muted"><?= e(OperacionMovimiento::ayuda($op)) ?></small>
+                                    </span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
         <p class="form__warn" id="reserva-conflicto" hidden></p>
         <p class="form__error" id="form-reserva-error" hidden></p>

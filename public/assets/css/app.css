@@ -2713,41 +2713,58 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .toast.is-yendose { transform: none; }
 }
 
-/* ── Unidad de un proveedor: bloque plegado dentro del formulario de reserva ──────────────
-   Va cerrado porque la mayoría de los movimientos son con flota propia; abrirlo es la señal
-   de que este no lo es, así no hace falta una casilla aparte que lo anuncie. */
-.tercero {
-    grid-column: 1 / -1;
-    margin-top: var(--sp-4);
+/* ── Formulario de reserva por secciones ─────────────────────────────────────────────────
+   Títulos pequeños y una línea fina entre bloques: ordenan la lectura sin sumar peso, que es
+   lo que el formulario de un barrido no lograba con veinte campos seguidos. */
+.form-seccion { display: grid; gap: var(--sp-3); }
+.form-seccion + .form-seccion { margin-top: var(--sp-1); }
+.form-seccion + .form-seccion { padding-top: var(--sp-4); border-top: 1px solid var(--color-border); }
+
+.form-seccion__titulo {
+    margin: 0;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+}
+
+.form-seccion__nota { margin: var(--sp-2) 0 0; font-size: var(--fs-xs); line-height: 1.4; }
+
+/* Selector Flota propia / Proveedor: dos segmentos, el activo en blanco. Es lo primero que
+   se decide, así que se ve como un interruptor y no como otro campo más. */
+.modo-equipo {
+    display: inline-flex;
+    justify-self: start;
+    gap: 2px;
+    padding: 3px;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
+    border-radius: 999px;
     background: var(--color-surface-soft);
 }
-
-.tercero > summary {
-    padding: var(--sp-3) var(--sp-4);
-    cursor: pointer;
-    font-weight: 600;
+.modo-equipo label { position: relative; }
+.modo-equipo input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.modo-equipo span {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 18px;
+    border-radius: 999px;
     font-size: var(--fs-sm);
-    list-style: none;
-}
-
-/* El triángulo propio, para que se vea igual en todos los navegadores. */
-.tercero > summary::-webkit-details-marker { display: none; }
-.tercero > summary::before {
-    content: '▸';
-    display: inline-block;
-    width: 1em;
+    font-weight: 600;
     color: var(--color-ink-soft);
-    transition: transform 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
-.tercero[open] > summary::before { transform: rotate(90deg); }
-
-.tercero > .grid-4 { padding: 0 var(--sp-4) var(--sp-2); }
-.tercero > p { padding: 0 var(--sp-4) var(--sp-3); margin: 0; font-size: var(--fs-sm); }
+.modo-equipo input:checked + span {
+    background: #fff;
+    color: var(--color-ink);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 0 0 1px var(--primary-border);
+}
+.modo-equipo input:focus-visible + span { box-shadow: var(--focus-ring); }
+.modo-equipo input:disabled { cursor: not-allowed; }
+.modo-equipo input:disabled:not(:checked) + span { opacity: 0.5; }
 
 @media (prefers-reduced-motion: reduce) {
-    .tercero > summary::before { transition: none; }
+    .modo-equipo span { transition: none; }
 }
 
 /* ── Opciones excluyentes con su definición al lado ───────────────────────────────────────
@@ -2785,6 +2802,7 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     border-radius: var(--radius);
     font-weight: 500;
     line-height: 1.3;
+    white-space: normal;
 }
 
 .opcion-par .check--box input { margin-top: 2px; }

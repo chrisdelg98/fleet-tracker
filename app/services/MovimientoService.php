@@ -78,7 +78,7 @@ final class MovimientoService
             'piloto_id'      => $unidad !== null ? $this->pilotoOpcional($input, $unidad) : null,
         ];
         // Nace en el caso mayoritario, así que en el uso normal nadie la toca.
-        $data['operacion'] = $this->operacionElegida($input) ?? OperacionMovimiento::INTERNO;
+        $data['operacion'] = $this->operacionElegida($input) ?? OperacionMovimiento::EXTERNO;
 
         if ($unidad !== null) {
             $this->assertAlcanceInternacional((int) $unidad['id'], $data);

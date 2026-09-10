@@ -372,8 +372,11 @@ function avisoTraslape(sujeto, cs) {
 
 async function checkConflicto() {
     if (!formReserva || !warnReserva) return;
-    const unidad = formReserva.elements['unidad_id'].value;
-    const piloto = formReserva.elements['piloto_id']?.value || '';
+    // En modo proveedor la unidad y el piloto propios no se envían: avisar de sus traslapes
+    // sería alertar sobre un camión que no va en el viaje.
+    const propia = modoEquipo() === 'propia';
+    const unidad = propia ? formReserva.elements['unidad_id'].value : '';
+    const piloto = propia ? (formReserva.elements['piloto_id']?.value || '') : '';
     const salida = formReserva.elements['fecha_salida'].value;
     const fin = formReserva.elements['fecha_fin_estimada'].value;
     if (!unidad || !salida || !fin) { warnReserva.hidden = true; return; }
@@ -435,7 +438,8 @@ function syncAvisoUnidad() {
  * dejar armar el viaje entero para negarlo al guardar.
  */
 function sincronizarAlcance() {
-    const opt = formReserva.elements['unidad_id'].selectedOptions[0];
+    // Sin unidad propia en juego no hay permiso que restringir: los países quedan libres.
+    const opt = modoEquipo() === 'propia' ? formReserva.elements['unidad_id'].selectedOptions[0] : null;
     const pais = opt && opt.value !== '' ? opt.dataset.pais : '';
     const internacional = opt?.dataset.internacional === '1';
     const soloNacional = pais !== '' && !internacional;
@@ -580,12 +584,13 @@ async function abrirEdicion(id) {
     formReserva.elements['retorno_disponible'].checked = Number(m.retorno_disponible) === 1;
     formReserva.elements['queda_con_cliente'].checked = Number(m.queda_con_cliente) === 1;
     // Los radios se seleccionan por valor: elements['operacion'] es la lista de los dos.
-    for (const radio of formReserva.elements['operacion']) radio.checked = radio.value === (m.operacion || 'IN');
+    for (const radio of formReserva.elements['operacion']) radio.checked = radio.value === (m.operacion || 'EX');
 
+    aplicarModo(m.unidad_id ? 'propia' : 'proveedor');
+    fijarModo(true);
     formReserva.querySelectorAll('select').forEach((sel) => sel.dispatchEvent(new Event('change', { bubbles: true })));
     toggleRutaCustom();
     syncAvisoLicencia();
-    sincronizarTercero();
     cargarTerceros();
     for (const [nombre, motivo] of Object.entries(NO_EDITABLE)) bloquear(formReserva.elements[nombre], motivo);
 
@@ -643,12 +648,35 @@ function completarTercero() {
     }
 }
 
-/** El bloque se abre solo si ya trae datos: al editar un movimiento que fue con tercero. */
-function sincronizarTercero() {
-    const bloque = document.getElementById('bloque-tercero');
-    if (!bloque) return;
-    const conDatos = CAMPOS_TERCERO.some((c) => (formReserva.elements[c]?.value || '').trim() !== '');
-    if (conDatos) bloque.open = true;
+// ── Flota propia o proveedor ──
+// Uno solo de los dos bloques de equipo aplica a cada reserva. Los campos del otro se quedan
+// en pantalla escondidos —cambiar de pestaña no borra lo tecleado— pero no se envían.
+
+/** @returns {'propia'|'proveedor'} */
+function modoEquipo() {
+    return formReserva.querySelector('input[name="modo_equipo"]:checked')?.value === 'proveedor'
+        ? 'proveedor' : 'propia';
+}
+
+/** ¿Pertenece el campo al modo activo? Los que no están en ningún bloque son comunes. */
+function enModoActivo(el) {
+    const bloque = el.closest?.('[data-modo]');
+    return !bloque || bloque.dataset.modo === modoEquipo();
+}
+
+/** Muestra el bloque del modo elegido y recalcula lo que dependía de la unidad. */
+function aplicarModo(modo) {
+    for (const radio of formReserva.querySelectorAll('input[name="modo_equipo"]')) {
+        radio.checked = radio.value === modo;
+    }
+    formReserva.querySelectorAll('[data-modo]').forEach((b) => { b.hidden = b.dataset.modo !== modo; });
+    sincronizarAlcance();
+    scheduleConflicto();
+}
+
+/** Al editar, el modo sale del movimiento y no se cambia: pasar de propio a tercero es otra reserva. */
+function fijarModo(bloqueado) {
+    formReserva.querySelectorAll('input[name="modo_equipo"]').forEach((r) => { r.disabled = bloqueado; });
 }
 
 function abrirReserva(unidadId) {
@@ -668,13 +696,15 @@ function abrirReserva(unidadId) {
         el.closest('.field')?.classList.remove('is-disabled');
     }
     if (unidadId) formReserva.elements['unidad_id'].value = unidadId;
+    // Desde la fila de una unidad es flota propia; una estación sin flota empieza en proveedor.
+    fijarModo(false);
+    aplicarModo(unidadId || formReserva.dataset.sinFlota !== '1' ? 'propia' : 'proveedor');
     toggleRutaCustom();
     formReserva.querySelectorAll('select').forEach((s) => s.dispatchEvent(new Event('change', { bubbles: true })));
     aplicarPilotoAsignado();
     sincronizarApoyos();
     syncAvisoUnidad();
     sincronizarAlcance();
-    sincronizarTercero();
     cargarTerceros();
     tipoTocadoManual = false;
     errReserva.hidden = true;
@@ -715,6 +745,9 @@ if (formReserva) {
     formReserva.elements['unidad_id'].addEventListener('change', syncAvisoUnidad);
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarAlcance);
     formReserva.elements['placa_motriz']?.addEventListener('change', completarTercero);
+    formReserva.querySelectorAll('input[name="modo_equipo"]').forEach((r) => {
+        r.addEventListener('change', () => aplicarModo(modoEquipo()));
+    });
     formReserva.elements['piloto_id']?.addEventListener('change', syncAvisoLicencia);
     document.querySelectorAll('[data-action="nueva-reserva"]').forEach((b) => b.addEventListener('click', () => abrirReserva('')));
 
@@ -734,7 +767,7 @@ if (formReserva) {
         ev.preventDefault();
         const p = {};
         for (const el of formReserva.elements) {
-            if (!el.name) continue;
+            if (!el.name || el.name === 'modo_equipo' || !enModoActivo(el)) continue;
             if (el.type === 'checkbox') { p[el.name] = el.checked ? 1 : 0; continue; }
             // Un grupo de radios comparte nombre: sin mirar cuál está marcado, el último de la
             // lista pisaría al elegido y el campo guardaría siempre el mismo valor.
@@ -749,7 +782,9 @@ if (formReserva) {
                 'reservado_para', 'referencia_cw', 'notificar_a', 'fecha_salida', 'fecha_fin_estimada',
                 'pais_origen_id', 'pais_destino_id', ...CAMPOS_TERCERO]) {
                 const el = formReserva.elements[name];
-                if (el) p[name] = el.value;
+                // Un campo de la otra pestaña no se manda ni vacío: al editar, un tercero vacío
+                // enviado desde "Flota propia" borraría los datos del proveedor.
+                if (el && enModoActivo(el)) p[name] = el.value;
             }
         }
 
