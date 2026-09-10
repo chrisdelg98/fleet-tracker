@@ -110,9 +110,20 @@
 
                     <?php foreach ($grupos as $titulo => $items): ?>
                         <?php if ($items === []): continue; endif; ?>
-                        <?php $slug = strtolower(str_replace(' ', '-', $titulo)); ?>
-                        <div class="sidebar__group is-open" data-section="<?= e($slug) ?>">
-                            <button type="button" class="sidebar__group-toggle" aria-expanded="true">
+                        <?php
+                        $slug = strtolower(str_replace(' ', '-', $titulo));
+                        // Cerradas de entrada, para que el menú quepa en pantallas bajas; solo se
+                        // abre la sección de la página actual, que es la que dice dónde estás.
+                        $abierta = false;
+                        foreach (array_keys($items) as $href) {
+                            if ($href === '/' ? $ruta === '/' : str_starts_with((string) $ruta, $href)) {
+                                $abierta = true;
+                                break;
+                            }
+                        }
+                        ?>
+                        <div class="sidebar__group<?= $abierta ? ' is-open' : '' ?>" data-section="<?= e($slug) ?>">
+                            <button type="button" class="sidebar__group-toggle" aria-expanded="<?= $abierta ? 'true' : 'false' ?>">
                                 <span><?= e($titulo) ?></span>
                                 <svg class="sidebar__chevron" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </button>
@@ -145,12 +156,13 @@
                 try {
                     if (localStorage.getItem('navCollapsed') === '1') shell.classList.add('is-collapsed');
                     /* En móvil el menú se abre por encima del contenido y se usa de un vistazo:
-                       ahí las secciones siempre van desplegadas, sin recordar cierres previos. */
+                       ahí no se recuerda lo abierto antes y se ve como lo pinta el servidor. La
+                       sección de la página actual no se cierra nunca: es la que dice dónde estás. */
                     if (window.matchMedia('(min-width: 761px)').matches) {
                         var guardado = JSON.parse(localStorage.getItem('navSections') || '{}');
                         shell.querySelectorAll('.sidebar__group').forEach(function (g) {
                             var k = g.dataset.section;
-                            if (k && k in guardado) {
+                            if (k && k in guardado && !g.querySelector('.is-active')) {
                                 g.classList.toggle('is-open', guardado[k]);
                                 var t = g.querySelector('.sidebar__group-toggle');
                                 if (t) t.setAttribute('aria-expanded', guardado[k] ? 'true' : 'false');
