@@ -246,6 +246,13 @@ final class MovimientoService
             $data['fecha_fin_estimada'] = $mov['fecha_fin_estimada'];
         }
 
+        // Con el retorno ya apartado la oferta está cumplida y se conserva aunque el formulario
+        // la mande desmarcada: quitarla dejaría el regreso colgando de una ida que "no ofrecía"
+        // retorno y lo sacaría de lo aprovechado en Inteligencia y en la ficha de la unidad.
+        if ($mov['movimiento_regreso_id'] !== null) {
+            $data['retorno_disponible'] = 1;
+        }
+
         if ($mov['unidad_id'] !== null) {
             $this->assertAlcanceInternacional((int) $mov['unidad_id'], $data);
         }
@@ -279,7 +286,9 @@ final class MovimientoService
             ]);
         });
 
-        if ((int) $data['retorno_disponible'] === 1) {
+        // Solo cuando la oferta es nueva: con cualquier otra edición (ruta, piloto, contactos)
+        // los suscriptores recibían otra vez el aviso de un retorno que ya conocían.
+        if ((int) $data['retorno_disponible'] === 1 && (int) $mov['retorno_disponible'] !== 1) {
             $this->notificaciones?->notificarRetornoDisponible($id);
         }
     }

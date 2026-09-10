@@ -571,6 +571,20 @@ function quitarOpcionesTemporales() {
     });
 }
 
+/**
+ * Con el retorno ya apartado, la oferta está cumplida y no se retira: quitarla dejaría el
+ * regreso colgando de una ida que "no ofrecía" retorno y lo borraría de lo aprovechado. La
+ * casilla queda marcada y su descripción pasa a decir en qué reserva se tomó; null la libera.
+ */
+function bloquearRetorno(motivo) {
+    const casilla = formReserva.elements['retorno_disponible'];
+    const nota = casilla?.closest('label')?.querySelector('small');
+    if (!casilla || !nota) return;
+    nota.dataset.original ??= nota.textContent.trim();
+    casilla.disabled = motivo !== null;
+    nota.textContent = motivo ?? nota.dataset.original;
+}
+
 /** Bloquea o libera un campo dejando dicho el motivo dentro del propio combobox. */
 function bloquear(sel, motivo) {
     if (!sel) return;
@@ -618,6 +632,7 @@ async function abrirEdicion(id) {
     v('notificar_a', m.notificar_a);
     for (const campo of CAMPOS_TERCERO) v(campo, m[campo]);
     formReserva.elements['retorno_disponible'].checked = Number(m.retorno_disponible) === 1;
+    bloquearRetorno(m.movimiento_regreso_id ? `Ya se apartó en la reserva #${m.movimiento_regreso_id}.` : null);
     formReserva.elements['queda_con_cliente'].checked = Number(m.queda_con_cliente) === 1;
     // Los radios se seleccionan por valor: elements['operacion'] es la lista de los dos.
     for (const radio of formReserva.elements['operacion']) radio.checked = radio.value === (m.operacion || 'EX');
@@ -737,6 +752,7 @@ function abrirReserva(unidadId) {
     if (!formReserva) return;
     formReserva.reset();
     quitarOpcionesTemporales();
+    bloquearRetorno(null);
     delete formReserva.dataset.movimiento;
     document.getElementById('dlg-reserva-title').textContent = 'Nueva reserva';
     // Al crear, el formulario se explica solo; al editar sí hace falta decir qué no se cambia.

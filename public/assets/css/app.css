@@ -2868,3 +2868,7 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     border-color: var(--primary-border, rgba(247, 108, 0, 0.30));
     background: color-mix(in srgb, var(--primary-soft) 55%, #fff);
 }
+
+/* Bloqueada: se sigue viendo marcada y la descripción dice por qué no se toca. */
+.opcion-par .check--box:has(input:disabled),
+.opcion-par .check--box input:disabled { cursor: not-allowed; }
