@@ -29,6 +29,41 @@ final class MovimientoModel
     }
 
     /**
+     * El movimiento con lo que el formulario de edición necesita para mostrarlo tal cual está.
+     *
+     * Trae el nombre de lo elegido además del id: el piloto pudo darse de baja o la unidad pasar
+     * a otra estación, y entonces ya no figuran en las listas del formulario. Y el equipo de
+     * apoyo que sigue en el viaje, que vive en movimiento_unidades y no en la fila del movimiento.
+     */
+    public function paraEditar(int $id): ?array
+    {
+        // Los roles van escritos en la consulta y no como parámetros: cada uno se usa dos veces
+        // y con prepares nativos un mismo marcador no se puede enlazar dos veces.
+        $apoyo = static fn(string $rol, string $columna): string =>
+            "(SELECT {$columna} FROM movimiento_unidades mu
+                JOIN unidades ua ON ua.id = mu.unidad_id
+               WHERE mu.movimiento_id = m.id AND mu.rol = '{$rol}' AND mu.liberado_en IS NULL
+               LIMIT 1)";
+        $motriz = RolUnidadMovimiento::MOTRIZ;
+        $arrastre = RolUnidadMovimiento::ARRASTRE;
+
+        $stmt = $this->pdo->prepare(
+            'SELECT m.*, u.placa_unidad AS unidad_placa, p.nombre AS piloto_nombre, '
+            . $apoyo($motriz, 'mu.unidad_id') . ' AS apoyo_motriz_id, '
+            . $apoyo($motriz, 'ua.placa_unidad') . ' AS apoyo_motriz_placa, '
+            . $apoyo($arrastre, 'mu.unidad_id') . ' AS apoyo_arrastre_id, '
+            . $apoyo($arrastre, 'ua.placa_unidad') . ' AS apoyo_arrastre_placa
+               FROM movimientos m
+               LEFT JOIN unidades u ON u.id = m.unidad_id
+               LEFT JOIN pilotos p ON p.id = m.piloto_id
+              WHERE m.id = :id
+              LIMIT 1'
+        );
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
      * Movimientos activos de la unidad cuyo rango [salida, fin] se traslapa con el nuevo.
      * Bloquea las filas (FOR UPDATE) para resistir reservas simultáneas (integridad #2).
      * Debe ejecutarse dentro de una transacción.

@@ -536,6 +536,41 @@ const NO_EDITABLE = {
     apoyo_arrastre_id: 'El equipo no se cambia al editar',
 };
 
+/** Estado del movimiento como lo nombra el formulario; «En tránsito» solo aparece al editar. */
+const ESTADOS_MOVIMIENTO = {
+    RESERVADO: 'Reserva (apartado)',
+    PROGRAMADO: 'Programado (confirmado)',
+    EN_TRANSITO: 'En tránsito',
+};
+
+/**
+ * Pone un valor guardado en un campo. Si ya no figura en la lista —piloto dado de baja, unidad
+ * que cambió de estación, un viaje que ya está en tránsito— se agrega una opción solo para
+ * mostrarlo: dejar el campo en blanco diría algo falso y, al guardar, borraría el dato.
+ */
+function ponerValor(nombre, valor, etiqueta) {
+    const el = formReserva.elements[nombre];
+    if (!el) return;
+    const texto = valor === null || valor === undefined ? '' : String(valor);
+    if (el.tagName === 'SELECT' && texto !== '' && etiqueta
+        && ![...el.options].some((o) => o.value === texto)) {
+        const opcion = new Option(etiqueta, texto);
+        opcion.dataset.temporal = '1';
+        el.add(opcion);
+        el.dispatchEvent(new Event('opciones-cambiadas'));
+    }
+    el.value = texto;
+}
+
+/** Quita esas opciones al volver a abrir el formulario: no son parte de las listas. */
+function quitarOpcionesTemporales() {
+    formReserva.querySelectorAll('option[data-temporal]').forEach((o) => {
+        const sel = o.closest('select');
+        o.remove();
+        sel?.dispatchEvent(new Event('opciones-cambiadas'));
+    });
+}
+
 /** Bloquea o libera un campo dejando dicho el motivo dentro del propio combobox. */
 function bloquear(sel, motivo) {
     if (!sel) return;
@@ -560,16 +595,16 @@ async function abrirEdicion(id) {
     const tz = fila?.timezone;
 
     formReserva.reset();
+    quitarOpcionesTemporales();
     formReserva.dataset.movimiento = id;
     document.getElementById('dlg-reserva-title').textContent = `Editar reserva #${id}`;
     document.getElementById('dlg-reserva-lede').textContent =
         'Cambia piloto, ruta o datos del viaje. La unidad y el equipo no se cambian aquí.';
     document.getElementById('dlg-reserva-guardar').textContent = 'Guardar cambios';
 
-    const v = (nombre, valor) => { const el = formReserva.elements[nombre]; if (el) el.value = valor ?? ''; };
-    v('unidad_id', m.unidad_id);
-    v('estado', m.estado);
-    v('piloto_id', m.piloto_id);
+    const v = ponerValor;
+    v('unidad_id', m.unidad_id, m.unidad_placa);
+    v('estado', m.estado, ESTADOS_MOVIMIENTO[m.estado]);
     // Sin ruta del catálogo, el movimiento se armó escribiendo países y ciudades.
     v('ruta_id', m.ruta_id || 'otra');
     v('pais_origen_id', m.pais_origen_id);
@@ -594,6 +629,17 @@ async function abrirEdicion(id) {
     syncAvisoLicencia();
     cargarTerceros();
     for (const [nombre, motivo] of Object.entries(NO_EDITABLE)) bloquear(formReserva.elements[nombre], motivo);
+    // Al cargar se disparan las reglas de «al cambiar la unidad» —piloto asignado, apoyos que
+    // admite su categoría—, pensadas para una reserva nueva: pisarían lo guardado. Se reponen
+    // al final, con los campos ya bloqueados donde toca.
+    for (const [nombre, valor, etiqueta] of [
+        ['piloto_id', m.piloto_id, m.piloto_nombre],
+        ['apoyo_motriz_id', m.apoyo_motriz_id, m.apoyo_motriz_placa],
+        ['apoyo_arrastre_id', m.apoyo_arrastre_id, m.apoyo_arrastre_placa],
+    ]) {
+        v(nombre, valor, etiqueta);
+        formReserva.elements[nombre]?.dispatchEvent(new Event('change', { bubbles: true }));
+    }
 
     // Confirmada la reserva, la liberación se mueve con «Cambiar fecha de fin», que pide un
     // motivo. El servidor lo impone igual; aquí solo se evita ofrecer algo que no se guardará.
@@ -690,6 +736,7 @@ function fijarModo(motivo) {
 function abrirReserva(unidadId) {
     if (!formReserva) return;
     formReserva.reset();
+    quitarOpcionesTemporales();
     delete formReserva.dataset.movimiento;
     document.getElementById('dlg-reserva-title').textContent = 'Nueva reserva';
     // Al crear, el formulario se explica solo; al editar sí hace falta decir qué no se cambia.

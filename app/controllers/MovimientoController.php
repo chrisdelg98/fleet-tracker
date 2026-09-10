@@ -21,7 +21,7 @@ final class MovimientoController
     public function apiShow(array $p): void
     {
         require_role_api(self::ESCRITURA);
-        $mov = $this->movimientos->find((int) $p['id']);
+        $mov = $this->movimientos->paraEditar((int) $p['id']);
         if ($mov === null) {
             json_error('Movimiento no encontrado', 404);
         }
