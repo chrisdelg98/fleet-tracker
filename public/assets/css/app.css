@@ -335,8 +335,7 @@ a { color: inherit; }
     gap: var(--sp-4);
     padding: var(--sp-4) var(--sp-3);
     /* Pegado bajo la barra superior y con su propio scroll: sin alto máximo, en pantallas bajas
-       el final del menú quedaba fuera de la vista sin forma de llegar a él. La barra es la del
-       navegador, la misma que el cuerpo de los diálogos. */
+       el final del menú quedaba fuera de la vista sin forma de llegar a él. */
     max-height: calc(100vh - var(--topbar-h));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -2404,6 +2403,50 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 .sidebar__collapse:hover { color: var(--primary); background: var(--primary-soft); }
 .sidebar__collapse svg { flex: 0 0 auto; transition: transform var(--transition); }
 .sidebar__collapse:hover svg { transform: translateX(-2px); }
+
+/* ── Barra de scroll de la app ──
+   Una sola para los diálogos y el menú lateral: delgada, redondeada, sin flechas y casi
+   transparente hasta que se pasa el mouse. La del navegador, gruesa y con flechas, pesaba más
+   que el contenido que desplaza. En Chrome/Edge la dibujan los pseudo-elementos; en Firefox,
+   que no los tiene, las propiedades estándar. */
+@supports not selector(::-webkit-scrollbar) {
+    .dialog__body,
+    .dialog__panel,
+    .sidebar,
+    .sidebar__panel {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(120, 132, 148, 0.35) transparent;
+    }
+}
+.dialog__body::-webkit-scrollbar,
+.dialog__panel::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.sidebar__panel::-webkit-scrollbar { width: 8px; height: 8px; }
+.dialog__body::-webkit-scrollbar-track,
+.dialog__panel::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.sidebar__panel::-webkit-scrollbar-track { background: transparent; }
+.dialog__body::-webkit-scrollbar-button,
+.dialog__panel::-webkit-scrollbar-button,
+.sidebar::-webkit-scrollbar-button,
+.sidebar__panel::-webkit-scrollbar-button { display: none; }
+.dialog__body::-webkit-scrollbar-thumb,
+.dialog__panel::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar__panel::-webkit-scrollbar-thumb {
+    background-color: rgba(120, 132, 148, 0.30);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+.dialog__body:hover::-webkit-scrollbar-thumb,
+.dialog__panel:hover::-webkit-scrollbar-thumb,
+.sidebar:hover::-webkit-scrollbar-thumb,
+.sidebar__panel:hover::-webkit-scrollbar-thumb { background-color: rgba(120, 132, 148, 0.48); }
+.dialog__body::-webkit-scrollbar-thumb:hover,
+.dialog__panel::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover,
+.sidebar__panel::-webkit-scrollbar-thumb:hover { background-color: rgba(96, 108, 124, 0.62); }
 
 .nav-backdrop {
     position: fixed;
