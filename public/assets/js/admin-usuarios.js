@@ -1,5 +1,6 @@
 /** Administración › Usuarios. Coherencia rol/estación en el form; contraseña opcional al editar. */
 import { api, showError, mensajeError } from './api.js';
+import { generarPassword, setPassVisible as verPassword, copiar } from './password.js';
 
 const dlg = document.getElementById('dlg-usuario');
 const form = document.getElementById('form-usuario');
@@ -41,42 +42,8 @@ const passInput = form.elements['password'];
 const passToggle = document.getElementById('pass-toggle');
 const passGenerate = document.getElementById('pass-generate');
 
-// Sin caracteres ambiguos (I l 1 O 0) para poder dictarla o copiarla sin errores.
-const MAYUS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-const MINUS = 'abcdefghijkmnopqrstuvwxyz';
-const DIGITOS = '23456789';
-const SIMBOLOS = '!@#$%&*?-_';
-const ALFABETO = MAYUS + MINUS + DIGITOS + SIMBOLOS;
-const LARGO = 12;
-
-/** Índice aleatorio uniforme: descarta el sobrante para no sesgar el módulo. */
-function indiceAleatorio(max) {
-    const limite = Math.floor(0x100000000 / max) * max;
-    const buf = new Uint32Array(1);
-    let n;
-    do { crypto.getRandomValues(buf); n = buf[0]; } while (n >= limite);
-    return n % max;
-}
-
-/** Contraseña con al menos un carácter de cada familia (mayúscula, minúscula, dígito, símbolo). */
-function generarPassword() {
-    const familias = [MAYUS, MINUS, DIGITOS, SIMBOLOS];
-    const chars = familias.map((f) => f[indiceAleatorio(f.length)]);
-    while (chars.length < LARGO) chars.push(ALFABETO[indiceAleatorio(ALFABETO.length)]);
-    // Fisher-Yates, para que las cuatro familias no queden siempre al inicio.
-    for (let i = chars.length - 1; i > 0; i--) {
-        const j = indiceAleatorio(i + 1);
-        [chars[i], chars[j]] = [chars[j], chars[i]];
-    }
-    return chars.join('');
-}
-
 function setPassVisible(visible) {
-    passInput.type = visible ? 'text' : 'password';
-    passToggle.classList.toggle('is-on', visible);
-    passToggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
-    passToggle.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
-    passToggle.title = visible ? 'Ocultar contraseña' : 'Mostrar contraseña';
+    verPassword(passInput, passToggle, visible);
 }
 
 function notaPassword(texto) {
@@ -94,12 +61,11 @@ passGenerate.addEventListener('click', async () => {
     setPassVisible(true);
     passInput.focus();
     passInput.select();
-    let aviso = 'Generada. Cópiala antes de guardar.';
-    try {
-        await navigator.clipboard.writeText(passInput.value);
-        aviso = 'Generada y copiada al portapapeles.';
-    } catch { /* el portapapeles exige origen seguro; el aviso por defecto ya cubre el caso */ }
-    notaPassword(aviso);
+    // El portapapeles exige origen seguro y permiso: si no se pudo, hay que decirlo en vez de
+    // dar por copiado algo que no lo está.
+    notaPassword(await copiar(passInput.value)
+        ? 'Generada y copiada al portapapeles.'
+        : 'Generada. Cópiala antes de guardar.');
 });
 
 document.addEventListener('click', async (ev) => {

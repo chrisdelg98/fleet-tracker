@@ -312,7 +312,10 @@ a { color: inherit; }
     cursor: pointer;
     transition: background-color var(--transition), color var(--transition);
 }
-.usermenu__item:hover { background: var(--color-error-bg); color: var(--color-error); }
+.usermenu__item { text-decoration: none; }
+.usermenu__item:hover { background: var(--color-surface-soft); }
+/* El rojo es solo para salir: pintar igual "cambiar contraseña" la haría parecer destructiva. */
+.usermenu__item--salir:hover { background: var(--color-error-bg); color: var(--color-error); }
 .usermenu__item svg { flex: none; color: currentColor; }
 
 .app-shell__body {
@@ -2915,3 +2918,47 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 /* Bloqueada: se sigue viendo marcada y la descripción dice por qué no se toca. */
 .opcion-par .check--box:has(input:disabled),
 .opcion-par .check--box input:disabled { cursor: not-allowed; }
+
+/* ── Cambiar contraseña (perfil) ──
+   Una sola columna estrecha: son tres campos en fila y ensancharlos solo alarga el recorrido
+   del ojo. La lista de requisitos se marca mientras se escribe, así que el resultado se ve
+   antes de guardar y no en un error después. */
+.perfil-password { display: grid; justify-items: center; }
+.perfil-password__card { width: min(100%, 540px); padding: var(--sp-6); }
+.perfil-password__head { display: grid; gap: 6px; margin-bottom: var(--sp-5); }
+.perfil-password__head h2 { margin: 0; font-size: var(--fs-xl); }
+.perfil-password__sep { height: 1px; margin: var(--sp-2) 0; border: 0; background: var(--color-border); }
+.perfil-password .alert { width: min(100%, 540px); margin-bottom: var(--sp-4); }
+.form__acciones { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-5); }
+
+/* Campo con problema: el borde lo señala y la nota de abajo lo explica. */
+.field--error input { border-color: var(--color-error); }
+.field__note--error { color: var(--color-error); }
+.field__note--ok { color: var(--estado-disponible); }
+
+.requisitos {
+    display: grid;
+    gap: 6px;
+    margin: calc(var(--sp-2) * -1) 0 var(--sp-2);
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-sm);
+    color: var(--color-ink-soft);
+}
+.requisito { display: flex; align-items: center; gap: var(--sp-2); }
+.requisito em { font-style: normal; color: var(--color-ink-mute); }
+/* La marca cambia de un círculo vacío a un visto: se ve de reojo cuál falta todavía. */
+.requisito__marca {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 50%;
+    background: transparent;
+}
+.requisito.is-ok { color: var(--color-ink); }
+.requisito.is-ok .requisito__marca {
+    border-color: var(--estado-disponible);
+    background: var(--estado-disponible)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-6.5' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;
+}

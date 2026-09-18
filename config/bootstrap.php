@@ -18,6 +18,7 @@ require_once BASE_PATH . '/app/helpers/auth.php';
 require_once BASE_PATH . '/app/helpers/bitacora.php';
 require_once BASE_PATH . '/app/helpers/view.php';
 require_once BASE_PATH . '/app/helpers/validation.php';
+require_once BASE_PATH . '/app/helpers/password.php';
 require_once BASE_PATH . '/app/helpers/db.php';
 require_once BASE_PATH . '/app/helpers/paises.php';
 require_once BASE_PATH . '/app/helpers/navegacion.php';

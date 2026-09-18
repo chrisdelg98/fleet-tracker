@@ -11,12 +11,20 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 $pdo    = db();
 $router = new Router();
 
-$authController = new AuthController(new AuthService(new UsuarioModel($pdo)));
+$usuarioModel = new UsuarioModel($pdo);
+$authService = new AuthService($usuarioModel);
+$authController = new AuthController($authService);
 
 // ── Autenticación (web) ──
 $router->get('/login',  fn() => $authController->showLogin());
 $router->post('/login', fn() => $authController->login());
 $router->post('/logout', fn() => $authController->logout());
+
+// ── Cuenta propia ──
+// Cambiar la contraseña no es administrar usuarios: cualquiera lo hace sobre la suya, sin rol.
+$perfilController = new PerfilController(new PerfilService($pdo, $usuarioModel, $authService));
+$router->get('/perfil/password',  fn() => $perfilController->passwordPage());
+$router->post('/perfil/password', fn() => $perfilController->passwordUpdate());
 
 // ── API protegida ──
 // Devuelve el usuario en sesión; sin sesión responde 401 (demuestra el guard de API).

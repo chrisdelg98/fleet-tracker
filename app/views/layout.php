@@ -82,9 +82,15 @@
                         <span><?= e(Rol::label($u['rol'])) ?></span>
                         <small><?= e($u['email']) ?></small>
                     </div>
+                    <a class="usermenu__item" href="/perfil/password">
+                        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false">
+                            <path d="M10 1.75a4.25 4.25 0 0 1 4.25 4.25v2h.5A1.75 1.75 0 0 1 16.5 9.75v6.5A1.75 1.75 0 0 1 14.75 18h-9.5A1.75 1.75 0 0 1 3.5 16.25v-6.5A1.75 1.75 0 0 1 5.25 8h.5V6A4.25 4.25 0 0 1 10 1.75Zm0 1.5A2.75 2.75 0 0 0 7.25 6v2h5.5V6A2.75 2.75 0 0 0 10 3.25Zm0 8a1.25 1.25 0 0 0-.75 2.25v1a.75.75 0 0 0 1.5 0v-1A1.25 1.25 0 0 0 10 11.25Z" fill="currentColor"/>
+                        </svg>
+                        <span>Cambiar contraseña</span>
+                    </a>
                     <form method="post" action="/logout">
                         <?= csrf_field() ?>
-                        <button type="submit" class="usermenu__item">
+                        <button type="submit" class="usermenu__item usermenu__item--salir">
                             <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false">
                                 <path d="M7.75 2.5a2.75 2.75 0 0 0-2.75 2.75v9.5a2.75 2.75 0 0 0 2.75 2.75h3.5a2.75 2.75 0 0 0 2.75-2.75.75.75 0 0 0-1.5 0c0 .69-.56 1.25-1.25 1.25h-3.5c-.69 0-1.25-.56-1.25-1.25v-9.5c0-.69.56-1.25 1.25-1.25h3.5c.69 0 1.25.56 1.25 1.25a.75.75 0 0 0 1.5 0A2.75 2.75 0 0 0 11.25 2.5h-3.5Zm7.72 5.22a.75.75 0 0 0-1.06 1.06l.47.47H9.5a.75.75 0 0 0 0 1.5h5.38l-.47.47a.75.75 0 1 0 1.06 1.06l1.75-1.75a.75.75 0 0 0 0-1.06l-1.75-1.75Z" fill="currentColor"/>
                             </svg>

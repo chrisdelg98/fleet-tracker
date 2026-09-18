@@ -38,6 +38,7 @@ Plataforma web para la **disponibilidad y el tracking de la flota** entre las es
 | 📊 **Inteligencia** | Utilización por estación, rutas más usadas y retornos aprovechados. |
 | 📜 **Histórico** | Movimientos pasados y bitácora del sistema (quién hizo qué y cuándo), con export CSV. |
 | ⚙️ **Administración** | Estaciones, usuarios, catálogos y **Correos enviados** (registro de avisos sin guardar direcciones). |
+| 🔑 **Cuenta propia** | Cada usuario cambia su contraseña desde el menú de su nombre: pide la actual, exige 8 caracteres con mayúscula, minúscula y número, y trae generador. |
 
 ## 🧠 Concepto central
 
