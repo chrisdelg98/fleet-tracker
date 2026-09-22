@@ -39,9 +39,22 @@ final class AdminController
     public function usuariosPage(): void
     {
         $user = require_admin_web();
+        // Los filtros viajan en la URL: así una búsqueda se puede compartir o guardar, y volver
+        // de editar un usuario no pierde dónde se estaba.
+        $filtros = [
+            'q'           => trim((string) ($_GET['q'] ?? '')),
+            'rol'         => (string) ($_GET['rol'] ?? ''),
+            'estacion_id' => (string) ($_GET['estacion_id'] ?? ''),
+            'activo'      => (string) ($_GET['activo'] ?? ''),
+        ];
         render('admin/usuarios', [
             'usuario'    => $user,
-            'usuarios'   => $this->usuarios->listar(),
+            'resultado'  => $this->usuarios->listar(
+                $filtros,
+                max(1, (int) ($_GET['pagina'] ?? 1)),
+                (int) ($_GET['por_pagina'] ?? UsuarioModel::POR_PAGINA_DEFAULT)
+            ),
+            'filtros'    => $filtros,
             'estaciones' => $this->catalogos->activos('estaciones'),
             'roles'      => Rol::values(),
             'rolesSinEstacion' => Rol::SIN_ESTACION,

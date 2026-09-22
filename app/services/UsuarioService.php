@@ -40,6 +40,7 @@ final class UsuarioService
         }
         $nuevaPassword = trim((string) ($input['password'] ?? ''));
         $data = $this->validar($input, $id, false);
+        $this->assertQuedaQuienAdministre($id, $actual, $data['rol'], (int) $actual['activo'] === 1, $user);
 
         tx($this->pdo, function () use ($id, $data, $nuevaPassword, $actual, $user): void {
             $this->usuarios->actualizar($id, $data);
@@ -62,12 +63,35 @@ final class UsuarioService
         if ($id === (int) $user['id'] && !$activo) {
             json_error('No puedes desactivar tu propia cuenta', 422);
         }
+        $this->assertQuedaQuienAdministre($id, $actual, (string) $actual['rol'], $activo, $user);
         tx($this->pdo, function () use ($id, $actual, $activo, $user): void {
             $this->usuarios->setActivo($id, $activo);
             registrar_bitacora($this->pdo, $user['id'], 'usuario', $id, AccionBitacora::EDITAR, [
                 'antes' => ['activo' => (int) $actual['activo']], 'despues' => ['activo' => $activo ? 1 : 0],
             ]);
         });
+    }
+
+    /**
+     * Nadie puede dejar al sistema sin Admin Global, ni quitarse a sí mismo la administración.
+     *
+     * La cuenta propia se protege aparte del recuento: aunque queden otros administradores,
+     * degradarse a uno mismo por accidente deja fuera de Administración a quien está trabajando,
+     * y recuperarlo exige que otro lo devuelva.
+     */
+    private function assertQuedaQuienAdministre(int $id, array $actual, string $rolNuevo, bool $seguiraActivo, array $user): void
+    {
+        $eraAdmin = $actual['rol'] === Rol::ADMIN_GLOBAL && (int) $actual['activo'] === 1;
+        $seguiraAdmin = $rolNuevo === Rol::ADMIN_GLOBAL && $seguiraActivo;
+        if (!$eraAdmin || $seguiraAdmin) {
+            return;
+        }
+        if ($id === (int) $user['id']) {
+            json_unprocessable(['rol' => 'No puedes quitarte a ti mismo el rol de Admin Global. Pídeselo a otro administrador.']);
+        }
+        if ($this->usuarios->adminsActivosSalvo($id) === 0) {
+            json_unprocessable(['rol' => 'Es el único Admin Global activo: si le quitas el rol, nadie podría administrar el sistema.']);
+        }
     }
 
     private function validar(array $input, ?int $exceptId, bool $creando): array

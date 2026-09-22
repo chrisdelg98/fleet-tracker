@@ -61,7 +61,7 @@ final class HistoricoController
                 isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1,
                 HistoricoService::porPaginaValido((int) ($_GET['por_pagina'] ?? 0))
             ),
-            'usuarios'  => $this->usuarios->listar(),
+            'usuarios'  => $this->usuarios->todos(),
             'entidades' => ['movimiento', 'unidad', 'piloto', 'ruta', 'override', 'estacion', 'usuario'],
             'acciones'  => [AccionBitacora::CREAR, AccionBitacora::EDITAR, AccionBitacora::CAMBIO_ESTADO, AccionBitacora::CANCELAR, AccionBitacora::ELIMINAR],
         ], 'Registro del sistema · Flete Finder');

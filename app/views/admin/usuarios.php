@@ -2,8 +2,12 @@
 /**
  * Administración › Usuarios (plan §5.2, §4).
  *
+ * La lista crece y se consulta para gestionar, no para leerla entera: filtros arriba, paginación
+ * abajo y, en medio, el recuento de lo que se está viendo.
+ *
  * @var array $usuario
- * @var array $usuarios
+ * @var array $resultado  filas, total, pagina, paginas, por_pagina
+ * @var array $filtros    q, rol, estacion_id, activo
  * @var array $estaciones
  * @var array $roles
  * @var array $rolesSinEstacion
@@ -17,22 +21,91 @@ set_page_meta(
     ]
 );
 ?>
+<?php
+$sel = static fn($valor, $opcion): string => (string) $valor === (string) $opcion ? 'selected' : '';
+$hayFiltros = implode('', $filtros) !== '';
+// El tamaño de página viaja con los filtros para no perderse al cambiar de página.
+$comunes = $filtros + ['por_pagina' => $resultado['por_pagina']];
+?>
 <section class="module">
+    <form class="filters-panel" method="get" action="/admin/usuarios" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
+        <div class="filters-panel__bar">
+            <div class="filters-panel__summary">
+                <strong>Filtros</strong>
+                <span>Nombre o correo, rol, estación y estado</span>
+            </div>
+            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="usuarios-filtros">
+                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
+                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+            </button>
+        </div>
+        <div class="filters-panel__more" id="usuarios-filtros" data-filters-more hidden>
+            <div class="filters-grid">
+                <label class="field"><span class="field__label">Buscar</span>
+                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Nombre o correo…" class="search" data-no-search></label>
+                <label class="field"><span class="field__label">Rol</span>
+                    <select name="rol" data-no-search>
+                        <option value="">Todos</option>
+                        <?php foreach ($roles as $r): ?><option value="<?= e($r) ?>" <?= $sel($filtros['rol'], $r) ?>><?= e(Rol::label($r)) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Estación</span>
+                    <select name="estacion_id">
+                        <option value="">Todas</option>
+                        <option value="sin" <?= $sel($filtros['estacion_id'], 'sin') ?>>Sin estación</option>
+                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= $sel($filtros['estacion_id'], $es['id']) ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
+                    </select></label>
+                <label class="field"><span class="field__label">Estado</span>
+                    <select name="activo" data-no-search>
+                        <option value="">Todos</option>
+                        <option value="1" <?= $sel($filtros['activo'], '1') ?>>Activos</option>
+                        <option value="0" <?= $sel($filtros['activo'], '0') ?>>Inactivos</option>
+                    </select></label>
+                <label class="field"><span class="field__label">Por página</span>
+                    <select name="por_pagina" data-no-search>
+                        <?php foreach (UsuarioModel::POR_PAGINA_OPCIONES as $op): ?><option value="<?= $op ?>" <?= $sel($resultado['por_pagina'], $op) ?>><?= $op ?></option><?php endforeach; ?>
+                    </select></label>
+            </div>
+            <div class="filters-actions">
+                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
+                <a href="/admin/usuarios" class="link">Limpiar</a>
+            </div>
+        </div>
+    </form>
+
+    <p class="dashboard__meta">
+        <span><?= (int) $resultado['total'] ?> usuario<?= (int) $resultado['total'] === 1 ? '' : 's' ?></span>
+        <?php if ($resultado['paginas'] > 1): ?>
+            · <span class="muted">página <?= (int) $resultado['pagina'] ?> de <?= (int) $resultado['paginas'] ?></span>
+        <?php endif; ?>
+    </p>
+
+    <?php if ($resultado['filas'] === []): ?>
+        <div class="card empty"><div class="card__empty">
+            <p>Ningún usuario coincide con los filtros. <a href="/admin/usuarios" class="link">Limpiar filtros</a></p>
+        </div></div>
+    <?php else: ?>
     <div class="card card--table">
         <table class="table">
             <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estación</th><th>Estado</th><th></th></tr></thead>
             <tbody>
-            <?php foreach ($usuarios as $u): ?>
-                <tr class="<?= (int) $u['activo'] === 0 ? 'is-inactive' : '' ?>">
-                    <td><strong><?= e($u['nombre']) ?></strong></td>
+            <?php foreach ($resultado['filas'] as $u):
+                $propio = (int) $u['id'] === (int) $usuario['id'];
+                $activo = (int) $u['activo'] === 1;
+            ?>
+                <tr class="<?= $activo ? '' : 'is-inactive' ?>">
+                    <td><strong><?= e($u['nombre']) ?></strong>
+                        <?php if ($propio): ?><span class="badge badge--muted">Tu cuenta</span><?php endif; ?></td>
                     <td><?= e($u['email']) ?></td>
                     <td><?= e(Rol::label($u['rol'])) ?></td>
                     <td><?= e($u['estacion_codigo'] ?? '—') ?></td>
-                    <td><?= (int) $u['activo'] === 1 ? '<span class="badge badge--ok">Activo</span>' : '<span class="badge badge--muted">Inactivo</span>' ?></td>
+                    <td><?= $activo ? '<span class="badge badge--ok">Activo</span>' : '<span class="badge badge--muted">Inactivo</span>' ?></td>
                     <td class="row-actions">
                         <?= row_menu([
                             ['label' => 'Editar', 'attrs' => ['data-action' => 'editar-usuario', 'data-id' => (int) $u['id']]],
-                            ['label' => (int) $u['activo'] === 1 ? 'Desactivar' : 'Activar', 'attrs' => ['data-action' => 'activo-usuario', 'data-id' => (int) $u['id'], 'data-activo' => (int) $u['activo']]],
+                            // La cuenta propia no se ofrece desactivar: el servidor lo rechaza igual,
+                            // y ofrecer algo que siempre falla solo hace perder el viaje.
+                            $propio ? null : ['label' => $activo ? 'Desactivar' : 'Activar', 'danger' => $activo,
+                                'attrs' => ['data-action' => 'activo-usuario', 'data-id' => (int) $u['id'], 'data-activo' => (int) $u['activo']]],
                         ]) ?>
                     </td>
                 </tr>
@@ -40,6 +113,15 @@ set_page_meta(
             </tbody>
         </table>
     </div>
+
+    <?php if ($resultado['paginas'] > 1): ?>
+    <nav class="pager">
+        <?php for ($p = 1; $p <= $resultado['paginas']; $p++): $pq = http_build_query(array_merge($comunes, ['pagina' => $p])); ?>
+            <a href="/admin/usuarios?<?= e($pq) ?>" class="pager__link<?= $p === (int) $resultado['pagina'] ? ' is-active' : '' ?>"><?= $p ?></a>
+        <?php endfor; ?>
+    </nav>
+    <?php endif; ?>
+    <?php endif; ?>
 </section>
 
 <dialog id="dlg-usuario" class="dialog" data-roles-sin-estacion='<?= e(json_encode($rolesSinEstacion)) ?>'>
