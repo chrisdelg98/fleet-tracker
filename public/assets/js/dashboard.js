@@ -531,6 +531,7 @@ function avisarCorreo(aviso) {
  */
 const NO_EDITABLE = {
     unidad_id: 'La unidad no se cambia: es otra reserva',
+    estacion_id: 'La estación no se cambia al editar',
     estado: 'Se avanza con Confirmar o Marcar salida',
     apoyo_motriz_id: 'El equipo no se cambia al editar',
     apoyo_arrastre_id: 'El equipo no se cambia al editar',
@@ -618,6 +619,7 @@ async function abrirEdicion(id) {
 
     const v = ponerValor;
     v('unidad_id', m.unidad_id, m.unidad_placa);
+    v('estacion_id', m.estacion_id, m.estacion_nombre);
     v('estado', m.estado, ESTADOS_MOVIMIENTO[m.estado]);
     // Sin ruta del catálogo, el movimiento se armó escribiendo países y ciudades.
     v('ruta_id', m.ruta_id || 'otra');
@@ -882,6 +884,14 @@ if (formReserva) {
         // que no se ven, así que se avisa aquí con lo que sí hay en pantalla.
         if (formReserva.elements['ruta_id'].value === '') {
             errReserva.textContent = 'Elige la ruta del catálogo, o «Otra ruta…» para escribir países y ciudades.';
+            errReserva.hidden = false;
+            return;
+        }
+        // Sin unidad propia, la estación no se deduce de nada: el campo solo existe para quien
+        // no tiene una fija, y decirlo aquí evita perder el viaje al servidor.
+        const estacion = formReserva.elements['estacion_id'];
+        if (estacion && enModoActivo(estacion) && estacion.value === '') {
+            errReserva.textContent = 'Indica qué estación gestiona este flete.';
             errReserva.hidden = false;
             return;
         }

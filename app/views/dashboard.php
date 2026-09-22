@@ -259,6 +259,19 @@ set_page_meta(
                                     <input type="text" name="codigo_nacional" maxlength="40"></label>
                                 <label class="field"><span class="field__label" title="Código de transporte internacional">Código internacional</span>
                                     <input type="text" name="codigo_internacional" maxlength="40"></label>
+                                <?php if ($usuario['rol'] === Rol::ADMIN_GLOBAL): ?>
+                                    <!-- Sin unidad propia no hay de dónde deducir la estación que gestiona el flete,
+                                         y es lo que se lo atribuye en los reportes. Solo se pregunta al Admin Global,
+                                         que trabaja con todas; a los demás el servidor les pone la suya. Va al final
+                                         porque se elige una vez y no compite con los datos del camión. -->
+                                    <label class="field grid-4__2"><span class="field__label">Estación que lo gestiona *</span>
+                                        <select name="estacion_id">
+                                            <option value="">Selecciona…</option>
+                                            <?php foreach ($estaciones as $es): ?>
+                                                <option value="<?= (int) $es['id'] ?>"<?= (int) $es['id'] === (int) ($usuario['estacion_id'] ?? 0) ? ' selected' : '' ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option>
+                                            <?php endforeach; ?>
+                                        </select></label>
+                                <?php endif; ?>
                             </div>
                             <datalist id="terceros-placas"></datalist>
                             <datalist id="terceros-proveedores"></datalist>

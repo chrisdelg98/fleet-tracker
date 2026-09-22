@@ -861,6 +861,9 @@ final class MovimientoService
     {
         $pedida = (int) ($input['estacion_id'] ?? 0);
         if ($pedida > 0) {
+            // Se comprueba igual que cualquier escritura: un encargado no registra fletes a
+            // nombre de otra estación por mandar otro id.
+            $this->assertPuedeEscribir($user, $pedida);
             return $pedida;
         }
         $propia = (int) ($user['estacion_id'] ?? 0);
