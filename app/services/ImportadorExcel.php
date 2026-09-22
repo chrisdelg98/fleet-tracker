@@ -228,7 +228,9 @@ abstract class ImportadorExcel
             }
 
             if ($erroresFila === [] && $data !== null) {
-                if (!can_write_station($user, (int) $data['estacion_id'])) {
+                // Solo lo que pertenece a una estación pide permiso sobre ella: un catálogo
+                // compartido, como el de proveedores, no tiene estación que comprobar.
+                if (array_key_exists('estacion_id', $data) && !can_write_station($user, (int) $data['estacion_id'])) {
                     $erroresFila['estacion'] = 'No tienes permiso para dar de alta en esa estación.';
                 } else {
                     $validas[] = ['fila' => $numeroFila, 'data' => $data, 'input' => $input, 'cruda' => $cruda];

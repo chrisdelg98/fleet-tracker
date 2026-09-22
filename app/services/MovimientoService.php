@@ -20,7 +20,8 @@ final class MovimientoService
         private RutaModel $rutas,
         private PilotoModel $pilotos,
         private ?NotificacionService $notificaciones = null,
-        private ?MovimientoTerceroModel $terceros = null
+        private ?MovimientoTerceroModel $terceros = null,
+        private ?ProveedorService $proveedores = null
     ) {
     }
 
@@ -102,6 +103,7 @@ final class MovimientoService
                 $this->apoyos->agregar($id, (int) $apoyo['id'], $apoyo['rol'], $user['id']);
             }
             if ($tercero !== null) {
+                $tercero = $this->conProveedor($tercero, $user);
                 $this->terceros?->guardar($id, $tercero);
             }
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::CREAR, [
@@ -278,7 +280,9 @@ final class MovimientoService
             // Solo se toca el tercero si el formulario habló de él. Que no venga la clave y que
             // venga vacía son cosas distintas: la primera es "no lo toques", la segunda "quítalo".
             if ($tocaTercero) {
-                $tercero === null ? $this->terceros?->eliminar($id) : $this->terceros?->guardar($id, $tercero);
+                $tercero === null
+                    ? $this->terceros?->eliminar($id)
+                    : $this->terceros?->guardar($id, $this->conProveedor($tercero, $user));
             }
             registrar_bitacora($this->pdo, $user['id'], 'movimiento', $id, AccionBitacora::EDITAR, [
                 'antes'   => $this->snapshot($mov),
@@ -811,9 +815,11 @@ final class MovimientoService
             if ($valor !== '') {
                 // Las placas en mayúsculas, como las de la flota propia: si no, la misma placa
                 // escrita de dos formas serían dos camiones y el autocompletado no la encuentra.
-                $datos[$campo] = in_array($campo, ['placa_motriz', 'placa_arrastre', 'piloto'], true)
-                    ? mb_strtoupper($valor, 'UTF-8')
-                    : $valor;
+                $datos[$campo] = match ($campo) {
+                    'placa_motriz', 'placa_arrastre' => NombreProveedor::placa($valor),
+                    'piloto' => mb_strtoupper($valor, 'UTF-8'),
+                    default => $valor,
+                };
             }
         }
         if ($datos === []) {
@@ -823,6 +829,21 @@ final class MovimientoService
             json_unprocessable(['proveedor' => 'Indica de qué proveedor es la unidad.']);
         }
         return $datos;
+    }
+
+    /**
+     * Enlaza el camión de la reserva al catálogo de proveedores.
+     *
+     * El nombre que queda en la reserva es el del proveedor registrado, no el que se tecleó:
+     * «transportes abc» se guarda como «TRANSPORTES ABC», y las estadísticas cuentan uno solo.
+     */
+    private function conProveedor(array $tercero, array $user): array
+    {
+        if ($this->proveedores === null) {
+            return $tercero;
+        }
+        $proveedor = $this->proveedores->paraReserva($tercero, (int) $user['id']);
+        return ['proveedor_id' => $proveedor['id'], 'proveedor' => $proveedor['nombre']] + $tercero;
     }
 
     /** Operación pedida (IN/EX), o null si no se pidió ninguna. */

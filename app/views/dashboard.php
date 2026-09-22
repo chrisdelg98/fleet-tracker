@@ -241,7 +241,8 @@ set_page_meta(
                                  que es como se lo identifica en la frontera. -->
                             <div class="grid-4">
                                 <label class="field grid-4__2"><span class="field__label">Proveedor *</span>
-                                    <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…"></label>
+                                    <input type="text" name="proveedor" maxlength="150" list="terceros-proveedores" placeholder="Transportes…" data-mayusculas autocomplete="off">
+                                    <small class="field__note" id="proveedor-aviso" hidden></small></label>
                                 <label class="field"><span class="field__label">Placa cabezal</span>
                                     <input type="text" name="placa_motriz" maxlength="30" list="terceros-placas" data-mayusculas autocomplete="off" placeholder="Completa lo demás" title="Con una placa ya usada, el resto se completa con lo de la última vez."></label>
                                 <label class="field"><span class="field__label">Placa furgón</span>

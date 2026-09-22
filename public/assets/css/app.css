@@ -2962,3 +2962,65 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     background: var(--estado-disponible)
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-6.5' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;
 }
+
+/* ── Proveedores ──
+   Una sola tabla con las columnas del camión; cada proveedor es un <tbody> con su fila de
+   cabecera. Los camiones se ven solo con el grupo abierto: de entrada se lee como una lista de
+   proveedores, y al buscar una placa se abren todos. */
+.prov-buscar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-4);
+}
+.prov-buscar__q { flex: 1 1 280px; }
+.prov-buscar__acciones { display: flex; align-items: center; gap: var(--sp-2); padding-bottom: 2px; }
+
+.tabla-proveedores .prov-fila td { background: var(--color-surface-soft); padding: 6px var(--sp-3); }
+.prov-grupo + .prov-grupo .prov-fila td { border-top: 1px solid var(--color-border); }
+.prov-fila__cuerpo { display: flex; align-items: center; gap: var(--sp-3); }
+.prov-fila__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 4px 6px;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.prov-fila__toggle:hover { background: var(--color-surface); }
+.prov-fila__toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.prov-fila__chevron { flex: none; color: var(--color-ink-mute); transition: transform 0.18s ease; }
+.prov-grupo.is-open .prov-fila__chevron { transform: rotate(90deg); }
+.prov-fila__meta { flex: 1; font-size: var(--fs-sm); }
+.prov-fila .rowmenu { margin-left: auto; }
+
+.prov-grupo:not(.is-open) .prov-camion { display: none; }
+.prov-grupo.is-off .prov-fila strong,
+.prov-camion.is-off td { color: var(--color-ink-mute); }
+.prov-camion td:first-child { padding-left: calc(var(--sp-3) + 26px); }
+.prov-camion--pie td { padding-top: 4px; padding-bottom: 10px; font-size: var(--fs-sm); }
+.prov-camion--pie .link { padding-left: 0; }
+.prov-camion--pie .muted + .link { margin-left: var(--sp-2); }
+
+.prov-aviso {
+    margin: 0;
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius);
+    background: #fbf1d8;
+    color: #8a5a00;
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+}
+.prov-aviso--error { background: var(--color-error-bg); color: var(--color-error); }
+.prov-nota { margin: 0; font-size: var(--fs-sm); }
+
+@media (prefers-reduced-motion: reduce) {
+    .prov-fila__chevron { transition: none; }
+}

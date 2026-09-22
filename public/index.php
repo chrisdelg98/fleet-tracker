@@ -118,6 +118,30 @@ $router->get('/api/pilotos/{id}', fn($p) => $pilotoController->apiShow($p));
 $router->put('/api/pilotos/{id}', fn($p) => $pilotoController->apiUpdate($p));
 $router->delete('/api/pilotos/{id}', fn($p) => $pilotoController->apiDelete($p));
 
+// ── Proveedores de transporte (catálogo compartido) ──
+$proveedorModel = new ProveedorModel($pdo);
+$proveedorCamionModel = new ProveedorCamionModel($pdo);
+$proveedorService = new ProveedorService($pdo, $proveedorModel, $proveedorCamionModel);
+$proveedorController = new ProveedorController($proveedorService, $proveedorModel);
+$proveedorImportController = new ImportController(
+    new ProveedorImportService($pdo, $proveedorService),
+    'proveedores',
+    'camión',
+    'camiones'
+);
+$router->get('/proveedores', fn() => $proveedorController->index());
+$router->get('/proveedores/plantilla.xlsx', fn() => $proveedorImportController->plantilla());
+$router->post('/api/proveedores/importar', fn() => $proveedorImportController->importar());
+$router->get('/api/proveedores/parecidos', fn() => $proveedorController->apiParecidos());
+$router->post('/api/proveedores', fn() => $proveedorController->apiCreate());
+$router->put('/api/proveedores/{id}', fn($p) => $proveedorController->apiUpdate($p));
+$router->post('/api/proveedores/{id}/activo', fn($p) => $proveedorController->apiActivo($p));
+$router->post('/api/proveedores/{id}/fusionar', fn($p) => $proveedorController->apiFusionar($p));
+$router->post('/api/proveedores/{id}/camiones', fn($p) => $proveedorController->apiCamionCreate($p));
+$router->get('/api/proveedor-camiones/{id}', fn($p) => $proveedorController->apiCamionShow($p));
+$router->put('/api/proveedor-camiones/{id}', fn($p) => $proveedorController->apiCamionUpdate($p));
+$router->post('/api/proveedor-camiones/{id}/activo', fn($p) => $proveedorController->apiCamionActivo($p));
+
 // ── Rutas (Fase 1) ──
 $rutaModel = new RutaModel($pdo);
 $rutaController = new RutaController(new RutaService($pdo, $rutaModel), $rutaModel);
@@ -163,9 +187,9 @@ $router->post('/api/catalogos/{tabla}/{id}/activo', fn($p) => $adminController->
 $movimientoModel = new MovimientoModel($pdo);
 $movimientoUnidadModel = new MovimientoUnidadModel($pdo);
 $movimientoTerceroModel = new MovimientoTerceroModel($pdo);
-$movimientoService = new MovimientoService($pdo, $movimientoModel, $movimientoUnidadModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService, $movimientoTerceroModel);
+$movimientoService = new MovimientoService($pdo, $movimientoModel, $movimientoUnidadModel, $unidadModel, $rutaModel, $pilotoModel, $notificacionService, $movimientoTerceroModel, $proveedorService);
 $overrideService = new OverrideService($pdo, $overrideModel, $unidadModel, $notificacionService);
-$movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService, $movimientoTerceroModel);
+$movimientoController = new MovimientoController($movimientoService, $movimientoModel, $overrideService, $movimientoTerceroModel, $proveedorService);
 $disponibilidadController = new DisponibilidadController(
     new DisponibilidadService($pdo),
     $catalogoModel,

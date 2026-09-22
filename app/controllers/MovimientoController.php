@@ -12,7 +12,8 @@ final class MovimientoController
         private MovimientoService $service,
         private MovimientoModel $movimientos,
         private OverrideService $overrides,
-        private ?MovimientoTerceroModel $terceros = null
+        private ?MovimientoTerceroModel $terceros = null,
+        private ?ProveedorService $proveedores = null
     ) {
     }
 
@@ -54,9 +55,8 @@ final class MovimientoController
      */
     public function apiTerceros(): void
     {
-        $user = require_role_api(self::ESCRITURA);
-        $alcance = $user['rol'] === Rol::ADMIN_GLOBAL ? null : (int) $user['estacion_id'];
-        json_ok($this->terceros?->usados($alcance) ?? []);
+        require_role_api(self::ESCRITURA);
+        json_ok($this->proveedores?->paraFormulario() ?? ['proveedores' => [], 'camiones' => []]);
     }
 
     /** POST /api/movimientos/{id}/reenviar-aviso — repite el correo de una reserva existente. */

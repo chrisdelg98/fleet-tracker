@@ -17,7 +17,7 @@ Plataforma web para la **disponibilidad y el tracking de la flota** entre las es
 | 🛫 **Dashboard** | Tablero de disponibilidad: estado de cada unidad con código de color, actividad, cuándo se libera, retorno y piloto. Filtros por fecha (incluso futura), categoría, estación, estado, alcance (INT/NAC), retorno y demora. Desde cada fila se reserva, confirma, marca salida o llegada, edita, cancela, aparta retorno o reenvía el aviso. |
 | 📅 **Reservas y movimientos** | Formulario en dos columnas con pestañas **Flota propia / Proveedor**. Estados: reserva → programado → en tránsito → completado (o cancelado). Valida traslapes de unidad, equipo de apoyo y piloto; respeta el alcance nacional/internacional de la unidad; clasifica la operación como **Interno (IN)** o **Externo (EX)**. |
 | ↩ **Retornos** | Un viaje con «Retorno disponible» sale en el tablero para que otra estación lo tome. Apartarlo crea el movimiento de regreso enlazado; una vez tomado, la oferta ya no se puede retirar. |
-| 🚚 **Proveedores** | Una reserva puede hacerse con un camión contratado: proveedor, placas, motorista, licencia, documento, teléfono y códigos. Al escribir una placa ya usada, el resto se completa con lo de la última vez. |
+| 🚚 **Reservas con proveedor** | Una reserva puede hacerse con un camión contratado: proveedor, placas, motorista, licencia, documento, teléfono y códigos. Al escribir una placa del catálogo, el resto se completa solo. |
 | 📺 **Live** | Pantalla de oficina (wallboard) que se refresca sola. |
 | 🗓 **Timeline** | Vista tipo Gantt de la ocupación de cada unidad. |
 
@@ -28,6 +28,7 @@ Plataforma web para la **disponibilidad y el tracking de la flota** entre las es
 | 🚚 **Flota** | Unidades por estación: placa, categoría, equipo, capacidad, permisos, alcance INT/NAC y estado del vehículo. Carga masiva con plantilla Excel. |
 | 👤 **Pilotos** | Licencia y vencimiento, documento, teléfono y códigos de transporte (con el nombre que usa cada país). Carga masiva con plantilla Excel. |
 | 🗺 **Rutas** | Catálogo de rutas con ciudades y tiempo estimado; se puede usar «Otra ruta…» para escribir países y ciudades a mano. |
+| 🏢 **Proveedores** | Catálogo compartido de proveedores de transporte y sus camiones, agrupado por proveedor. No admite duplicados por cómo se escribe (mayúsculas, tildes, «S.A. de C.V.»), avisa de nombres parecidos y permite fusionar los que se colaron. Desactivar, mover un camión de proveedor y carga masiva con Excel. |
 | ✉️ **Contactos** | Listas de correo reutilizables para los avisos de reserva. |
 
 ### Consulta y administración
@@ -134,7 +135,7 @@ storage/      → Logs (fuera del repositorio)
 - [x] **Fase 3** — Retornos, inventario e histórico
 - [x] **Fase 4** — Inteligencia y notificaciones por correo
 - [x] **Flota externa** — Movimientos con camión de proveedor, operación IN/EX y avisos con sus datos
-- [ ] **Catálogo de proveedores** — Gestión, carga con Excel, desactivar y evitar nombres duplicados
+- [x] **Catálogo de proveedores** — Gestión, carga con Excel, desactivar, fusionar y evitar nombres duplicados
 - [ ] **Flota externa (siguientes fases)** — Tabla de movimientos con reporte mensual IN/EX, terceros con retorno en el tablero, importación de movimientos
 - [ ] **Mantenimientos** — Módulo de mantenimiento de unidades
 

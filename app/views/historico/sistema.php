@@ -158,6 +158,7 @@ $tipoLabel = static function (string $entidad): string {
     $propios = [
         'unidad' => 'Unidad', 'piloto' => 'Piloto', 'movimiento' => 'Movimiento',
         'usuario' => 'Usuario', 'estacion' => 'Estación', 'ruta' => 'Ruta', 'override' => 'Bloqueo',
+        'proveedor' => 'Proveedor', 'proveedor_camion' => 'Camión de proveedor',
     ];
     if (isset($propios[$entidad])) {
         return $propios[$entidad];

@@ -677,21 +677,55 @@ async function abrirEdicion(id) {
 const CAMPOS_TERCERO = ['proveedor', 'placa_motriz', 'placa_arrastre', 'piloto', 'licencia',
     'documento', 'telefonos', 'codigo_nacional', 'codigo_internacional'];
 
-/** Camiones de proveedor ya usados. Se pide una vez y se reutiliza mientras dure la página. */
+/**
+ * Camiones del catálogo de proveedores. Se pide una vez y se reutiliza mientras dure la página.
+ * Vienen solo los activos: lo desactivado en Proveedores deja de ofrecerse aquí.
+ */
 let tercerosUsados = null;
 
 async function cargarTerceros() {
     if (tercerosUsados !== null) return tercerosUsados;
     const r = await api('GET', '/api/movimientos/terceros');
-    tercerosUsados = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    const datos = r.ok && r.data ? r.data : {};
+    tercerosUsados = Array.isArray(datos.camiones) ? datos.camiones : [];
 
     const opciones = (id, valores) => {
         const dl = document.getElementById(id);
         if (dl) dl.innerHTML = [...new Set(valores.filter(Boolean))].map((v) => `<option value="${esc(v)}">`).join('');
     };
     opciones('terceros-placas', tercerosUsados.map((t) => t.placa_motriz));
-    opciones('terceros-proveedores', tercerosUsados.map((t) => t.proveedor));
+    opciones('terceros-proveedores', Array.isArray(datos.proveedores) ? datos.proveedores : []);
     return tercerosUsados;
+}
+
+/**
+ * Al escribir el proveedor se avisa si ya existe escrito de otra forma (y se usa ese), si se
+ * parece a otro, o si es nuevo. Al guardar, el servidor lo resuelve igual; esto solo evita la
+ * sorpresa y la variante con una letra de más que el servidor no puede reconocer.
+ */
+let esperaProveedor = null;
+async function revisarProveedor() {
+    const input = formReserva.elements['proveedor'];
+    const aviso = document.getElementById('proveedor-aviso');
+    const nombre = input.value.trim();
+    if (!aviso) return;
+    if (nombre.length < 3) { aviso.hidden = true; return; }
+
+    const r = await api('GET', `/api/proveedores/parecidos?nombre=${encodeURIComponent(nombre)}`);
+    if (!r.ok || input.value.trim() !== nombre) return;   // ya cambió mientras se consultaba
+    const { exacto, parecidos } = r.data;
+    aviso.classList.remove('field__note--ok');
+    if (exacto) {
+        // Misma clave: es ese proveedor. Se pone su nombre para que se vea cuál se va a usar.
+        if (input.value !== exacto.nombre) input.value = exacto.nombre;
+        aviso.textContent = 'Proveedor registrado.';
+        aviso.classList.add('field__note--ok');
+    } else if (parecidos?.length) {
+        aviso.textContent = `¿Es ${parecidos.map((p) => `«${p.nombre}»`).join(' o ')}? Si es el mismo, elígelo de la lista.`;
+    } else {
+        aviso.textContent = 'Proveedor nuevo: se agregará al catálogo al guardar.';
+    }
+    aviso.hidden = false;
 }
 
 /**
@@ -819,7 +853,11 @@ if (formReserva) {
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarApoyos);
     formReserva.elements['unidad_id'].addEventListener('change', syncAvisoUnidad);
     formReserva.elements['unidad_id'].addEventListener('change', sincronizarAlcance);
-    formReserva.elements['placa_motriz']?.addEventListener('change', completarTercero);
+    formReserva.elements['placa_motriz']?.addEventListener('change', () => { completarTercero(); revisarProveedor(); });
+    formReserva.elements['proveedor']?.addEventListener('input', () => {
+        clearTimeout(esperaProveedor);
+        esperaProveedor = setTimeout(revisarProveedor, 350);
+    });
     formReserva.querySelectorAll('input[name="modo_equipo"]').forEach((r) => {
         r.addEventListener('change', () => aplicarModo(modoEquipo()));
     });
