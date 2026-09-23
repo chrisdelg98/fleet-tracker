@@ -126,8 +126,8 @@ set_page_meta(
                          data-categoria="<?= e($u['categoria']) ?>"
                          data-tipo-equipo="<?= e($u['tipo_equipo'] ?? '—') ?>"
                          data-capacidad="<?= e($u['capacidad'] ?? '—') ?>"
-                         data-vehiculo="<?= e(trim(($u['marca'] ?? '') . ' ' . ($u['modelo'] ?? '')) ?: '—') ?>"
-                         data-furgon="<?= e($u['placa_furgon'] ?? '—') ?>"
+                         data-vehiculo="<?= e(trim(($u['marca'] ?? '') . ' ' . ($u['modelo'] ?? '') . ' ' . ($u['anio'] ?? '')) ?: '—') ?>"
+                         data-combustible="<?= e($u['tipo_combustible'] ?? '—') ?>"
                          data-alcance="<?= e($alcance) ?>"
                          data-piloto="<?= e($u['piloto_asignado'] ?? '—') ?>"
                          data-estado-unidad="<?= e(EstadoVehiculo::label($u['estado_vehiculo'])) ?>">

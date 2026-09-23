@@ -102,19 +102,25 @@ final class TimelineController
      */
     private function unidadesConMovimientos(?int $estacion, ?int $paisPropio, DateTimeImmutable $inicio, DateTimeImmutable $fin, array $filtros = []): array
     {
-        $sql = 'SELECT u.id, u.placa_unidad, u.placa_furgon, u.marca, u.modelo, u.capacidad,
+        // Capacidad y tipo de combustible son catálogos, no columnas de la unidad: la 019 cambió
+        // `capacidad` por `capacidad_id`, y la 030 retiró `placa_furgon` cuando el furgón pasó a
+        // ser una unidad propia. Se traen por JOIN, igual que hace UnidadModel::listar.
+        $sql = 'SELECT u.id, u.placa_unidad, u.marca, u.modelo, u.anio,
                        u.estado_vehiculo, e.timezone,
                        e.codigo AS estacion_codigo, e.nombre AS estacion_nombre,
                        pa.codigo_iso AS pais_iso, pa.nombre AS pais_nombre,
                        c.nombre AS categoria, c.es_motriz,
-                       te.nombre AS tipo_equipo, pi.nombre AS piloto_asignado,
+                       te.nombre AS tipo_equipo, cap.nombre AS capacidad,
+                       comb.nombre AS tipo_combustible, pil.nombre AS piloto_asignado,
                        ' . UnidadModel::SQL_PUEDE_INTERNACIONAL . ' AS puede_internacional
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
                   JOIN paises pa ON pa.id = e.pais_id
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
-                  LEFT JOIN pilotos pi ON pi.id = u.piloto_asignado_id
+                  LEFT JOIN capacidades cap ON cap.id = u.capacidad_id
+                  LEFT JOIN tipos_combustible comb ON comb.id = u.tipo_combustible_id
+                  LEFT JOIN pilotos pil ON pil.id = u.piloto_asignado_id
                  WHERE u.activo = 1 AND u.en_disponibilidad = 1';
         $params = [];
         if ($estacion !== null) {

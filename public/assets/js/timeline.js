@@ -50,7 +50,7 @@ if (tl) {
                 ${fila('Tipo de equipo', d.tipoEquipo)}
                 ${fila('Capacidad', d.capacidad)}
                 ${fila('Vehículo', d.vehiculo)}
-                ${fila('Furgón', d.furgon)}
+                ${fila('Combustible', d.combustible)}
                 ${fila('Alcance', d.alcance)}
                 ${fila('Piloto asignado', d.piloto)}
                 ${fila('Estado', d.estadoUnidad)}
