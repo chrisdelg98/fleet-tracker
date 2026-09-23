@@ -3024,3 +3024,70 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 @media (prefers-reduced-motion: reduce) {
     .prov-fila__chevron { transition: none; }
 }
+
+/* ── Módulo de mantenimientos ──
+   Un solo acceso en el menú: las secciones del módulo viven en esta barra, no en el lateral. */
+.subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: var(--sp-4);
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface-soft);
+}
+.subnav__link {
+    padding: 7px var(--sp-4);
+    border-radius: 999px;
+    color: var(--color-ink-soft);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color var(--transition), color var(--transition);
+}
+.subnav__link:hover { color: var(--color-ink); background: var(--color-surface); }
+.subnav__link.is-active {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 0 0 1px var(--primary-border);
+}
+
+/* Las tarjetas son el filtro: se lee el número y se hace clic para ver esas unidades. */
+.mant-tarjetas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+}
+.mant-tarjeta {
+    display: grid;
+    gap: 2px;
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.mant-tarjeta:hover { border-color: var(--primary-border); }
+.mant-tarjeta.is-active { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.mant-tarjeta__n { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.mant-tarjeta__t { font-size: var(--fs-sm); color: var(--color-ink-soft); }
+
+.mant-config { padding: var(--sp-5); margin-bottom: var(--sp-4); }
+.mant-config__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-3);
+}
+.mant-config__head h2 { margin: 0 0 2px; font-size: var(--fs-lg); }
+.mant-config__head p { margin: 0; max-width: 70ch; font-size: var(--fs-sm); line-height: 1.5; }
+
+@media (prefers-reduced-motion: reduce) {
+    .subnav__link, .mant-tarjeta { transition: none; }
+}

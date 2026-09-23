@@ -25,6 +25,7 @@ function menu_usuario(array $u): array
         $grupos['Operación']['/flota'] = 'Flota';
         $grupos['Operación']['/pilotos'] = 'Pilotos';
         $grupos['Operación']['/proveedores'] = 'Proveedores';
+        $grupos['Operación']['/mantenimientos'] = 'Mantenimientos';
         $grupos['Operación']['/rutas'] = 'Rutas';
         $grupos['Operación']['/contactos'] = 'Contactos';
     }

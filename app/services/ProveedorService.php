@@ -3,7 +3,7 @@
  * Reglas del catálogo de proveedores y sus camiones.
  *
  * Lo central es que un proveedor no se duplique por cómo se escribe. Se compara siempre por la
- * clave de NombreProveedor, y todo camino que crea proveedores —la pantalla, el Excel y la
+ * clave de NombreCatalogo, y todo camino que crea proveedores —la pantalla, el Excel y la
  * reserva— pasa por aquí, así que no hay una puerta por donde se cuele «Transportes abc».
  */
 
@@ -49,7 +49,7 @@ final class ProveedorService
      */
     public function parecidos(string $nombre): array
     {
-        $clave = NombreProveedor::clave($nombre);
+        $clave = NombreCatalogo::clave($nombre);
         if ($clave === '') {
             return ['exacto' => null, 'parecidos' => []];
         }
@@ -63,7 +63,7 @@ final class ProveedorService
             if ($exacto !== null && (int) $p['id'] === (int) $exacto['id']) {
                 continue;
             }
-            if (NombreProveedor::parecidas($clave, (string) $p['clave'])) {
+            if (NombreCatalogo::parecidas($clave, (string) $p['clave'])) {
                 $parecidos[] = ['id' => (int) $p['id'], 'nombre' => (string) $p['nombre']];
             }
         }
@@ -331,8 +331,8 @@ final class ProveedorService
      */
     private function encontrarOCrear(string $nombreEscrito, ?int $usuarioId, string $origen): array
     {
-        $nombre = NombreProveedor::mostrar($nombreEscrito);
-        $clave = NombreProveedor::clave($nombre);
+        $nombre = NombreCatalogo::mostrar($nombreEscrito);
+        $clave = NombreCatalogo::clave($nombre);
         if ($clave === '') {
             json_unprocessable(['proveedor' => 'Indica de qué proveedor es la unidad.']);
         }
@@ -381,14 +381,14 @@ final class ProveedorService
     /** @return array{0: string, 1: string} [nombre para mostrar, clave] */
     private function nombreValido(array $input): array
     {
-        $nombre = NombreProveedor::mostrar((string) ($input['nombre'] ?? ''));
+        $nombre = NombreCatalogo::mostrar((string) ($input['nombre'] ?? ''));
         if ($nombre === '') {
             json_unprocessable(['nombre' => 'Escribe el nombre del proveedor.']);
         }
         if (mb_strlen($nombre) > 150) {
             json_unprocessable(['nombre' => 'El nombre no puede pasar de 150 caracteres.']);
         }
-        return [$nombre, NombreProveedor::clave($nombre)];
+        return [$nombre, NombreCatalogo::clave($nombre)];
     }
 
     /** Explica un choque de nombre según en qué estado está el que ya existe. */
@@ -420,7 +420,7 @@ final class ProveedorService
         foreach (ProveedorCamionModel::CAMPOS as $campo) {
             $valor = trim((string) ($input[$campo] ?? ''));
             if ($valor !== '' && in_array($campo, ['placa_motriz', 'placa_arrastre'], true)) {
-                $valor = NombreProveedor::placa($valor);
+                $valor = NombreCatalogo::placa($valor);
             } elseif ($valor !== '' && $campo === 'piloto') {
                 $valor = mb_strtoupper($valor, 'UTF-8');
             }

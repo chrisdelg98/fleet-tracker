@@ -816,7 +816,7 @@ final class MovimientoService
                 // Las placas en mayúsculas, como las de la flota propia: si no, la misma placa
                 // escrita de dos formas serían dos camiones y el autocompletado no la encuentra.
                 $datos[$campo] = match ($campo) {
-                    'placa_motriz', 'placa_arrastre' => NombreProveedor::placa($valor),
+                    'placa_motriz', 'placa_arrastre' => NombreCatalogo::placa($valor),
                     'piloto' => mb_strtoupper($valor, 'UTF-8'),
                     default => $valor,
                 };

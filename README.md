@@ -38,6 +38,7 @@ Plataforma web para la **disponibilidad y el tracking de la flota** entre las es
 | 📦 **Inventario** | Censo de todos los vehículos (incluidos los que no participan en disponibilidad), con export a Excel. Acceso por niveles. |
 | 📊 **Inteligencia** | Utilización por estación, rutas más usadas y retornos aprovechados. |
 | 📜 **Histórico** | Movimientos pasados y bitácora del sistema (quién hizo qué y cuándo), con export CSV. |
+| 🔧 **Mantenimientos** | Un acceso en el menú y, dentro, sus secciones. **Control**: semáforo por unidad (vencido, próximo, al día, sin línea base) con el kilometraje que falta y la fecha estimada según el ritmo de los últimos 90 días. **Historial**: toda intervención con su costo, convertido a dólares con la tasa del día de la factura, que queda guardada. **Costos**: por unidad, marca o taller. **Talleres**: cada encargado gestiona los de su estación. **Configuración**: tipos, planes (ciclo y umbral de aviso) y monedas, editables por los encargados. Carga masiva de historial y de kilometraje con plantilla Excel. |
 | ⚙️ **Administración** | Estaciones, usuarios, catálogos y **Correos enviados** (registro de avisos sin guardar direcciones). |
 | 🔑 **Cuenta propia** | Cada usuario cambia su contraseña desde el menú de su nombre: pide la actual, exige 8 caracteres con mayúscula, minúscula y número, y trae generador. |
 
@@ -137,7 +138,8 @@ storage/      → Logs (fuera del repositorio)
 - [x] **Flota externa** — Movimientos con camión de proveedor, operación IN/EX y avisos con sus datos
 - [x] **Catálogo de proveedores** — Gestión, carga con Excel, desactivar, fusionar y evitar nombres duplicados
 - [ ] **Flota externa (siguientes fases)** — Tabla de movimientos con reporte mensual IN/EX, terceros con retorno en el tablero, importación de movimientos
-- [ ] **Mantenimientos** — Módulo de mantenimiento de unidades
+- [x] **Mantenimientos** — Control, historial, costos, talleres, configuración y carga masiva desde Excel
+- [ ] **Mantenimientos (siguiente fase)** — Bloque de mantenimiento en la ficha de la unidad, kilometraje estimado desde los viajes terminados y aviso por correo de servicios vencidos
 
 ---
 

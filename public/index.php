@@ -142,6 +142,65 @@ $router->get('/api/proveedor-camiones/{id}', fn($p) => $proveedorController->api
 $router->put('/api/proveedor-camiones/{id}', fn($p) => $proveedorController->apiCamionUpdate($p));
 $router->post('/api/proveedor-camiones/{id}/activo', fn($p) => $proveedorController->apiCamionActivo($p));
 
+// ── Mantenimientos (un acceso en el menú; sus secciones viven dentro del módulo) ──
+$tallerModel = new TallerModel($pdo);
+$mantenimientoModel = new MantenimientoModel($pdo);
+$lecturaModel = new LecturaOdometroModel($pdo);
+$tallerService = new TallerService($pdo, $tallerModel);
+$mantenimientoService = new MantenimientoService($pdo, $mantenimientoModel, $lecturaModel, $unidadModel, $tallerService);
+$mantenimientoController = new MantenimientoController(
+    $mantenimientoService,
+    $mantenimientoModel,
+    $tallerService,
+    $tallerModel,
+    $catalogoModel,
+    $unidadModel,
+    new CatalogoAdminService($pdo)
+);
+$router->get('/mantenimientos', fn() => $mantenimientoController->control());
+$router->get('/mantenimientos/historial', fn() => $mantenimientoController->historial());
+$router->get('/mantenimientos/historial.csv', fn() => $mantenimientoController->historialCsv());
+$router->get('/mantenimientos/costos', fn() => $mantenimientoController->costos());
+$router->get('/mantenimientos/talleres', fn() => $mantenimientoController->talleresPage());
+$router->get('/mantenimientos/configuracion', fn() => $mantenimientoController->configuracion());
+
+// Los dos años que hoy viven en la hoja entran por aquí: el historial de intervenciones y las
+// lecturas de odómetro van por separado porque son dos archivos distintos y se corrigen aparte.
+$mantenimientoImportController = new ImportController(
+    new MantenimientoImportService($pdo, $mantenimientoService, $unidadModel, $tallerModel, $catalogoModel),
+    'mantenimientos',
+    'mantenimiento',
+    'mantenimientos'
+);
+$router->get('/mantenimientos/plantilla.xlsx', fn() => $mantenimientoImportController->plantilla());
+$router->post('/api/mantenimientos/importar', fn() => $mantenimientoImportController->importar());
+
+$lecturaImportController = new ImportController(
+    new LecturaImportService($pdo, $mantenimientoService, $unidadModel),
+    'kilometraje',
+    'lectura',
+    'lecturas',
+    true
+);
+$router->get('/mantenimientos/kilometraje/plantilla.xlsx', fn() => $lecturaImportController->plantilla());
+$router->post('/api/mantenimientos/kilometraje/importar', fn() => $lecturaImportController->importar());
+
+$router->post('/api/mantenimientos', fn() => $mantenimientoController->apiCreate());
+$router->get('/api/mantenimientos/{id}', fn($p) => $mantenimientoController->apiShow($p));
+$router->put('/api/mantenimientos/{id}', fn($p) => $mantenimientoController->apiUpdate($p));
+$router->delete('/api/mantenimientos/{id}', fn($p) => $mantenimientoController->apiDelete($p));
+$router->post('/api/mantenimientos/lectura', fn() => $mantenimientoController->apiLectura());
+$router->post('/api/mantenimientos/lecturas', fn() => $mantenimientoController->apiLecturas());
+
+$router->post('/api/talleres', fn() => $mantenimientoController->apiTallerCreate());
+$router->get('/api/talleres/{id}', fn($p) => $mantenimientoController->apiTallerShow($p));
+$router->put('/api/talleres/{id}', fn($p) => $mantenimientoController->apiTallerUpdate($p));
+$router->post('/api/talleres/{id}/activo', fn($p) => $mantenimientoController->apiTallerActivo($p));
+
+$router->post('/api/mantenimientos/config/{tabla}', fn($p) => $mantenimientoController->apiConfigCreate($p));
+$router->put('/api/mantenimientos/config/{tabla}/{id}', fn($p) => $mantenimientoController->apiConfigUpdate($p));
+$router->post('/api/mantenimientos/config/{tabla}/{id}/activo', fn($p) => $mantenimientoController->apiConfigActivo($p));
+
 // ── Rutas (Fase 1) ──
 $rutaModel = new RutaModel($pdo);
 $rutaController = new RutaController(new RutaService($pdo, $rutaModel), $rutaModel);

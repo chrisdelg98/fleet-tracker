@@ -39,7 +39,7 @@ final class ProveedorImportService extends ImportadorExcel
     /** En el informe, la fila se nombra por su placa: es lo que identifica al camión. */
     protected function etiquetaFila(array $cruda): string
     {
-        $placa = NombreProveedor::placa((string) ($cruda['placa_motriz'] ?? ''));
+        $placa = NombreCatalogo::placa((string) ($cruda['placa_motriz'] ?? ''));
         return $placa !== '' ? $placa : trim((string) ($cruda['proveedor'] ?? ''));
     }
 
@@ -73,7 +73,7 @@ final class ProveedorImportService extends ImportadorExcel
     {
         $resultado = $this->proveedores->evaluarCamion($input);
         if ($resultado['data'] !== null) {
-            $resultado['data']['proveedor'] = NombreProveedor::mostrar($input['proveedor']);
+            $resultado['data']['proveedor'] = NombreCatalogo::mostrar($input['proveedor']);
         }
         return $resultado;
     }

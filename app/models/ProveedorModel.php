@@ -59,8 +59,8 @@ final class ProveedorModel
                       OR EXISTS (SELECT 1 FROM proveedor_camiones c
                                   WHERE c.proveedor_id = p.id AND c.placa_motriz LIKE :q3))';
             $params[':q1'] = '%' . $q . '%';
-            $params[':q2'] = '%' . NombreProveedor::clave($q) . '%';
-            $params[':q3'] = '%' . NombreProveedor::placa($q) . '%';
+            $params[':q2'] = '%' . NombreCatalogo::clave($q) . '%';
+            $params[':q3'] = '%' . NombreCatalogo::placa($q) . '%';
         }
         $sql .= ' ORDER BY p.activo DESC, p.nombre';
 

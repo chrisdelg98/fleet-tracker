@@ -1,15 +1,16 @@
 <?php
 /**
- * Cómo se escribe y cómo se reconoce un proveedor.
+ * Cómo se escribe y cómo se reconoce el nombre de un proveedor o de un taller.
  *
  * Dos cosas distintas: el nombre que se muestra (mayúsculas, espacios limpios, la puntuación
  * como la escribió quien lo creó) y la clave con que se compara. La clave es la que evita que
- * «Transportes López, S.A. de C.V.» y «TRANSPORTES LOPEZ SA DE CV» sean dos proveedores.
+ * «Transportes López, S.A. de C.V.» y «TRANSPORTES LOPEZ SA DE CV» sean dos proveedores, o que
+ * «K&C», «K & C» y «KyC» sean tres talleres.
  */
 
 declare(strict_types=1);
 
-final class NombreProveedor
+final class NombreCatalogo
 {
     /**
      * Formas jurídicas que se quitan del final para comparar. Van ya sin puntuación, que es
