@@ -112,7 +112,28 @@ set_page_meta(
             </div>
             <?php foreach ($unidades as $u): ?>
                 <div class="tl__row">
-                    <div class="tl__unidad"><?= e($u['placa_unidad']) ?></div>
+                    <?php
+                    // La estación va a la vista, no solo en el popover: el timeline mezcla
+                    // unidades de varios países y la placa sola no dice de dónde es ninguna.
+                    $alcance = (int) $u['puede_internacional'] === 1 ? 'Internacional' : 'Nacional';
+                    ?>
+                    <div class="tl__unidad" tabindex="0" role="button"
+                         title="<?= e($u['placa_unidad'] . ' · ' . $u['estacion_codigo'] . ' · ' . $u['pais_nombre']) ?>"
+                         data-pop-unidad
+                         data-placa="<?= e($u['placa_unidad']) ?>"
+                         data-estacion="<?= e($u['estacion_codigo'] . ' · ' . $u['estacion_nombre']) ?>"
+                         data-pais="<?= e($u['pais_nombre'] . ' (' . $u['pais_iso'] . ')') ?>"
+                         data-categoria="<?= e($u['categoria']) ?>"
+                         data-tipo-equipo="<?= e($u['tipo_equipo'] ?? '—') ?>"
+                         data-capacidad="<?= e($u['capacidad'] ?? '—') ?>"
+                         data-vehiculo="<?= e(trim(($u['marca'] ?? '') . ' ' . ($u['modelo'] ?? '')) ?: '—') ?>"
+                         data-furgon="<?= e($u['placa_furgon'] ?? '—') ?>"
+                         data-alcance="<?= e($alcance) ?>"
+                         data-piloto="<?= e($u['piloto_asignado'] ?? '—') ?>"
+                         data-estado-unidad="<?= e(EstadoVehiculo::label($u['estado_vehiculo'])) ?>">
+                        <strong><?= e($u['placa_unidad']) ?></strong>
+                        <small><?= e($u['estacion_codigo'] . ' · ' . $u['pais_iso']) ?></small>
+                    </div>
                     <div class="tl__track">
                         <?php for ($i = 1; $i < $diasTotal; $i++): ?><span class="tl__grid" style="left: <?= round($i / $diasTotal * 100, 3) ?>%"></span><?php endfor; ?>
                         <?php foreach ($u['bloques'] as $b): ?>
@@ -137,4 +158,4 @@ set_page_meta(
     </div>
 </section>
 
-<script src="/assets/js/timeline.js" type="module"></script>
+<script src="<?= e(asset('/assets/js/timeline.js')) ?>" type="module"></script>

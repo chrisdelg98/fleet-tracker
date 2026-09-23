@@ -1,7 +1,11 @@
 /**
- * Popover de los bloques del timeline (plan §7.5). Sustituye al tooltip nativo, que no se
- * puede estilar ni fijar: al pasar el ratón se asoma, al hacer clic queda anclado (con botón
- * de cierre) y solo se va con Escape, con el botón o al hacer clic fuera.
+ * Popover del timeline (plan §7.5). Sustituye al tooltip nativo, que no se puede estilar ni
+ * fijar: al pasar el ratón se asoma, al hacer clic queda anclado (con botón de cierre) y solo
+ * se va con Escape, con el botón o al hacer clic fuera.
+ *
+ * Lo usan dos cosas: los bloques de movimiento y la celda de la unidad. La segunda existe
+ * porque la pantalla mezcla unidades de varias estaciones —las de casa y las que vienen hacia
+ * aquí— y hace falta saber de dónde es cada una sin salir del timeline.
  */
 import { crearPanel, colocar, aLaVista } from './popover.js';
 
@@ -9,8 +13,11 @@ const tl = document.querySelector('.tl');
 if (tl) {
     const pop = crearPanel();
 
-    let anclado = null;      // bloque cuyo popover quedó fijo
-    let actual = null;       // bloque que se está mostrando ahora
+    let anclado = null;      // elemento cuyo popover quedó fijo
+    let actual = null;       // elemento que se está mostrando ahora
+
+    // Los dos disparadores: el bloque de un movimiento y la celda de la unidad.
+    const DISPARADOR = '[data-pop], [data-pop-unidad]';
 
     const fila = (etiqueta, valor) => `<div class="popover__row"><dt>${etiqueta}</dt><dd>${escapar(valor)}</dd></div>`;
     const escapar = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -32,9 +39,35 @@ if (tl) {
             </div>`;
     }
 
+    /** Ficha de la unidad: lo que identifica al vehículo, empezando por de dónde es. */
+    function fichaUnidad(d) {
+        return `
+            <div class="popover__title">${escapar(d.placa)}</div>
+            <dl class="popover__body">
+                ${fila('Estación', d.estacion)}
+                ${fila('País', d.pais)}
+                ${fila('Categoría', d.categoria)}
+                ${fila('Tipo de equipo', d.tipoEquipo)}
+                ${fila('Capacidad', d.capacidad)}
+                ${fila('Vehículo', d.vehiculo)}
+                ${fila('Furgón', d.furgon)}
+                ${fila('Alcance', d.alcance)}
+                ${fila('Piloto asignado', d.piloto)}
+                ${fila('Estado', d.estadoUnidad)}
+            </dl>`;
+    }
+
     function pintar(blk, fijo) {
-        const grupo = blk.grupo || [blk];
         const cierre = fijo ? '<button type="button" class="popover__close" aria-label="Cerrar">&times;</button>' : '';
+        if (blk.hasAttribute('data-pop-unidad')) {
+            pop.innerHTML = cierre + fichaUnidad(blk.dataset);
+            pop.classList.toggle('is-pinned', fijo);
+            pop.hidden = false;
+            colocar(blk, pop);
+            actual = blk;
+            return;
+        }
+        const grupo = blk.grupo || [blk];
         pop.innerHTML = cierre + (grupo.length > 1
             ? `<div class="popover__title">${grupo.length} movimientos · ${escapar(blk.dataset.unidad)}</div>`
               + grupo.map((b) => ficha(b.dataset, false)).join('')
@@ -104,19 +137,19 @@ if (tl) {
     window.addEventListener('resize', () => { cerrar(); ajustarBloques(); });
 
     // El tooltip nativo estorbaría encima del popover: se guarda y se quita.
-    tl.querySelectorAll('[data-pop][title]').forEach((blk) => {
+    tl.querySelectorAll(`${DISPARADOR}[title]`).forEach((blk) => {
         blk.dataset.tituloNativo = blk.title;
         blk.removeAttribute('title');
     });
 
     tl.addEventListener('mouseover', (e) => {
-        const blk = e.target.closest('[data-pop]');
+        const blk = e.target.closest(DISPARADOR);
         if (!blk || anclado || blk === actual) return;
         pintar(blk, false);
     });
 
     tl.addEventListener('mouseout', (e) => {
-        const blk = e.target.closest('[data-pop]');
+        const blk = e.target.closest(DISPARADOR);
         if (!blk || anclado) return;
         if (e.relatedTarget && pop.contains(e.relatedTarget)) return;
         cerrar();
@@ -124,12 +157,12 @@ if (tl) {
 
     // Foco de teclado: mismo comportamiento que el ratón.
     tl.addEventListener('focusin', (e) => {
-        const blk = e.target.closest('[data-pop]');
+        const blk = e.target.closest(DISPARADOR);
         if (blk && !anclado) pintar(blk, false);
     });
 
     tl.addEventListener('click', (e) => {
-        const blk = e.target.closest('[data-pop]');
+        const blk = e.target.closest(DISPARADOR);
         if (!blk) return;
         e.stopPropagation();
         if (anclado === blk) { cerrar(); return; }

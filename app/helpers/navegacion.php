@@ -16,14 +16,14 @@ function menu_usuario(array $u): array
 {
     $puedeGestionar = in_array($u['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true);
 
-    $principal = ['/' => 'Dashboard', '/live' => 'Live'];
+    // Timeline es una vista general de solo lectura, como Dashboard y Live: quien consulta
+    // también necesita saber dónde está cada unidad. Lo que cambia por rol es el alcance.
+    $principal = ['/' => 'Dashboard', '/live' => 'Live', '/timeline' => 'Timeline'];
     // Mantenimientos va en su propio grupo, no dentro de Operación: es un módulo con sus
     // propias secciones adentro, y colgarlo de los datos maestros lo escondía entre ellos.
     $grupos = ['Operación' => [], 'Mantenimientos' => [], 'Consulta' => [], 'Administración' => []];
 
     if ($puedeGestionar) {
-        // Timeline es una vista general, como Dashboard y Live, no un mantenimiento.
-        $principal['/timeline'] = 'Timeline';
         $grupos['Operación']['/flota'] = 'Flota';
         $grupos['Operación']['/pilotos'] = 'Pilotos';
         $grupos['Operación']['/proveedores'] = 'Proveedores';

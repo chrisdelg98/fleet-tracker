@@ -1,9 +1,12 @@
 <?php
 /**
- * Timeline/calendario por unidad (plan §7.5) — Gantt simple: filas = unidades de la
- * estación, eje X = días, bloques de color por movimiento activo. Sirve para gestionar
- * reservas a futuro viendo las ventanas ocupadas (evita traslapes de un vistazo; el backend
- * los rechaza igual). Área de gestión: Admin Global y Encargados.
+ * Timeline/calendario por unidad (plan §7.5) — Gantt simple: filas = unidades en alcance,
+ * eje X = días, bloques de color por movimiento activo. Sirve para gestionar reservas a
+ * futuro viendo las ventanas ocupadas (evita traslapes de un vistazo; el backend los rechaza
+ * igual).
+ *
+ * Lo ve cualquiera con sesión: es una pantalla de solo lectura y saber dónde está cada unidad
+ * es justo lo que necesita quien consulta. Lo que cambia por rol es el alcance, no el acceso.
  */
 
 declare(strict_types=1);
@@ -17,7 +20,9 @@ final class TimelineController
     /** Estados que ocupan la unidad; los demás no pintan bloque. */
     private const ESTADOS_VISIBLES = [EstadoMovimiento::RESERVADO, EstadoMovimiento::PROGRAMADO, EstadoMovimiento::EN_TRANSITO];
     private const DIAS = 14;
-    private const ACCESO = [Rol::ADMIN_GLOBAL, Rol::ENCARGADO];
+
+    /** Quién ve todas las estaciones, igual que en Inventario e Inteligencia. */
+    private const ALCANCE_TOTAL = [Rol::ADMIN_GLOBAL, Rol::CONSULTA_REGIONAL];
 
     public function __construct(private PDO $pdo, private CatalogoModel $catalogos)
     {
@@ -26,11 +31,6 @@ final class TimelineController
     public function index(): void
     {
         $user = require_login_web();
-        if (!in_array($user['rol'], self::ACCESO, true)) {
-            http_response_code(403);
-            echo 'No tienes acceso al timeline.';
-            return;
-        }
 
         // Por defecto la ventana arranca el domingo de esta semana, no hoy: en viernes,
         // empezar hoy escondería lo que ya pasó en la semana, que es justo lo que se consulta
@@ -46,10 +46,14 @@ final class TimelineController
         $inicio = new DateTimeImmutable($desde . ' 00:00:00', new DateTimeZone('UTC'));
         $finVentana = $inicio->modify('+' . $diasTotal . ' days');
 
-        // Estación en alcance
-        $estacion = $user['rol'] === Rol::ADMIN_GLOBAL
+        // Alcance. Quien no lo tiene total ve su país —su estación y las hermanas del mismo
+        // país— más las unidades de fuera que vienen hacia él dentro de la ventana: un cabezal
+        // guatemalteco que llega el jueves ocupa el patio igual que uno propio.
+        $alcanceTotal = in_array($user['rol'], self::ALCANCE_TOTAL, true);
+        $estacion = $alcanceTotal
             ? (!empty($_GET['estacion_id']) ? (int) $_GET['estacion_id'] : null)
-            : (int) $user['estacion_id'];
+            : null;
+        $paisPropio = $alcanceTotal ? null : $this->paisDeEstacion((int) $user['estacion_id']);
 
         $filtros = [
             'categoria_id'   => !empty($_GET['categoria_id']) ? (int) $_GET['categoria_id'] : null,
@@ -58,7 +62,7 @@ final class TimelineController
             'solo_ocupadas'  => !empty($_GET['solo_ocupadas']),
         ];
 
-        $unidades = $this->unidadesConMovimientos($estacion, $inicio, $finVentana, $filtros);
+        $unidades = $this->unidadesConMovimientos($estacion, $paisPropio, $inicio, $finVentana, $filtros);
 
         // Cabecera de días
         $dias = [];
@@ -75,24 +79,65 @@ final class TimelineController
             'diasTotal'  => $diasTotal,
             'filtros'    => $filtros,
             'estacionSel' => $estacion,
-            'verTodas'   => $user['rol'] === Rol::ADMIN_GLOBAL,
+            'verTodas'   => $alcanceTotal,
             'estaciones' => $this->catalogos->activos('estaciones', 'codigo'),
             'categorias' => $this->catalogos->activos('categorias_vehiculo', 'orden'),
         ], 'Timeline · Flete Finder');
     }
 
-    /** Unidades operativas en alcance con sus bloques de movimiento dentro de la ventana. */
-    private function unidadesConMovimientos(?int $estacion, DateTimeImmutable $inicio, DateTimeImmutable $fin, array $filtros = []): array
+    /** El país de una estación, para saber qué viene "hacia aquí". */
+    private function paisDeEstacion(int $estacionId): ?int
     {
-        $sql = 'SELECT u.id, u.placa_unidad, e.timezone, c.nombre AS categoria, c.es_motriz
+        $stmt = $this->pdo->prepare('SELECT pais_id FROM estaciones WHERE id = :id');
+        $stmt->execute([':id' => $estacionId]);
+        $pais = $stmt->fetchColumn();
+        return $pais === false ? null : (int) $pais;
+    }
+
+    /**
+     * Unidades operativas en alcance con sus bloques de movimiento dentro de la ventana.
+     *
+     * Se traen también los datos de ficha de la unidad: el timeline mezcla unidades de varios
+     * países y la placa sola no dice de dónde es ninguna.
+     */
+    private function unidadesConMovimientos(?int $estacion, ?int $paisPropio, DateTimeImmutable $inicio, DateTimeImmutable $fin, array $filtros = []): array
+    {
+        $sql = 'SELECT u.id, u.placa_unidad, u.placa_furgon, u.marca, u.modelo, u.capacidad,
+                       u.estado_vehiculo, e.timezone,
+                       e.codigo AS estacion_codigo, e.nombre AS estacion_nombre,
+                       pa.codigo_iso AS pais_iso, pa.nombre AS pais_nombre,
+                       c.nombre AS categoria, c.es_motriz,
+                       te.nombre AS tipo_equipo, pi.nombre AS piloto_asignado,
+                       ' . UnidadModel::SQL_PUEDE_INTERNACIONAL . ' AS puede_internacional
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
+                  JOIN paises pa ON pa.id = e.pais_id
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
+                  LEFT JOIN tipos_equipo te ON te.id = u.tipo_equipo_id
+                  LEFT JOIN pilotos pi ON pi.id = u.piloto_asignado_id
                  WHERE u.activo = 1 AND u.en_disponibilidad = 1';
         $params = [];
         if ($estacion !== null) {
             $sql .= ' AND u.estacion_id = :e';
             $params[':e'] = $estacion;
+        }
+        if ($paisPropio !== null) {
+            // Las de casa, más las que traen un viaje con destino aquí dentro de la ventana.
+            $estadosPais = self::ESTADOS_VISIBLES;
+            $marcasPais = implode(',', array_map(static fn(int $i): string => ":ep{$i}", array_keys($estadosPais)));
+            $sql .= " AND (e.pais_id = :pais
+                           OR EXISTS (SELECT 1 FROM movimientos mv
+                                       WHERE mv.unidad_id = u.id
+                                         AND mv.pais_destino_id = :pais2
+                                         AND mv.estado IN ({$marcasPais})
+                                         AND mv.fecha_salida < :finp AND mv.fecha_fin_estimada > :inip))";
+            $params[':pais'] = $paisPropio;
+            $params[':pais2'] = $paisPropio;
+            $params[':finp'] = $fin->format('Y-m-d H:i:s');
+            $params[':inip'] = $inicio->format('Y-m-d H:i:s');
+            foreach ($estadosPais as $i => $estado) {
+                $params[":ep{$i}"] = $estado;
+            }
         }
         if (!empty($filtros['categoria_id'])) {
             $sql .= ' AND u.categoria_vehiculo_id = :cat';
