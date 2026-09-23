@@ -85,7 +85,15 @@ final class UnidadService
         $v->validateOrFail();
 
         $esOperativo = $nuevo === EstadoVehiculo::OPERATIVO;
-        $notasFinal  = $esOperativo ? null : $notas; // al volver a OPERATIVO se limpia (queda en bitácora)
+        // Las notas se guardan tal como vengan, también en OPERATIVO: la carga masiva las usa
+        // como comentario de la unidad («RENTADO EFLG») y antes se perdían sin poder editarlas.
+        // Para quitarlas basta con vaciar el campo.
+        $notasFinal  = ($notas === null || trim((string) $notas) === '') ? null : trim((string) $notas);
+
+        // Guardar sin cambiar nada no es un cambio de estado: no se escribe ni se audita.
+        if ($nuevo === $unidad['estado_vehiculo'] && $notasFinal === $unidad['estado_notas']) {
+            return;
+        }
 
         tx($this->pdo, function () use ($id, $unidad, $nuevo, $notasFinal, $notas, $esOperativo, $user): void {
             $this->unidades->actualizarEstado($id, $nuevo, $notasFinal);

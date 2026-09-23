@@ -127,6 +127,7 @@ document.addEventListener('click', async (ev) => {
         formEstado.reset();
         formEstado.elements['id'].value = id;
         selEstado.value = btn.dataset.estado || 'OPERATIVO';
+        txtNotas.value = btn.dataset.notas || '';
         selEstado.dispatchEvent(new Event('change', { bubbles: true }));
         errEstado.hidden = true;
         dlgEstado.showModal();

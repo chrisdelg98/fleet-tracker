@@ -149,7 +149,8 @@ set_page_meta(
                         <td class="row-actions">
                             <?= row_menu([
                                 ['label' => 'Editar', 'attrs' => ['data-action' => 'editar', 'data-id' => (int) $u['id']]],
-                                ['label' => 'Cambiar estado', 'attrs' => ['data-action' => 'estado', 'data-id' => (int) $u['id'], 'data-estado' => $u['estado_vehiculo']]],
+                                ['label' => 'Cambiar estado', 'attrs' => ['data-action' => 'estado', 'data-id' => (int) $u['id'], 'data-estado' => $u['estado_vehiculo'],
+                                'data-notas' => (string) ($u['estado_notas'] ?? '')]],
                                 // Solo el bloqueo manual se levanta desde aquí; el de taller se cierra
                                 // devolviendo la unidad a Operativo en "Cambiar estado".
                                 !empty($u['tiene_bloqueo_manual'])
