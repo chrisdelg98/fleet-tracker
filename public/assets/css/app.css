@@ -1535,9 +1535,11 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .tl__corner { z-index: 5; color: var(--color-ink-soft); }
 /* La celda de la unidad es también su ficha: la placa y, debajo, de qué estación y país es.
    Hace falta porque el timeline mezcla unidades de varios países y la placa sola no lo dice. */
-.tl__unidad { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; }
-.tl__row .tl__unidad { cursor: pointer; }
-.tl__unidad small { font-weight: 500; font-size: var(--fs-xs); color: var(--color-ink-soft); }
+.tl__unidad { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; line-height: 1.15; }
+/* Las dos líneas caben en el alto de la fila (34px): sin apretar el relleno, cada unidad
+   ocupaba el doble y la pantalla mostraba la mitad de la flota. */
+.tl__row .tl__unidad { cursor: pointer; padding: 2px var(--sp-3); }
+.tl__unidad small { font-weight: 500; font-size: 0.66rem; color: var(--color-ink-soft); }
 .tl__row .tl__unidad:hover,
 .tl__row .tl__unidad:focus-visible { background: var(--color-surface-soft); }
 /* Fin de semana: referencia visual para no perderse en una ventana de 60 días. */

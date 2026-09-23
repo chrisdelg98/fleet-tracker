@@ -46,14 +46,9 @@ if (tl) {
             <dl class="popover__body">
                 ${fila('Estación', d.estacion)}
                 ${fila('País', d.pais)}
-                ${fila('Categoría', d.categoria)}
-                ${fila('Tipo de equipo', d.tipoEquipo)}
-                ${fila('Capacidad', d.capacidad)}
+                ${fila('Unidad', d.unidadDetalle)}
                 ${fila('Vehículo', d.vehiculo)}
-                ${fila('Combustible', d.combustible)}
                 ${fila('Alcance', d.alcance)}
-                ${fila('Piloto asignado', d.piloto)}
-                ${fila('Estado', d.estadoUnidad)}
             </dl>`;
     }
 

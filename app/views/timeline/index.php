@@ -116,6 +116,12 @@ set_page_meta(
                     // La estación va a la vista, no solo en el popover: el timeline mezcla
                     // unidades de varios países y la placa sola no dice de dónde es ninguna.
                     $alcance = (int) $u['puede_internacional'] === 1 ? 'Internacional' : 'Nacional';
+                    // Categoría, equipo y capacidad describen lo mismo —qué es la unidad—, así
+                    // que van en una línea, como en el tablero. Lo que no se sabe no se lista.
+                    $detalle = implode(' · ', array_filter(
+                        [$u['categoria'], $u['tipo_equipo'], $u['capacidad']],
+                        static fn(?string $v): bool => $v !== null && trim($v) !== '' && strtoupper(trim($v)) !== 'N/A'
+                    ));
                     ?>
                     <div class="tl__unidad" tabindex="0" role="button"
                          title="<?= e($u['placa_unidad'] . ' · ' . $u['estacion_codigo'] . ' · ' . $u['pais_nombre']) ?>"
@@ -123,14 +129,9 @@ set_page_meta(
                          data-placa="<?= e($u['placa_unidad']) ?>"
                          data-estacion="<?= e($u['estacion_codigo'] . ' · ' . $u['estacion_nombre']) ?>"
                          data-pais="<?= e($u['pais_nombre'] . ' (' . $u['pais_iso'] . ')') ?>"
-                         data-categoria="<?= e($u['categoria']) ?>"
-                         data-tipo-equipo="<?= e($u['tipo_equipo'] ?? '—') ?>"
-                         data-capacidad="<?= e($u['capacidad'] ?? '—') ?>"
+                         data-unidad-detalle="<?= e($detalle !== '' ? $detalle : '—') ?>"
                          data-vehiculo="<?= e(trim(($u['marca'] ?? '') . ' ' . ($u['modelo'] ?? '') . ' ' . ($u['anio'] ?? '')) ?: '—') ?>"
-                         data-combustible="<?= e($u['tipo_combustible'] ?? '—') ?>"
-                         data-alcance="<?= e($alcance) ?>"
-                         data-piloto="<?= e($u['piloto_asignado'] ?? '—') ?>"
-                         data-estado-unidad="<?= e(EstadoVehiculo::label($u['estado_vehiculo'])) ?>">
+                         data-alcance="<?= e($alcance) ?>">
                         <strong><?= e($u['placa_unidad']) ?></strong>
                         <small><?= e($u['estacion_codigo'] . ' · ' . $u['pais_iso']) ?></small>
                     </div>
