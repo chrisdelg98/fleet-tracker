@@ -3244,3 +3244,18 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 /* El contador vive en el pie, junto a los botones: es lo último que se mira antes de guardar. */
 .km-resumen { margin-right: auto; color: var(--color-ink-soft); font-size: var(--fs-sm); }
 .km-resumen.is-lleno { color: var(--color-primary); font-weight: 700; }
+
+/* Talleres que faltan en una carga: se muestran como se crearían, para confirmarlos sin salir
+   del diálogo ni volver a subir el archivo. */
+.import-faltantes {
+    display: grid;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--primary-border);
+    border-radius: var(--radius-lg);
+    background: var(--primary-soft);
+}
+.import-faltantes__head { display: grid; gap: 2px; }
+.import-faltantes table { margin: 0; background: var(--color-surface); border-radius: var(--radius); }
+.import-faltantes th, .import-faltantes td { padding: 6px var(--sp-3); }
+.import-faltantes .btn { justify-self: start; }

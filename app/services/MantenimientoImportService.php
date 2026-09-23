@@ -16,6 +16,9 @@ final class MantenimientoImportService extends ImportadorExcel
 {
     private OdometroEnArchivo $odometro;
 
+    /** Talleres del archivo que no existen todavía, por estación. */
+    private array $talleresFaltantes = [];
+
     public function __construct(
         PDO $pdo,
         private MantenimientoService $mantenimientos,
@@ -85,6 +88,7 @@ final class MantenimientoImportService extends ImportadorExcel
     protected function indices(array $user): array
     {
         $this->odometro->reiniciar();
+        $this->talleresFaltantes = [];
 
         $unidades = [];
         $estacionDe = [];
@@ -184,10 +188,36 @@ final class MantenimientoImportService extends ImportadorExcel
         $estacion = $indices['estacionDe'][$unidadId] ?? ['id' => 0, 'codigo' => 'esa estación'];
         $id = $indices['talleres'][$estacion['id']][NombreCatalogo::clave($nombre)] ?? null;
         if ($id === null) {
-            $errores['taller'] = "«{$nombre}» no es un taller de {$estacion['codigo']}."
-                . ' Agrégalo en Mantenimientos › Talleres y vuelve a subir el archivo.';
+            $clave = $estacion['id'] . '|' . NombreCatalogo::clave($nombre);
+            $this->talleresFaltantes[$clave] ??= [
+                'nombre'      => NombreCatalogo::mostrar($nombre),
+                'estacion_id' => $estacion['id'],
+                'estacion'    => $estacion['codigo'],
+                'filas'       => 0,
+            ];
+            $this->talleresFaltantes[$clave]['filas']++;
+            $errores['taller'] = "«{$nombre}» todavía no es un taller de {$estacion['codigo']}.";
         }
         return $id;
+    }
+
+    /** Los talleres que habría que crear para que el archivo entre tal cual está. */
+    public function extras(): array
+    {
+        return ['talleres_faltantes' => array_values($this->talleresFaltantes)];
+    }
+
+    /** La fila como quedará guardada: la fecha ya legible y el dinero con dos decimales. */
+    public function vistaPrevia(array $cruda): array
+    {
+        $cruda['fecha'] = $this->fechaIso((string) $cruda['fecha']) ?? $cruda['fecha'];
+        foreach (['costo', 'tasa'] as $campo) {
+            $valor = trim((string) ($cruda[$campo] ?? ''));
+            if ($valor !== '' && is_numeric(str_replace(',', '.', $valor))) {
+                $cruda[$campo] = number_format((float) str_replace(',', '.', $valor), 2, '.', '');
+            }
+        }
+        return $cruda;
     }
 
     protected function evaluarReglas(array $input, array $user): array

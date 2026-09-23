@@ -64,8 +64,9 @@ final class ImportController
                     'confirmado' => false,
                     'listas'     => count($informe['filas']),
                     'errores'    => $informe['errores'],
+                    'extras'     => $this->service->extras(),
                     'vista'      => array_map(
-                        static fn(array $f): array => ['fila' => $f['fila']] + $f['cruda'],
+                        fn(array $f): array => ['fila' => $f['fila']] + $this->service->vistaPrevia($f['cruda']),
                         array_slice($informe['filas'], 0, 20)
                     ),
                 ], $this->resumen($informe));

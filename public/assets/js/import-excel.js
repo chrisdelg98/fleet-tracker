@@ -7,7 +7,7 @@
  * de que pase, y un archivo con errores nunca deja media carga aplicada.
  */
 
-import { apiArchivo, mensajeError } from './api.js';
+import { api, apiArchivo, mensajeError } from './api.js';
 
 const dlg = document.getElementById('dlg-import');
 const URL_IMPORT = dlg.dataset.importUrl;
@@ -175,6 +175,49 @@ btnConfirmar.addEventListener('click', async () => {
     }
 });
 
+// ── Lo que se puede arreglar sin tocar el Excel ──
+
+/**
+ * Talleres del archivo que aún no existen. En vez de mandar al usuario a crearlos uno por uno
+ * y volver a subir, se listan tal como se crearían y se confirman de un botón.
+ */
+function pintarFaltantes(faltantes) {
+    const caja = document.getElementById('import-faltantes');
+    if (!caja) return;
+    if (faltantes.length === 0) { caja.hidden = true; caja.innerHTML = ''; return; }
+
+    caja.hidden = false;
+    caja.innerHTML = `
+        <div class="import-faltantes__head">
+            <strong>${faltantes.length === 1 ? 'Falta 1 taller' : `Faltan ${faltantes.length} talleres`}</strong>
+            <span class="muted">Se crearían así. Revisa los nombres antes de confirmar.</span>
+        </div>
+        <table class="table">
+            <thead><tr><th>Taller</th><th>Estación</th><th>Filas del archivo</th></tr></thead>
+            <tbody>${faltantes.map((t) => `
+                <tr><td><strong>${esc(t.nombre)}</strong></td><td>${esc(t.estacion)}</td><td>${t.filas}</td></tr>`).join('')}
+            </tbody>
+        </table>
+        <button type="button" class="btn btn--primary" id="import-crear-talleres">
+            Crear ${faltantes.length === 1 ? 'el taller' : 'los talleres'} y revisar de nuevo
+        </button>`;
+
+    document.getElementById('import-crear-talleres').addEventListener('click', async () => {
+        trabajar(true, 'Creando talleres…');
+        const r = await api('POST', '/api/talleres/lote', {
+            talleres: faltantes.map((t) => ({ nombre: t.nombre, estacion_id: t.estacion_id })),
+        });
+        trabajar(false);
+        if (!r.ok) {
+            error.textContent = mensajeError(r, 'No se pudieron crear los talleres.');
+            error.hidden = false;
+            return;
+        }
+        // Se vuelve a analizar el mismo archivo: ya sin esos errores, y sin volver a subirlo.
+        analizar(archivo);
+    });
+}
+
 // ── Informe ──
 
 function pintar(data, mensaje) {
@@ -183,6 +226,7 @@ function pintar(data, mensaje) {
     const limpio = errores.length === 0 && listas > 0;
 
     resumen.innerHTML = `<span class="import-resumen__estado ${limpio ? 'es-ok' : 'es-error'}">${esc(mensaje)}</span>`;
+    pintarFaltantes(data?.extras?.talleres_faltantes ?? []);
     btnConfirmar.disabled = !limpio;
     btnConfirmar.innerHTML = limpio
         ? `Cargar ${listas} ${listas === 1 ? SINGULAR : PLURAL}`

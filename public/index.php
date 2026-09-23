@@ -197,6 +197,7 @@ $router->post('/api/mantenimientos/lectura', fn() => $mantenimientoController->a
 $router->post('/api/mantenimientos/lecturas', fn() => $mantenimientoController->apiLecturas());
 
 $router->post('/api/talleres', fn() => $mantenimientoController->apiTallerCreate());
+$router->post('/api/talleres/lote', fn() => $mantenimientoController->apiTalleresLote());
 $router->get('/api/talleres/{id}', fn($p) => $mantenimientoController->apiTallerShow($p));
 $router->put('/api/talleres/{id}', fn($p) => $mantenimientoController->apiTallerUpdate($p));
 $router->post('/api/talleres/{id}/activo', fn($p) => $mantenimientoController->apiTallerActivo($p));

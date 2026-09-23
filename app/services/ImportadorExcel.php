@@ -75,6 +75,27 @@ abstract class ImportadorExcel
     /** Inserta una fila ya validada dentro de la transacción. */
     abstract protected function insertar(array $item, array $user): void;
 
+    /**
+     * Datos extra del último análisis, para que la pantalla ofrezca una salida en vez de solo
+     * un error. El historial de mantenimientos lo usa para proponer crear los talleres que
+     * faltan: son la mitad de los errores de una carga y arreglarlos a mano es media hora.
+     */
+    public function extras(): array
+    {
+        return [];
+    }
+
+    /**
+     * La fila como se verá en la vista previa. Por defecto, tal cual vino.
+     *
+     * Excel guarda una fecha como «45992» y un costo como «77.069999999999993»: es lo que hay
+     * en la celda, pero no es lo que se va a guardar, y enseñarlo así hace dudar de la carga.
+     */
+    public function vistaPrevia(array $cruda): array
+    {
+        return $cruda;
+    }
+
     /** Campo interno devuelto por la validación => clave de columna del Excel. */
     protected function equivalencias(): array
     {

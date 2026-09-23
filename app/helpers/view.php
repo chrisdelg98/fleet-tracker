@@ -141,7 +141,11 @@ function dialogo_import(array $o): string
                 <p class="muted" id="import-vista-pie" hidden></p>
                 <!-- Los problemas se agrupan por fila (no es una tabla de errores sueltos):
                      cada bloque es una fila del Excel con todo lo que hay que corregir en ella. -->
-                <div id="import-errores-wrap" hidden>
+                <!-- Lo que se puede resolver desde aquí va ANTES de la lista de errores: si no, se
+                 lee media pantalla de fallos para descubrir al final que hay un botón. -->
+            <div class="import-faltantes" id="import-faltantes" hidden></div>
+
+            <div id="import-errores-wrap" hidden>
                     <div id="import-errores" class="err-lista"></div>
                 </div>
             </div>
