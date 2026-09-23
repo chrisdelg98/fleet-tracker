@@ -3103,12 +3103,45 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .subnav__link, .mant-tarjeta { transition: none; }
 }
 
-/* Segunda fila de pestañas, dentro de Configuración: se ve que depende de la de arriba. */
-.subnav--hija {
-    margin-top: calc(var(--sp-2) * -1);
+/* ── Barra del módulo ──
+   Una sola fila: las pantallas que se usan a diario a la izquierda y los catálogos detrás de un
+   desplegable. Dos filas de pestañas ponían al mismo nivel lo diario y lo que se toca al mes. */
+.modnav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-1);
     margin-bottom: var(--sp-3);
-    padding-left: var(--sp-3);
-    border-left: 2px solid var(--color-border);
-    border-radius: 0;
+    padding-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--color-border);
+}
+.modnav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px var(--sp-3);
+    border: 0;
+    border-radius: var(--radius);
     background: none;
+    color: var(--color-ink-soft);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+}
+.modnav__link:hover { color: var(--color-ink); background: var(--color-surface-soft); }
+/* La activa se marca con una guía debajo, como una pestaña de verdad: se ve dónde estás sin
+   tener que comparar tonos de gris. */
+.modnav__link.is-active {
+    color: var(--color-primary);
+    background: var(--primary-soft);
+    box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+.modnav__caret { font-size: 0.7em; opacity: .8; }
+.modnav__config { margin-left: auto; }
+.rowmenu__item.is-active { color: var(--color-primary); font-weight: 700; }
+@media (max-width: 720px) {
+    .modnav__config { margin-left: 0; }
 }
