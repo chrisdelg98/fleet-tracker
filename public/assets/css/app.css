@@ -3145,3 +3145,102 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 @media (max-width: 720px) {
     .modnav__config { margin-left: 0; }
 }
+
+/* ── Captura de kilometraje ──
+   Es la pantalla que más se usa del módulo y la que más filas tiene. Manda la lista: la barra de
+   arriba y el pie ocupan lo mínimo para que se vean el doble de unidades de una vez. */
+.form--km { gap: var(--sp-3); }
+.form--km .dialog__head { padding-bottom: var(--sp-3); }
+
+.km-barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+}
+.km-fecha { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: 600; }
+/* Los campos del diálogo viven fuera de `.field`, que es donde el sistema aplica su estilo:
+   sin esto salían con el borde gris del navegador y de otra altura que los chips. */
+.km-barra input,
+.km-nota input {
+    min-height: var(--control-h);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font: inherit;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.km-barra input:focus,
+.km-nota input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: var(--focus-ring);
+}
+.km-fecha input { width: 168px; }
+#km-buscar { flex: 1 1 220px; min-width: 170px; }
+.km-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Los atajos a la misma altura que los campos: la fila se lee como una sola barra. */
+.km-chips .chipbtn { min-height: var(--control-h); }
+
+/* La tabla se desplaza por su cuenta: dentro del diálogo, `card--table` recortaba las filas con
+   overflow:hidden y las 47 unidades quedaban inalcanzables. Con el encabezado fijo, además, se
+   sigue sabiendo qué columna se está llenando en la fila treinta. */
+.captura-km {
+    max-height: min(58vh, 460px);
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+.captura-km .table { margin: 0; }
+.captura-km thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px var(--sp-3);
+    background: var(--color-surface-soft);
+    box-shadow: inset 0 -1px 0 var(--color-border);
+}
+.captura-km td { padding: 4px var(--sp-3); border-top: 1px solid var(--color-border); }
+.captura-km tbody tr:first-child td { border-top: 0; }
+.captura-km tbody tr:hover { background: var(--primary-soft); }
+.captura-km .col--dato, .captura-km td:last-child { text-align: right; }
+.captura-km .km-previo { font-variant-numeric: tabular-nums; font-weight: 600; }
+.km-vacio { padding: var(--sp-4); margin: 0; color: var(--color-ink-soft); text-align: center; }
+
+/* El número es el protagonista: grande, a la derecha y con la unidad dentro del campo, para que
+   nadie escriba «145000 km» y el sufijo no ocupe otra columna. */
+.km-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-right: var(--sp-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.km-input input {
+    width: 108px;
+    min-height: calc(var(--control-h) - 10px);
+    padding: 4px var(--sp-2);
+    font: inherit;
+    border: 0;
+    background: none;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+.km-input input:focus { outline: none; }
+.km-input span { color: var(--color-ink-mute); font-size: var(--fs-xs); }
+.km-input:focus-within { border-color: var(--color-primary); box-shadow: var(--focus-ring); }
+
+/* Debajo del campo y a su ancho: suelta a todo lo ancho, la fila parecía otra cosa. */
+.km-nota { max-width: 300px; margin: 4px 0 4px auto; text-align: left; }
+.km-nota small { color: #8a5a00; }
+.km-nota input { width: 100%; margin-top: 2px; }
+
+/* El contador vive en el pie, junto a los botones: es lo último que se mira antes de guardar. */
+.km-resumen { margin-right: auto; color: var(--color-ink-soft); font-size: var(--fs-sm); }
+.km-resumen.is-lleno { color: var(--color-primary); font-weight: 700; }

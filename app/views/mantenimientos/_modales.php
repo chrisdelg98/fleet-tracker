@@ -96,24 +96,38 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
 </dialog>
 
 <dialog id="dlg-km" class="dialog dialog--ancho">
-    <form method="dialog" class="form" id="form-km" novalidate>
+    <form method="dialog" class="form form--km" id="form-km" novalidate>
         <div class="dialog__head">
             <h2>Capturar kilometraje</h2>
-            <p class="dialog__lede">Anota el kilometraje que marca el odómetro hoy. Deja en blanco
-               las unidades que no revisaste: se quedan como están.</p>
+            <p class="dialog__lede">Anota lo que marca el odómetro. Lo que dejes en blanco no cambia.</p>
         </div>
-        <div class="dialog__body">
-            <label class="field" style="max-width:220px"><span class="field__label">Fecha de la lectura *</span>
+
+        <!-- Fecha, búsqueda y atajos en una sola fila: son lo que se toca antes de empezar a
+             teclear, y cada uno en su propio bloque robaba el alto que necesita la lista. -->
+        <div class="km-barra">
+            <label class="km-fecha"><span>Fecha</span>
                 <input type="date" name="fecha" required max="<?= e($hoy) ?>" value="<?= e($hoy) ?>"></label>
-            <div class="card card--table">
-                <table class="table">
-                    <thead><tr><th>Unidad</th><th>Última lectura</th><th>Kilometraje de hoy</th></tr></thead>
-                    <tbody id="km-filas"></tbody>
-                </table>
+            <input type="search" id="km-buscar" autocomplete="off" placeholder="Buscar placa o estación…">
+            <div class="km-chips" role="group" aria-label="Filtrar unidades">
+                <button type="button" class="chipbtn is-active" data-km-filtro="todas">Todas</button>
+                <button type="button" class="chipbtn" data-km-filtro="pendientes">Sin anotar</button>
+                <button type="button" class="chipbtn" data-km-filtro="viejas">Sin leer +30 días</button>
             </div>
         </div>
+
+        <div class="dialog__body">
+            <div class="captura-km">
+                <table class="table">
+                    <thead><tr><th>Unidad</th><th>Última lectura</th><th class="col--dato">Kilometraje de hoy</th></tr></thead>
+                    <tbody id="km-filas"></tbody>
+                </table>
+                <p class="km-vacio" id="km-vacio" hidden>Ninguna unidad coincide con la búsqueda.</p>
+            </div>
+        </div>
+
         <p class="form__error" id="form-km-error" hidden></p>
         <div class="dialog__actions">
+            <span class="km-resumen" id="km-resumen"></span>
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
             <button type="submit" class="btn btn--primary">Guardar kilometrajes</button>
         </div>

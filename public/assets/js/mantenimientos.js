@@ -132,43 +132,89 @@ const errKm = $('form-km-error');
 
 /** Días desde una fecha, en palabras. «hace 28 días» dice más que una fecha suelta. */
 function desde(fecha) {
-    if (!fecha) return 'nunca';
+    if (!fecha) return null;
     const dias = Math.round((Date.now() - new Date(fecha).getTime()) / 86400000);
     if (dias <= 0) return 'hoy';
     if (dias === 1) return 'ayer';
     return `hace ${dias} días`;
 }
 
-function abrirKm(unidadId) {
-    const filas = unidadId ? UNIDADES.filter((u) => String(u.id) === String(unidadId)) : UNIDADES;
-    // Primero lo que lleva más tiempo sin leerse: es lo que de verdad hay que salir a buscar.
-    const orden = [...filas].sort((a, b) => (a.ultima_fecha ?? '') .localeCompare(b.ultima_fecha ?? ''));
+const diasSin = (u) => (u.ultima_fecha ? (Date.now() - new Date(u.ultima_fecha).getTime()) / 86400000 : Infinity);
 
-    $('km-filas').innerHTML = orden.map((u) => `
+let deLaLista = [];          // unidades del modal, ya ordenadas
+const escrito = new Map();   // id => km tecleado, para que filtrar no borre lo escrito
+
+function filaKm(u) {
+    const previo = u.ultimo_km == null
+        ? '<span class="muted">Nunca se ha anotado</span>'
+        : `<span class="km-previo">${Number(u.ultimo_km).toLocaleString('es')}</span> <small class="muted">km · ${desde(u.ultima_fecha)}</small>`;
+    const valor = escrito.get(String(u.id)) ?? '';
+    return `
         <tr data-fila="${u.id}">
-            <td><strong>${u.placa}</strong><br><small class="muted">${u.estacion ?? ''}</small></td>
-            <td>${u.ultimo_km == null
-                    ? '<span class="muted">Sin lecturas</span>'
-                    : `${Number(u.ultimo_km).toLocaleString('es')} km<br><small class="muted">${desde(u.ultima_fecha)}</small>`}</td>
+            <td><strong>${u.placa}</strong> <small class="muted">${u.estacion ?? ''}</small></td>
+            <td>${previo}</td>
             <td>
-                <input type="text" inputmode="numeric" autocomplete="off" data-km="${u.id}"
-                       data-ultimo="${u.ultimo_km ?? ''}" placeholder="${u.ultimo_km ?? 'km'}" style="max-width:140px">
-                <div data-nota-wrap="${u.id}" hidden style="margin-top:4px">
-                    <small class="muted">Escribiste menos que la última lectura. ¿Se reemplazó el odómetro?</small>
+                <span class="km-input">
+                    <input type="text" inputmode="numeric" autocomplete="off" data-km="${u.id}"
+                           data-ultimo="${u.ultimo_km ?? ''}" value="${valor}" aria-label="Kilometraje de ${u.placa}">
+                    <span aria-hidden="true">km</span>
+                </span>
+                <div class="km-nota" data-nota-wrap="${u.id}" hidden>
+                    <small>Es menos que la última lectura. ¿Se reemplazó el odómetro?</small>
                     <input type="text" maxlength="160" autocomplete="off" data-nota="${u.id}"
                            placeholder="Explica por qué bajó">
                 </div>
             </td>
-        </tr>`).join('');
+        </tr>`;
+}
+
+/** Redibuja la lista aplicando búsqueda y atajo. Es instantáneo: los datos ya están aquí. */
+function pintarKm() {
+    const texto = ($('km-buscar')?.value || '').trim().toLowerCase();
+    const filtro = document.querySelector('[data-km-filtro].is-active')?.dataset.kmFiltro || 'todas';
+
+    const visibles = deLaLista.filter((u) => {
+        if (texto && !`${u.placa} ${u.estacion ?? ''}`.toLowerCase().includes(texto)) return false;
+        if (filtro === 'pendientes') return !escrito.get(String(u.id));
+        if (filtro === 'viejas') return diasSin(u) > 30;
+        return true;
+    });
+
+    $('km-filas').innerHTML = visibles.map(filaKm).join('');
+    $('km-vacio').hidden = visibles.length > 0;
+    contar();
+}
+
+function contar() {
+    const llenos = [...escrito.values()].filter((v) => v.trim() !== '').length;
+    const resumen = $('km-resumen');
+    if (!resumen) return;
+    resumen.textContent = llenos === 0
+        ? `${deLaLista.length} unidades`
+        : `${llenos} de ${deLaLista.length} anotadas`;
+    resumen.classList.toggle('is-lleno', llenos > 0);
+}
+
+function abrirKm(unidadId) {
+    // Primero lo que lleva más tiempo sin leerse: es lo que de verdad hay que salir a buscar.
+    deLaLista = (unidadId ? UNIDADES.filter((u) => String(u.id) === String(unidadId)) : [...UNIDADES])
+        .sort((a, b) => diasSin(b) - diasSin(a));
+    escrito.clear();
+    if ($('km-buscar')) $('km-buscar').value = '';
+    document.querySelectorAll('[data-km-filtro]').forEach((b, i) => b.classList.toggle('is-active', i === 0));
+    pintarKm();
     errKm.hidden = true;
     dlgKm.showModal();
 }
 
-// La nota solo aparece cuando hace falta: once campos vacíos pidiendo explicación era ruido,
-// y quien no tiene nada que explicar no debería verlos.
+// Lo tecleado se guarda aparte de la tabla: así se puede filtrar sin perder nada.
 $('km-filas')?.addEventListener('input', (ev) => {
     const campo = ev.target.closest('[data-km]');
     if (!campo) return;
+    escrito.set(campo.dataset.km, campo.value);
+    contar();
+
+    // La nota solo aparece cuando hace falta: once campos pidiendo explicación eran ruido.
     const ultimo = Number(campo.dataset.ultimo);
     const ahora = Number(String(campo.value).replace(/[., ]/g, ''));
     const baja = campo.dataset.ultimo !== '' && ahora > 0 && ahora < ultimo;
@@ -176,13 +222,20 @@ $('km-filas')?.addEventListener('input', (ev) => {
     if (caja) caja.hidden = !baja;
 });
 
+$('km-buscar')?.addEventListener('input', pintarKm);
+document.querySelectorAll('[data-km-filtro]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-km-filtro]').forEach((b) => b.classList.toggle('is-active', b === btn));
+        pintarKm();
+    });
+});
+
 formKm?.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const filas = {};
-    formKm.querySelectorAll('[data-km]').forEach((input) => {
-        const km = input.value.trim();
-        if (km === '') return;   // lo vacío se ignora: nadie llena toda la flota cada mes
-        filas[input.dataset.km] = { km, nota: formKm.querySelector(`[data-nota="${input.dataset.km}"]`)?.value ?? '' };
+    escrito.forEach((km, id) => {
+        if (String(km).trim() === '') return;   // lo vacío se ignora: nadie llena toda la flota
+        filas[id] = { km: String(km).trim(), nota: formKm.querySelector(`[data-nota="${id}"]`)?.value ?? '' };
     });
     if (Object.keys(filas).length === 0) {
         errKm.textContent = 'Escribe al menos un kilometraje.';
