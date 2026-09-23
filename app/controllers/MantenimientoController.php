@@ -22,7 +22,8 @@ final class MantenimientoController
         private TallerModel $talleres,
         private CatalogoModel $catalogos,
         private UnidadModel $unidades,
-        private CatalogoAdminService $config
+        private CatalogoAdminService $config,
+        private LecturaOdometroModel $lecturas
     ) {
     }
 
@@ -125,21 +126,59 @@ final class MantenimientoController
     }
 
     /** GET /mantenimientos/configuracion — tipos, planes y monedas. */
-    public function configuracion(): void
+    /**
+     * GET /mantenimientos/configuracion/{seccion}
+     *
+     * Una pantalla por catálogo. Las tres juntas cabían, pero había que leer tres tablas para
+     * encontrar un dato, y la de en medio se llevaba las preguntas de las otras dos.
+     */
+    public const CONFIG = [
+        'planes'  => ['planes_mantenimiento', 'Planes de servicio'],
+        'tipos'   => ['tipos_mantenimiento',  'Tipos de mantenimiento'],
+        'monedas' => ['monedas',              'Monedas'],
+    ];
+
+    public function configuracion(array $params = []): void
     {
         $user = require_login_web();
-        $datos = [];
-        foreach (CatalogoAdminService::DE_MODULO as $tabla) {
-            $datos[$tabla] = [
-                'spec'  => CatalogoAdminService::spec($tabla),
-                'items' => $this->catalogos->activos($tabla, $tabla === 'monedas' ? 'orden' : 'nombre'),
-            ];
+        $clave = (string) ($params['seccion'] ?? 'planes');
+        if (!isset(self::CONFIG[$clave])) {
+            header('Location: /mantenimientos/configuracion/planes');
+            return;
         }
+        [$tabla, $titulo] = self::CONFIG[$clave];
+
         render('mantenimientos/configuracion', [
-            'usuario'   => $user,
-            'catalogos' => $datos,
+            'usuario'     => $user,
+            'clave'       => $clave,
+            'tabla'       => $tabla,
+            'titulo'      => $titulo,
+            'spec'        => CatalogoAdminService::spec($tabla),
+            'items'       => $this->catalogos->activos($tabla, $tabla === 'monedas' ? 'orden' : 'nombre'),
+            'categorias'  => $tabla === 'planes_mantenimiento'
+                ? $this->catalogos->activos('categorias_vehiculo', 'orden')
+                : [],
             'puedeEditar' => in_array($user['rol'], self::ESCRITURA, true),
-        ] + $this->datosDelModal($user), 'Configuración de mantenimientos · Flete Finder');
+        ] + $this->datosDelModal($user), $titulo . ' · Flete Finder');
+    }
+
+    /**
+     * POST /api/mantenimientos/planes/{id}/categorias
+     *
+     * Asigna el plan a unas categorías y marca cuáles no llevan plan. Se manda el estado
+     * completo, no diferencias: lo que no venga marcado vuelve al plan por defecto.
+     */
+    public function apiAplicarPlan(array $p): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $body = request_body();
+        $this->service->aplicarPlanACategorias(
+            (int) $p['id'],
+            array_map('intval', (array) ($body['categorias'] ?? [])),
+            array_map('intval', (array) ($body['sin_plan'] ?? [])),
+            $user
+        );
+        json_ok(null, 'Plan aplicado.');
     }
 
     // ── API: intervenciones ──
@@ -292,6 +331,7 @@ final class MantenimientoController
 
         return [
             'unidadesParaModal' => $this->unidades->listar(null, [], true),
+            'ultimasLecturas' => $this->lecturas->ultimasPorUnidad(),
             'tiposMantenimiento' => $this->catalogos->activos('tipos_mantenimiento'),
             'monedas' => $this->catalogos->activos('monedas', 'orden'),
             'talleresParaModal' => $this->talleres->activos(array_column($escribibles, 'id')),

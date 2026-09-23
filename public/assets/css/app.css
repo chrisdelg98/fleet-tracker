@@ -792,6 +792,8 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .chip--transito   { --estado: var(--estado-transito); }
 .chip--taller     { --estado: var(--estado-taller); }
 .chip--cliente    { --estado: var(--estado-cliente); }   /* ocupado, pero no viajando */
+/* Sin plan no es un estado malo ni bueno: es «aquí no aplica», y en gris no compite con las alertas. */
+.chip--muted      { --estado: var(--color-ink-mute); }
 
 .filters-panel {
     display: grid;
@@ -3099,4 +3101,14 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 
 @media (prefers-reduced-motion: reduce) {
     .subnav__link, .mant-tarjeta { transition: none; }
+}
+
+/* Segunda fila de pestañas, dentro de Configuración: se ve que depende de la de arriba. */
+.subnav--hija {
+    margin-top: calc(var(--sp-2) * -1);
+    margin-bottom: var(--sp-3);
+    padding-left: var(--sp-3);
+    border-left: 2px solid var(--color-border);
+    border-radius: 0;
+    background: none;
 }

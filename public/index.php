@@ -155,7 +155,8 @@ $mantenimientoController = new MantenimientoController(
     $tallerModel,
     $catalogoModel,
     $unidadModel,
-    new CatalogoAdminService($pdo)
+    new CatalogoAdminService($pdo),
+    $lecturaModel
 );
 $router->get('/mantenimientos', fn() => $mantenimientoController->control());
 $router->get('/mantenimientos/historial', fn() => $mantenimientoController->historial());
@@ -163,6 +164,9 @@ $router->get('/mantenimientos/historial.csv', fn() => $mantenimientoController->
 $router->get('/mantenimientos/costos', fn() => $mantenimientoController->costos());
 $router->get('/mantenimientos/talleres', fn() => $mantenimientoController->talleresPage());
 $router->get('/mantenimientos/configuracion', fn() => $mantenimientoController->configuracion());
+$router->get('/mantenimientos/configuracion/{seccion}', fn($p) => $mantenimientoController->configuracion($p));
+// Un plan se aplica a categorías enteras: «todos los cabezales» son catorce unidades.
+$router->post('/api/mantenimientos/planes/{id}/categorias', fn($p) => $mantenimientoController->apiAplicarPlan($p));
 
 // Los dos años que hoy viven en la hoja entran por aquí: el historial de intervenciones y las
 // lecturas de odómetro van por separado porque son dos archivos distintos y se corrigen aparte.

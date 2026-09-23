@@ -52,6 +52,28 @@ final class LecturaOdometroModel
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Última lectura de cada unidad, en una sola consulta.
+     *
+     * La captura masiva la necesita para mostrar de qué número viene cada placa: sin eso nadie
+     * sabe si lo que escribe tiene sentido, y un 14,500 donde iban 145,000 pasa sin más.
+     *
+     * @return array<int, array{km:int, fecha:string}>
+     */
+    public function ultimasPorUnidad(): array
+    {
+        $sql = 'SELECT l.unidad_id, l.km, l.fecha
+                  FROM lecturas_odometro l
+                  JOIN (SELECT unidad_id, MAX(fecha) AS f FROM lecturas_odometro GROUP BY unidad_id) u
+                    ON u.unidad_id = l.unidad_id AND u.f = l.fecha
+                 ORDER BY l.id';
+        $out = [];
+        foreach ($this->pdo->query($sql)->fetchAll() as $f) {
+            $out[(int) $f['unidad_id']] = ['km' => (int) $f['km'], 'fecha' => (string) $f['fecha']];
+        }
+        return $out;
+    }
+
     public function crear(array $data, ?int $usuarioId): int
     {
         $stmt = $this->pdo->prepare(

@@ -13,7 +13,8 @@ declare(strict_types=1);
 final class MantenimientoService
 {
     /** Estados del semáforo, del más urgente al más tranquilo. */
-    public const SIN_LINEA_BASE = 'SIN_LINEA_BASE';
+    public const SIN_PLAN       = 'SIN_PLAN';
+    public const FALTA_KM       = 'FALTA_KM';
     public const VENCIDO        = 'VENCIDO';
     public const PROXIMO        = 'PROXIMO';
     public const AL_DIA         = 'AL_DIA';
@@ -33,7 +34,8 @@ final class MantenimientoService
             self::VENCIDO        => 'Vencidos',
             self::PROXIMO        => 'Próximos',
             self::AL_DIA         => 'Al día',
-            self::SIN_LINEA_BASE => 'Sin línea base',
+            self::FALTA_KM       => 'Falta kilometraje',
+            self::SIN_PLAN       => 'Sin plan',
         ];
     }
 
@@ -227,6 +229,40 @@ final class MantenimientoService
         return $this->lecturas->crear($data, $user['id']);
     }
 
+    /**
+     * Aplica un plan a categorías enteras y marca las que no llevan servicio programado.
+     *
+     * Se recibe el estado completo porque es como se ve en pantalla: un cuadro de casillas.
+     * Desmarcar una categoría no la deja huérfana, la devuelve al plan por defecto.
+     */
+    public function aplicarPlanACategorias(int $planId, array $categorias, array $sinPlan, array $user): void
+    {
+        $plan = $this->fila('planes_mantenimiento', $planId);
+        if ($plan === null) {
+            json_error('Plan no encontrado', 404);
+        }
+
+        tx($this->pdo, function () use ($planId, $categorias, $sinPlan, $plan, $user): void {
+            // Primero se suelta lo que tenía este plan y ya no lo tiene.
+            $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_mantenimiento_id = NULL
+                                  WHERE plan_mantenimiento_id = :p')->execute([':p' => $planId]);
+
+            foreach ($categorias as $id) {
+                $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_mantenimiento_id = :p WHERE id = :id')
+                    ->execute([':p' => $planId, ':id' => $id]);
+            }
+            // «No lleva plan» es de la categoría, no del plan: se fija para todas de una vez.
+            $this->pdo->exec('UPDATE categorias_vehiculo SET plan_no_aplica = 0');
+            foreach ($sinPlan as $id) {
+                $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_no_aplica = 1, plan_mantenimiento_id = NULL WHERE id = :id')
+                    ->execute([':id' => $id]);
+            }
+            registrar_bitacora($this->pdo, $user['id'], 'plan_mantenimiento', $planId, AccionBitacora::EDITAR, [
+                'despues' => ['nombre' => $plan['nombre'], 'categorias' => $categorias, 'sin_plan' => $sinPlan],
+            ]);
+        });
+    }
+
     // ── Control: el semáforo ──
 
     /**
@@ -250,7 +286,7 @@ final class MantenimientoService
         }
 
         // Lo urgente primero: dentro de cada estado, lo que lleva más tiempo vencido.
-        $orden = [self::VENCIDO => 0, self::PROXIMO => 1, self::SIN_LINEA_BASE => 2, self::AL_DIA => 3];
+        $orden = [self::VENCIDO => 0, self::PROXIMO => 1, self::FALTA_KM => 2, self::AL_DIA => 3, self::SIN_PLAN => 4];
         usort($filas, static function (array $a, array $b) use ($orden): int {
             return [$orden[$a['estado']], $a['faltan_km'] ?? PHP_INT_MAX]
                 <=> [$orden[$b['estado']], $b['faltan_km'] ?? PHP_INT_MAX];
@@ -298,7 +334,15 @@ final class MantenimientoService
             }
         }
 
-        $estado = $this->estadoDe($faltanKm, $faltanDias, (int) $u['umbral_km'], (int) $u['umbral_dias'], $kmActual, $ultimoKm);
+        $estado = $this->estadoDe(
+            $faltanKm,
+            $faltanDias,
+            (int) ($u['umbral_km'] ?? 0),
+            (int) ($u['umbral_dias'] ?? 0),
+            $kmActual,
+            $ultimoKm,
+            $u['plan'] !== null && $intervalo > 0
+        );
 
         return $u + [
             'proximo_km' => $proximoKm,
@@ -311,12 +355,17 @@ final class MantenimientoService
         ];
     }
 
-    private function estadoDe(?int $faltanKm, ?int $faltanDias, int $umbralKm, int $umbralDias, ?int $kmActual, ?int $ultimoKm): string
+    private function estadoDe(?int $faltanKm, ?int $faltanDias, int $umbralKm, int $umbralDias, ?int $kmActual, ?int $ultimoKm, bool $conPlan): string
     {
+        // Sin plan no hay nada que vencer: una plataforma no lleva cambio de aceite, y contarla
+        // como alerta es lo que hacía que nadie mirara el semáforo.
+        if (!$conPlan) {
+            return self::SIN_PLAN;
+        }
         // Falta el dato, no el taller: sin lectura o sin servicio previo no se puede afirmar nada.
         if ($kmActual === null || $ultimoKm === null) {
             if ($faltanDias === null) {
-                return self::SIN_LINEA_BASE;
+                return self::FALTA_KM;
             }
         }
         // Manda el peor de los dos, km o días: lo que se cumpla primero es lo que vence.
@@ -326,7 +375,7 @@ final class MantenimientoService
         if (($faltanKm !== null && $faltanKm <= $umbralKm) || ($faltanDias !== null && $faltanDias <= $umbralDias)) {
             return self::PROXIMO;
         }
-        return $faltanKm === null && $faltanDias === null ? self::SIN_LINEA_BASE : self::AL_DIA;
+        return $faltanKm === null && $faltanDias === null ? self::FALTA_KM : self::AL_DIA;
     }
 
     // ── Validación ──
@@ -405,7 +454,7 @@ final class MantenimientoService
             // fricción que hace que la gente deje de registrar.
             'reinicia_ciclo' => array_key_exists('reinicia_ciclo', $input)
                 ? (int) (bool) $input['reinicia_ciclo']
-                : (int) $tipo['reinicia_ciclo'],
+                : (int) $tipo['es_preventivo'],
             'observaciones' => $this->texto($input['observaciones'] ?? null, 255),
             'nota_odometro' => $nota === '' ? null : $nota,
         ], 'errores' => []];

@@ -41,7 +41,7 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
                 <label class="field grid-4__2"><span class="field__label">Tipo *</span>
                     <select name="tipo_mantenimiento_id" required>
                         <?php foreach ($tiposMantenimiento as $t): ?>
-                            <option value="<?= (int) $t['id'] ?>" data-reinicia="<?= (int) $t['reinicia_ciclo'] ?>"><?= e($t['nombre']) ?></option>
+                            <option value="<?= (int) $t['id'] ?>" data-reinicia="<?= (int) $t['es_preventivo'] ?>"><?= e($t['nombre']) ?></option>
                         <?php endforeach; ?>
                     </select></label>
                 <label class="field grid-4__2"><span class="field__label">Descripción</span>
@@ -99,14 +99,15 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
     <form method="dialog" class="form" id="form-km" novalidate>
         <div class="dialog__head">
             <h2>Capturar kilometraje</h2>
-            <p class="dialog__lede">Escribe solo las unidades que vas a actualizar; las demás se quedan como están.</p>
+            <p class="dialog__lede">Anota el kilometraje que marca el odómetro hoy. Deja en blanco
+               las unidades que no revisaste: se quedan como están.</p>
         </div>
         <div class="dialog__body">
             <label class="field" style="max-width:220px"><span class="field__label">Fecha de la lectura *</span>
                 <input type="date" name="fecha" required max="<?= e($hoy) ?>" value="<?= e($hoy) ?>"></label>
             <div class="card card--table">
                 <table class="table">
-                    <thead><tr><th>Unidad</th><th>Estación</th><th>Kilometraje</th><th>Nota (si el odómetro cambió)</th></tr></thead>
+                    <thead><tr><th>Unidad</th><th>Última lectura</th><th>Kilometraje de hoy</th></tr></thead>
                     <tbody id="km-filas"></tbody>
                 </table>
             </div>
@@ -125,6 +126,8 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
         'placa' => $u['placa_unidad'],
         'estacion' => $u['estacion_codigo'],
         'estacion_id' => (int) $u['estacion_id'],
+        'ultimo_km' => $ultimasLecturas[(int) $u['id']]['km'] ?? null,
+        'ultima_fecha' => $ultimasLecturas[(int) $u['id']]['fecha'] ?? null,
     ],
     $unidadesParaModal
 ), JSON_UNESCAPED_UNICODE) ?></script>

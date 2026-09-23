@@ -18,7 +18,7 @@ final class CatalogoAdminService
         'tipos_combustible'   => ['label' => 'Tipo de combustible','fields' => ['nombre' => 'string', 'orden' => 'int']],
         'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'paises'              => ['label' => 'País',                 'fields' => ['codigo_iso' => 'iso2', 'nombre' => 'string', 'region' => 'region', 'orden' => 'int']],
-        'tipos_mantenimiento' => ['label' => 'Tipo de mantenimiento', 'fields' => ['nombre' => 'string', 'reinicia_ciclo' => 'bool', 'orden' => 'int']],
+        'tipos_mantenimiento' => ['label' => 'Tipo de mantenimiento', 'fields' => ['nombre' => 'string', 'es_preventivo' => 'bool', 'orden' => 'int']],
         'planes_mantenimiento'=> ['label' => 'Plan de mantenimiento', 'fields' => ['nombre' => 'string', 'intervalo_km' => 'int', 'intervalo_dias' => 'int', 'umbral_km' => 'int', 'umbral_dias' => 'int', 'por_defecto' => 'bool']],
         'monedas'             => ['label' => 'Moneda',                'fields' => ['codigo' => 'iso3', 'nombre' => 'string', 'por_dolar' => 'decimal', 'orden' => 'int']],
     ];
@@ -40,7 +40,7 @@ final class CatalogoAdminService
         'admite_arrastre' => 'Lleva equipo',
         'orden' => 'Orden',
         'region' => 'Región',
-        'reinicia_ciclo' => 'Reinicia el ciclo de servicio',
+        'es_preventivo' => 'Es servicio programado (reinicia el ciclo)',
         'intervalo_km' => 'Servicio cada (km)',
         'intervalo_dias' => 'Servicio cada (días, vacío = no aplica)',
         'umbral_km' => 'Avisar con (km) de anticipación',
@@ -75,6 +75,12 @@ final class CatalogoAdminService
     public static function etiqueta(string $campo): string
     {
         return self::ETIQUETAS[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
+    }
+
+    /** Todas las etiquetas, para que el formulario del navegador use las mismas palabras. */
+    public static function etiquetas(): array
+    {
+        return self::ETIQUETAS;
     }
 
     /**

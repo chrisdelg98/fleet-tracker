@@ -1,123 +1,147 @@
 <?php
 /**
- * Mantenimientos › Configuración. Cada cuánto toca servicio, con cuánta anticipación avisar, qué
- * tipos de mantenimiento existen y a cómo está cada moneda.
+ * Mantenimientos › Configuración. Una pantalla por catálogo: planes, tipos o monedas.
  *
  * Vive en el módulo y no en Administración porque la mantiene quien opera: un encargado ajusta
  * el intervalo o la tasa del día sin depender del Admin Global.
  *
- * @var array $usuario
- * @var array $catalogos    tabla => ['spec' => ..., 'items' => ...]
- * @var bool  $puedeEditar
+ * @var array  $usuario
+ * @var string $clave        planes | tipos | monedas
+ * @var string $tabla        tabla del catálogo
+ * @var string $titulo
+ * @var array  $spec         definición de campos (CatalogoAdminService)
+ * @var array  $items
+ * @var array  $categorias   solo en planes: para decir a qué se aplica cada uno
+ * @var bool   $puedeEditar
  */
-set_page_meta('Configuración de mantenimientos', 'Intervalos, avisos, tipos de servicio y tasas de cambio.');
+set_page_meta($titulo, [
+    'planes'  => 'Cada cuánto toca servicio y con cuánta anticipación avisar.',
+    'tipos'   => 'Cómo se clasifica cada trabajo que se registra.',
+    'monedas' => 'A cómo está cada moneda frente al dólar.',
+][$clave] ?? '', ['accion' => $puedeEditar
+    ? '<button type="button" class="btn btn--primary" data-action="nuevo-config" data-tabla="' . e($tabla) . '">＋ Agregar</button>'
+    : '']);
 $seccion = 'configuracion';
 
+// Una frase por pantalla, la que responde la duda que trae quien entra.
 $ayuda = [
-    'tipos_mantenimiento' => 'Solo el que reinicia el ciclo mueve la fecha del próximo servicio. Si todos lo reiniciaran, las alertas quedarían siempre en verde.',
-    'planes_mantenimiento' => 'Cada cuánto toca servicio y con cuánta anticipación avisar. El plan por defecto lo usan todas las unidades que no tengan uno propio, en todas las estaciones.',
-    'monedas' => 'Cuántas unidades equivalen a un dólar. Cada gasto guarda la tasa con la que se convirtió, así que cambiarla aquí no altera lo ya registrado.',
-];
+    'planes'  => 'Un plan dice cada cuántos kilómetros o días toca el servicio programado. '
+               . 'Se aplica a categorías enteras —todos los cabezales, por ejemplo— desde la columna «Aplica a».',
+    'tipos'   => 'Solo dos hacen falta: <strong>Preventivo</strong> es el servicio programado y '
+               . 'reinicia el conteo hacia el próximo; <strong>Correctivo</strong> es una reparación y no lo reinicia. '
+               . 'Lo que se hizo va en la descripción de cada registro, no aquí.',
+    'monedas' => 'Cuántas unidades equivalen a un dólar. Cada gasto guarda la tasa con la que se convirtió, '
+               . 'así que cambiarla aquí no altera lo ya registrado.',
+][$clave] ?? '';
 ?>
 <section class="module">
     <?php require __DIR__ . '/_nav.php'; ?>
 
-    <?php foreach ($catalogos as $tabla => $datos): ?>
-        <div class="card mant-config" data-tabla="<?= e($tabla) ?>">
-            <div class="mant-config__head">
-                <div>
-                    <h2><?= e($datos['spec']['label']) ?></h2>
-                    <p class="muted"><?= e($ayuda[$tabla] ?? '') ?></p>
-                </div>
-                <?php if ($puedeEditar): ?>
-                    <button type="button" class="btn btn--ghost-dark" data-action="nuevo-config" data-tabla="<?= e($tabla) ?>">＋ Agregar</button>
-                <?php endif; ?>
-            </div>
+    <p class="muted" style="margin-bottom: var(--sp-3)"><?= $ayuda ?></p>
 
-            <table class="table">
-                <thead><tr>
-                    <?php foreach ($datos['spec']['fields'] as $campo => $tipo): ?>
+    <div class="card card--table mant-config" data-tabla="<?= e($tabla) ?>">
+        <table class="table">
+            <thead>
+                <tr>
+                    <?php foreach ($spec['fields'] as $campo => $tipo): ?>
                         <th><?= e(CatalogoAdminService::etiqueta($campo)) ?></th>
                     <?php endforeach; ?>
-                    <th></th>
-                </tr></thead>
-                <tbody>
-                <?php foreach ($datos['items'] as $item): ?>
-                    <tr>
-                        <?php foreach ($datos['spec']['fields'] as $campo => $tipo): ?>
-                            <td>
-                                <?php
-                                $valor = $item[$campo] ?? null;
-                                if ($tipo === 'bool') {
-                                    echo (int) $valor === 1
-                                        ? '<span class="badge badge--ok">Sí</span>'
-                                        : '<span class="muted">No</span>';
-                                } elseif ($valor === null || $valor === '') {
-                                    echo '<span class="muted">—</span>';
-                                } elseif ($tipo === 'int') {
-                                    echo number_format((float) $valor);
-                                } elseif ($tipo === 'decimal') {
-                                    echo e(rtrim(rtrim((string) $valor, '0'), '.'));
-                                } else {
-                                    echo e((string) $valor);
-                                }
-                                ?>
-                            </td>
-                        <?php endforeach; ?>
-                        <td class="row-actions">
-                            <?= !$puedeEditar ? '' : row_menu([
-                                ['label' => 'Editar', 'attrs' => ['data-action' => 'editar-config', 'data-tabla' => $tabla, 'data-id' => (int) $item['id']]],
-                                ['label' => 'Desactivar', 'danger' => true, 'attrs' => [
-                                    'data-action' => 'desactivar-config', 'data-tabla' => $tabla, 'data-id' => (int) $item['id'],
-                                    'data-nombre' => $item['nombre'] ?? ($item['codigo'] ?? '')]],
+                    <?php if ($clave === 'planes'): ?><th>Aplica a</th><?php endif; ?>
+                    <?php if ($puedeEditar): ?><th class="col col--acciones"></th><?php endif; ?>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if ($items === []): ?>
+                <tr><td colspan="9" class="muted">Todavía no hay nada aquí. Usa «Agregar».</td></tr>
+            <?php endif; ?>
+            <?php foreach ($items as $it): ?>
+                <tr>
+                    <?php foreach ($spec['fields'] as $campo => $tipo): ?>
+                        <td>
+                            <?php if ($tipo === 'bool'): ?>
+                                <?= (int) ($it[$campo] ?? 0) === 1
+                                    ? '<span class="chip chip--disponible">Sí</span>'
+                                    : '<span class="muted">No</span>' ?>
+                            <?php else: ?>
+                                <?= e((string) ($it[$campo] ?? '')) !== '' ? e((string) $it[$campo]) : '—' ?>
+                            <?php endif; ?>
+                        </td>
+                    <?php endforeach; ?>
+                    <?php if ($clave === 'planes'): ?>
+                        <?php
+                        // Qué categorías usan este plan. Es la respuesta a «¿a quién le aplica esto?»,
+                        // que antes obligaba a abrir las unidades una por una.
+                        $usan = array_values(array_filter(
+                            $categorias,
+                            static fn(array $c): bool => (int) ($c['plan_mantenimiento_id'] ?? 0) === (int) $it['id']
+                        ));
+                        ?>
+                        <td>
+                            <?php if ($usan === []): ?>
+                                <span class="muted"><?= (int) ($it['por_defecto'] ?? 0) === 1 ? 'Todas las que no tengan otro' : 'Ninguna' ?></span>
+                            <?php else: ?>
+                                <?= e(implode(' · ', array_column($usan, 'nombre'))) ?>
+                            <?php endif; ?>
+                            <?php if ($puedeEditar): ?>
+                                <button type="button" class="btn btn--linea btn--sm" data-action="aplicar-plan"
+                                        data-id="<?= (int) $it['id'] ?>" data-nombre="<?= e($it['nombre']) ?>">Aplicar a categorías</button>
+                            <?php endif; ?>
+                        </td>
+                    <?php endif; ?>
+                    <?php if ($puedeEditar): ?>
+                        <td class="col col--acciones">
+                            <?= row_menu([
+                                ['label' => 'Editar', 'attrs' => ['data-action' => 'editar-config',
+                                    'data-tabla' => $tabla, 'data-id' => (int) $it['id']]],
+                                ['label' => 'Desactivar', 'peligro' => true, 'attrs' => ['data-action' => 'desactivar-config',
+                                    'data-tabla' => $tabla, 'data-id' => (int) $it['id'], 'data-nombre' => $it['nombre'] ?? '']],
                             ]) ?>
                         </td>
-                    </tr>
-                <?php endforeach; ?>
-                <?php if ($datos['items'] === []): ?>
-                    <tr><td colspan="<?= count($datos['spec']['fields']) + 1 ?>" class="muted">Nada configurado todavía.</td></tr>
-                <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endforeach; ?>
+                    <?php endif; ?>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 </section>
 
-<?php if ($puedeEditar): ?>
-<dialog id="dlg-config" class="dialog">
-    <form method="dialog" class="form" id="form-config" novalidate>
+<?php require __DIR__ . '/_modales.php'; ?>
+
+<?php if ($clave === 'planes' && $puedeEditar): ?>
+<dialog id="dlg-aplicar-plan" class="dialog">
+    <form method="dialog" class="form" id="form-aplicar-plan" novalidate>
         <div class="dialog__head">
-            <h2 id="dlg-config-title">Agregar</h2>
+            <h2 id="dlg-aplicar-title">Aplicar plan</h2>
+            <p class="dialog__lede">Marca las categorías que usan este plan. Lo que desmarques vuelve al plan por defecto.</p>
         </div>
-        <input type="hidden" name="id" value="">
-        <input type="hidden" name="__tabla" value="">
-        <div class="dialog__body"><div id="config-campos" class="form"></div></div>
-        <p class="form__error" id="form-config-error" hidden></p>
+        <input type="hidden" name="plan_id" value="">
+        <div class="dialog__body">
+            <div class="checks">
+                <?php foreach ($categorias as $c): ?>
+                    <label class="check"><input type="checkbox" name="categorias[]" value="<?= (int) $c['id'] ?>"
+                        data-plan="<?= (int) ($c['plan_mantenimiento_id'] ?? 0) ?>"
+                        data-no-aplica="<?= (int) ($c['plan_no_aplica'] ?? 0) ?>"> <?= e($c['nombre']) ?></label>
+                <?php endforeach; ?>
+            </div>
+            <p class="muted">¿Una categoría no lleva servicio programado —plataformas, contenedores—?
+               Márcala en «No lleva plan» y dejará de aparecer en el semáforo.</p>
+            <div class="checks">
+                <?php foreach ($categorias as $c): ?>
+                    <label class="check"><input type="checkbox" name="sin_plan[]" value="<?= (int) $c['id'] ?>"
+                        <?= (int) ($c['plan_no_aplica'] ?? 0) === 1 ? 'checked' : '' ?>> <?= e($c['nombre']) ?> no lleva plan</label>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <p class="form__error" id="form-aplicar-error" hidden></p>
         <div class="dialog__actions">
             <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
             <button type="submit" class="btn btn--primary">Guardar</button>
         </div>
     </form>
 </dialog>
-
-<script type="application/json" id="config-spec"><?= json_encode(
-    array_map(static fn(array $c): array => ['label' => $c['spec']['label'], 'fields' => $c['spec']['fields']], $catalogos),
-    JSON_UNESCAPED_UNICODE
-) ?></script>
-<script type="application/json" id="config-data"><?= json_encode(
-    array_map(static fn(array $c): array => $c['items'], $catalogos),
-    JSON_UNESCAPED_UNICODE
-) ?></script>
-<script type="application/json" id="config-etiquetas"><?= json_encode(
-    array_reduce(
-        array_merge(...array_map(static fn(array $c): array => array_keys($c['spec']['fields']), array_values($catalogos))),
-        static function (array $acc, string $campo): array {
-            $acc[$campo] = CatalogoAdminService::etiqueta($campo);
-            return $acc;
-        },
-        []
-    ),
-    JSON_UNESCAPED_UNICODE
-) ?></script>
-<script src="<?= e(asset('/assets/js/mantenimientos-config.js')) ?>" type="module"></script>
 <?php endif; ?>
+
+<script type="application/json" id="config-spec"><?= json_encode([$tabla => $spec], JSON_UNESCAPED_UNICODE) ?></script>
+<script type="application/json" id="config-data"><?= json_encode([$tabla => $items], JSON_UNESCAPED_UNICODE) ?></script>
+<script type="application/json" id="config-etiquetas"><?= json_encode(CatalogoAdminService::etiquetas(), JSON_UNESCAPED_UNICODE) ?></script>
+<script src="<?= e(asset('/assets/js/mantenimientos-config.js')) ?>" type="module"></script>

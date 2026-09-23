@@ -10,13 +10,21 @@ $secciones = [
     'historial'     => ['/mantenimientos/historial', 'Historial'],
     'costos'        => ['/mantenimientos/costos', 'Costos'],
     'talleres'      => ['/mantenimientos/talleres', 'Talleres'],
-    'configuracion' => ['/mantenimientos/configuracion', 'Configuración'],
+    'configuracion' => ['/mantenimientos/configuracion/planes', 'Configuración'],
+];
+
+// Configuración son tres catálogos distintos. Juntos en una pantalla había que leer tres tablas
+// para encontrar un dato; separados, cada uno se explica solo.
+$deConfiguracion = [
+    'planes'  => ['/mantenimientos/configuracion/planes',  'Planes de servicio'],
+    'tipos'   => ['/mantenimientos/configuracion/tipos',   'Tipos de mantenimiento'],
+    'monedas' => ['/mantenimientos/configuracion/monedas', 'Monedas'],
 ];
 ?>
 <nav class="subnav" aria-label="Secciones de mantenimientos">
-    <?php foreach ($secciones as $clave => [$href, $texto]): ?>
-        <a href="<?= e($href) ?>" class="subnav__link<?= $clave === $seccion ? ' is-active' : '' ?>"
-           <?= $clave === $seccion ? 'aria-current="page"' : '' ?>><?= e($texto) ?></a>
+    <?php foreach ($secciones as $sec => [$href, $texto]): ?>
+        <a href="<?= e($href) ?>" class="subnav__link<?= $sec === $seccion ? ' is-active' : '' ?>"
+           <?= $sec === $seccion ? 'aria-current="page"' : '' ?>><?= e($texto) ?></a>
     <?php endforeach; ?>
 </nav>
 
@@ -26,3 +34,12 @@ $secciones = [
     <strong>En construcción.</strong> Este módulo todavía está en ajustes: puedes usarlo, pero
     algunas pantallas y datos van a cambiar.
 </p>
+
+<?php if ($seccion === 'configuracion'): ?>
+<nav class="subnav subnav--hija" aria-label="Catálogos de configuración">
+    <?php foreach ($deConfiguracion as $c => [$href, $texto]): ?>
+        <a href="<?= e($href) ?>" class="subnav__link<?= ($clave ?? 'planes') === $c ? ' is-active' : '' ?>"
+           <?= ($clave ?? 'planes') === $c ? 'aria-current="page"' : '' ?>><?= e($texto) ?></a>
+    <?php endforeach; ?>
+</nav>
+<?php endif; ?>

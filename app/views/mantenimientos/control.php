@@ -31,7 +31,8 @@ $chip = [
     MantenimientoService::VENCIDO        => 'chip--transito',
     MantenimientoService::PROXIMO        => 'chip--reservada',
     MantenimientoService::AL_DIA         => 'chip--disponible',
-    MantenimientoService::SIN_LINEA_BASE => 'chip--taller',
+    MantenimientoService::FALTA_KM       => 'chip--taller',
+    MantenimientoService::SIN_PLAN       => 'chip--muted',
 ];
 ?>
 <section class="module">

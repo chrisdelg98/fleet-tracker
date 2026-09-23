@@ -130,18 +130,51 @@ const dlgKm = $('dlg-km');
 const formKm = $('form-km');
 const errKm = $('form-km-error');
 
+/** Días desde una fecha, en palabras. «hace 28 días» dice más que una fecha suelta. */
+function desde(fecha) {
+    if (!fecha) return 'nunca';
+    const dias = Math.round((Date.now() - new Date(fecha).getTime()) / 86400000);
+    if (dias <= 0) return 'hoy';
+    if (dias === 1) return 'ayer';
+    return `hace ${dias} días`;
+}
+
 function abrirKm(unidadId) {
     const filas = unidadId ? UNIDADES.filter((u) => String(u.id) === String(unidadId)) : UNIDADES;
-    $('km-filas').innerHTML = filas.map((u) => `
-        <tr>
-            <td><strong>${u.placa}</strong></td>
-            <td>${u.estacion ?? ''}</td>
-            <td><input type="text" inputmode="numeric" autocomplete="off" data-km="${u.id}" style="max-width:140px"></td>
-            <td><input type="text" maxlength="160" autocomplete="off" data-nota="${u.id}" placeholder="Solo si el odómetro cambió"></td>
+    // Primero lo que lleva más tiempo sin leerse: es lo que de verdad hay que salir a buscar.
+    const orden = [...filas].sort((a, b) => (a.ultima_fecha ?? '') .localeCompare(b.ultima_fecha ?? ''));
+
+    $('km-filas').innerHTML = orden.map((u) => `
+        <tr data-fila="${u.id}">
+            <td><strong>${u.placa}</strong><br><small class="muted">${u.estacion ?? ''}</small></td>
+            <td>${u.ultimo_km == null
+                    ? '<span class="muted">Sin lecturas</span>'
+                    : `${Number(u.ultimo_km).toLocaleString('es')} km<br><small class="muted">${desde(u.ultima_fecha)}</small>`}</td>
+            <td>
+                <input type="text" inputmode="numeric" autocomplete="off" data-km="${u.id}"
+                       data-ultimo="${u.ultimo_km ?? ''}" placeholder="${u.ultimo_km ?? 'km'}" style="max-width:140px">
+                <div data-nota-wrap="${u.id}" hidden style="margin-top:4px">
+                    <small class="muted">Escribiste menos que la última lectura. ¿Se reemplazó el odómetro?</small>
+                    <input type="text" maxlength="160" autocomplete="off" data-nota="${u.id}"
+                           placeholder="Explica por qué bajó">
+                </div>
+            </td>
         </tr>`).join('');
     errKm.hidden = true;
     dlgKm.showModal();
 }
+
+// La nota solo aparece cuando hace falta: once campos vacíos pidiendo explicación era ruido,
+// y quien no tiene nada que explicar no debería verlos.
+$('km-filas')?.addEventListener('input', (ev) => {
+    const campo = ev.target.closest('[data-km]');
+    if (!campo) return;
+    const ultimo = Number(campo.dataset.ultimo);
+    const ahora = Number(String(campo.value).replace(/[., ]/g, ''));
+    const baja = campo.dataset.ultimo !== '' && ahora > 0 && ahora < ultimo;
+    const caja = $('km-filas').querySelector(`[data-nota-wrap="${campo.dataset.km}"]`);
+    if (caja) caja.hidden = !baja;
+});
 
 formKm?.addEventListener('submit', async (ev) => {
     ev.preventDefault();
