@@ -18,6 +18,9 @@ final class CatalogoAdminService
         'tipos_combustible'   => ['label' => 'Tipo de combustible','fields' => ['nombre' => 'string', 'orden' => 'int']],
         'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'paises'              => ['label' => 'País',                 'fields' => ['codigo_iso' => 'iso2', 'nombre' => 'string', 'region' => 'region', 'orden' => 'int']],
+        'tipos_mantenimiento' => ['label' => 'Tipo de mantenimiento', 'fields' => ['nombre' => 'string', 'reinicia_ciclo' => 'bool', 'orden' => 'int']],
+        'planes_mantenimiento'=> ['label' => 'Plan de mantenimiento', 'fields' => ['nombre' => 'string', 'intervalo_km' => 'int', 'intervalo_dias' => 'int', 'umbral_km' => 'int', 'umbral_dias' => 'int', 'por_defecto' => 'bool']],
+        'monedas'             => ['label' => 'Moneda',                'fields' => ['codigo' => 'iso3', 'nombre' => 'string', 'por_dolar' => 'decimal', 'orden' => 'int']],
     ];
 
     public function __construct(private PDO $pdo)
@@ -37,6 +40,14 @@ final class CatalogoAdminService
         'admite_arrastre' => 'Lleva equipo',
         'orden' => 'Orden',
         'region' => 'Región',
+        'reinicia_ciclo' => 'Reinicia el ciclo de servicio',
+        'intervalo_km' => 'Servicio cada (km)',
+        'intervalo_dias' => 'Servicio cada (días, vacío = no aplica)',
+        'umbral_km' => 'Avisar con (km) de anticipación',
+        'umbral_dias' => 'Avisar con (días) de anticipación',
+        'por_defecto' => 'Plan por defecto',
+        'codigo' => 'Código',
+        'por_dolar' => 'Unidades por dólar',
     ];
 
     /**
@@ -66,8 +77,23 @@ final class CatalogoAdminService
         return self::ETIQUETAS[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
     }
 
-    /** @return string[] tablas editables. */
+    /**
+     * Catálogos que pertenecen a un módulo y se gestionan dentro de él, no en Administración.
+     *
+     * Los de mantenimientos los mantiene cada encargado —son parte de su operación diaria, no de
+     * la configuración del sistema—, así que viven en la pestaña Configuración del módulo. Siguen
+     * pasando por este servicio: las reglas de escritura son las mismas, solo cambia quién entra.
+     */
+    public const DE_MODULO = ['tipos_mantenimiento', 'planes_mantenimiento', 'monedas'];
+
+    /** @return string[] tablas editables desde Administración › Catálogos. */
     public static function tablas(): array
+    {
+        return array_values(array_diff(array_keys(self::SPEC), self::DE_MODULO));
+    }
+
+    /** @return string[] todas las tablas editables, vengan de donde vengan. */
+    public static function todasLasTablas(): array
     {
         return array_keys(self::SPEC);
     }
@@ -78,10 +104,28 @@ final class CatalogoAdminService
         return self::SPEC[$tabla];
     }
 
+    /**
+     * Solo un plan puede ser el de por defecto: es el que usan las unidades que no eligieron uno,
+     * y con dos marcados la respuesta dependería del orden de la consulta.
+     */
+    private function soloUnPlanPorDefecto(array $data, ?int $exceptId): void
+    {
+        if (empty($data['por_defecto'])) {
+            return;
+        }
+        $sql = 'UPDATE planes_mantenimiento SET por_defecto = 0 WHERE por_defecto = 1'
+            . ($exceptId ? ' AND id <> :id' : '');
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($exceptId ? [':id' => $exceptId] : []);
+    }
+
     public function crear(string $tabla, array $input, array $user): int
     {
         self::assert($tabla);
         $data = $this->validar($tabla, $input, null);
+        if ($tabla === 'planes_mantenimiento') {
+            $this->soloUnPlanPorDefecto($data, null);
+        }
         $cols = array_keys($data);
         $ph = array_map(static fn(string $c): string => ':' . $c, $cols);
 
@@ -108,6 +152,9 @@ final class CatalogoAdminService
             json_error('Registro no encontrado', 404);
         }
         $data = $this->validar($tabla, $input, $id);
+        if ($tabla === 'planes_mantenimiento') {
+            $this->soloUnPlanPorDefecto($data, $id);
+        }
         $sets = array_map(static fn(string $c): string => "{$c} = :{$c}", array_keys($data));
 
         tx($this->pdo, function () use ($tabla, $id, $data, $sets, $actual, $user): void {
@@ -154,7 +201,7 @@ final class CatalogoAdminService
         $out = [];
 
         foreach ($fields as $campo => $tipo) {
-            $label = ucfirst(str_replace('_', ' ', $campo));
+            $label = self::etiqueta($campo);
             switch ($tipo) {
                 case 'string':
                     $v->required($campo, $label)->maxLen($campo, 100, $label);
@@ -164,6 +211,17 @@ final class CatalogoAdminService
                     break;
                 case 'iso2':
                     $v->required($campo, $label)->maxLen($campo, 2, $label);
+                    break;
+                case 'iso3':
+                    $v->required($campo, $label)->maxLen($campo, 3, $label);
+                    break;
+                case 'decimal':
+                    // Una tasa de cambio en cero o negativa haría una división imposible al
+                    // convertir; se corta aquí y no al registrar el gasto.
+                    $valor = (float) str_replace(',', '.', (string) ($input[$campo] ?? ''));
+                    if ($valor <= 0) {
+                        $v->addError($campo, "{$label} tiene que ser mayor que cero.");
+                    }
                     break;
                 case 'int':
                     $v->positiveInt($campo, $label);
@@ -197,6 +255,8 @@ final class CatalogoAdminService
                 'bool'   => array_key_exists($campo, $input) ? (int) (bool) $input[$campo] : 0,
                 'int'    => $val !== null && $val !== '' ? (int) $val : 0,
                 'iso2'   => strtoupper((string) $val),
+                'iso3'   => strtoupper((string) $val),
+                'decimal' => (float) str_replace(',', '.', (string) $val),
                 'text'   => $val === null || $val === '' ? null : $val,
                 'pais'   => $val === null || $val === '' ? null : (int) $val,
                 default  => $val,
@@ -214,6 +274,20 @@ final class CatalogoAdminService
             $stmt->execute($params);
             if ($stmt->fetchColumn() !== false) {
                 json_unprocessable(['codigo_iso' => 'Ya existe un país con ese código ISO.']);
+            }
+        }
+
+        // Unicidad del código de moneda: dos filas "USD" harían ambigua la conversión.
+        if ($tabla === 'monedas') {
+            $sql = 'SELECT 1 FROM monedas WHERE codigo = :c' . ($exceptId ? ' AND id <> :id' : '') . ' LIMIT 1';
+            $params = [':c' => $out['codigo']];
+            if ($exceptId) {
+                $params[':id'] = $exceptId;
+            }
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            if ($stmt->fetchColumn() !== false) {
+                json_unprocessable(['codigo' => 'Ya existe una moneda con ese código.']);
             }
         }
 
