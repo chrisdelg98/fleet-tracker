@@ -57,7 +57,7 @@ final class LecturaImportService extends ImportadorExcel
 
     protected function listas(array $user): array
     {
-        return ['placa' => array_column($this->unidadesEscribibles($user), 'placa')];
+        return ['placa' => array_column($this->unidadesEscribibles($user), 'placa_unidad')];
     }
 
     protected function indices(array $user): array
@@ -66,7 +66,7 @@ final class LecturaImportService extends ImportadorExcel
 
         $unidades = [];
         foreach ($this->unidadesEscribibles($user) as $u) {
-            $unidades[NombreCatalogo::placa((string) $u['placa'])] = (int) $u['id'];
+            $unidades[NombreCatalogo::placa((string) $u['placa_unidad'])] = (int) $u['id'];
         }
         return ['unidades' => $unidades];
     }

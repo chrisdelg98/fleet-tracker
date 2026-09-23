@@ -69,7 +69,7 @@ final class MantenimientoImportService extends ImportadorExcel
     protected function listas(array $user): array
     {
         return [
-            'placa'  => array_column($this->unidadesEscribibles($user), 'placa'),
+            'placa'  => array_column($this->unidadesEscribibles($user), 'placa_unidad'),
             'tipo'   => array_column($this->catalogos->activos('tipos_mantenimiento'), 'nombre'),
             'moneda' => array_column($this->catalogos->activos('monedas', 'orden'), 'codigo'),
             // Los talleres NO se listan: se repiten de estación en estación («K&C» está en
@@ -89,7 +89,7 @@ final class MantenimientoImportService extends ImportadorExcel
         $unidades = [];
         $estacionDe = [];
         foreach ($this->unidadesEscribibles($user) as $u) {
-            $unidades[NombreCatalogo::placa((string) $u['placa'])] = (int) $u['id'];
+            $unidades[NombreCatalogo::placa((string) $u['placa_unidad'])] = (int) $u['id'];
             $estacionDe[(int) $u['id']] = ['id' => (int) $u['estacion_id'], 'codigo' => (string) $u['estacion_codigo']];
         }
 
