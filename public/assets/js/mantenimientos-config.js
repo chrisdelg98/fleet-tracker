@@ -93,7 +93,21 @@ document.addEventListener('click', async (ev) => {
 });
 
 // ── Plan de cada categoría ──
+const dlgCat = $('dlg-cat-planes');
 const formCat = $('form-cat-planes');
+
+if (formCat) {
+    document.addEventListener('click', (ev) => {
+        if (!ev.target.closest('[data-action="asignar-planes"]')) return;
+        $('form-cat-error').hidden = true;
+        dlgCat.showModal();
+    });
+    // La fila se tiñe sola al elegir: se ve de un vistazo cuántas quedan sin plan.
+    formCat.addEventListener('change', (ev) => {
+        const sel = ev.target.closest('select');
+        if (sel) sel.closest('.cat-planes__fila').classList.toggle('is-asignada', sel.value !== '');
+    });
+}
 
 formCat?.addEventListener('submit', async (ev) => {
     ev.preventDefault();

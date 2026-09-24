@@ -3302,19 +3302,21 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .modfiltros__acciones .btn { flex: 1; }
 }
 
-/* Plan de cada categoría: el reparto completo a la vista, sin abrir nada. */
-.cat-planes { margin-top: var(--sp-4); padding: 0; overflow: hidden; }
-.cat-planes__head { padding: var(--sp-4) var(--sp-4) var(--sp-3); }
-.cat-planes__head h2 { margin: 0 0 2px; font-size: var(--fs-lg); }
-.cat-planes .table { margin: 0; }
-.cat-planes th, .cat-planes td { padding: 6px var(--sp-4); }
-.cat-planes td:last-child { width: 320px; }
-.cat-planes__pie {
+/* Plan de cada categoría: el reparto completo a la vista, sin abrir plan por plan. */
+.cat-planes { display: grid; gap: 2px; }
+.cat-planes__fila {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-4);
-    border-top: 1px solid var(--color-border);
+    padding: 6px var(--sp-3);
+    border-radius: var(--radius);
+    transition: background-color var(--transition);
 }
-.cat-planes__pie .form__error { margin-right: auto; }
+.cat-planes__fila:hover { background: var(--color-surface-soft); }
+/* Lo asignado se tiñe: las que quedan sin plan son las que hay que mirar. */
+.cat-planes__fila.is-asignada { background: var(--primary-soft); }
+.cat-planes__nombre { flex: 1; font-weight: 600; }
+.cat-planes__fila select { width: 230px; min-height: var(--control-h); padding: 0 var(--sp-3);
+    border: 1px solid var(--color-border); border-radius: var(--radius);
+    background: var(--color-surface); color: var(--color-ink); font: inherit; }
+.cat-planes__fila select:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--focus-ring); }

@@ -18,15 +18,20 @@ set_page_meta($titulo, [
     'planes'  => 'Cada cuánto toca servicio y con cuánta anticipación avisar.',
     'tipos'   => 'Cómo se clasifica cada trabajo que se registra.',
     'monedas' => 'A cómo está cada moneda frente al dólar.',
-][$clave] ?? '', ['accion' => $puedeEditar
-    ? '<button type="button" class="btn btn--primary" data-action="nuevo-config" data-tabla="' . e($tabla) . '">＋ Agregar</button>'
-    : '']);
+][$clave] ?? '', [
+    'accion' => $puedeEditar
+        ? '<button type="button" class="btn btn--primary" data-action="nuevo-config" data-tabla="' . e($tabla) . '">＋ Agregar</button>'
+        : '',
+    'acciones' => $puedeEditar && $clave === 'planes'
+        ? '<button type="button" class="btn btn--ghost-dark" data-action="asignar-planes">Asignar por categoría</button>'
+        : '',
+]);
 $seccion = 'configuracion';
 
 // Una frase por pantalla, la que responde la duda que trae quien entra.
 $ayuda = [
     'planes'  => 'Un plan dice cada cuántos kilómetros o días toca el servicio programado. '
-               . 'Abajo eliges qué plan sigue cada categoría: todos los cabezales de una vez.',
+               . 'Con «Asignar por categoría» eliges cuál sigue cada tipo de vehículo: todos los cabezales de una vez.',
     'tipos'   => 'Solo dos hacen falta: <strong>Preventivo</strong> es el servicio programado y '
                . 'reinicia el conteo hacia el próximo; <strong>Correctivo</strong> es una reparación y no lo reinicia. '
                . 'Lo que se hizo va en la descripción de cada registro, no aquí.',
@@ -97,47 +102,39 @@ $ayuda = [
     </div>
 </section>
 
-<?php if ($clave === 'planes'): ?>
-    <!-- La pregunta real es «¿qué plan sigue esta categoría?», y desde el plan había que
-         abrirlos todos para responderla. Un desplegable por fila además hace evidente la regla:
-         una categoría sigue un plan, o ninguno. -->
-    <div class="card cat-planes">
-        <div class="cat-planes__head">
+<?php if ($clave === 'planes' && $puedeEditar): ?>
+<!-- La pregunta real es «¿qué plan sigue esta categoría?», y desde el plan había que abrirlos
+     todos para responderla. Un desplegable por fila además hace evidente la regla: una
+     categoría sigue un plan, o ninguno. -->
+<dialog id="dlg-cat-planes" class="dialog">
+    <form method="dialog" class="form" id="form-cat-planes" novalidate>
+        <div class="dialog__head">
             <h2>Plan de cada categoría</h2>
-            <p class="muted">Lo que dejes en «Sin plan» no lleva servicio programado y no aparece en el semáforo.</p>
+            <p class="dialog__lede">Elige qué plan sigue cada tipo de vehículo: todos los cabezales de
+               una vez. Lo que dejes en «Sin plan» no lleva servicio programado y no aparece en el semáforo.</p>
         </div>
-        <form id="form-cat-planes">
-            <table class="table">
-                <thead><tr><th>Categoría</th><th>Plan de servicio</th></tr></thead>
-                <tbody>
+        <div class="dialog__body">
+            <div class="cat-planes">
                 <?php foreach ($categorias as $c): $suyo = (int) ($c['plan_mantenimiento_id'] ?? 0); ?>
-                    <tr>
-                        <td><strong><?= e($c['nombre']) ?></strong></td>
-                        <td>
-                            <?php if ($puedeEditar): ?>
-                                <select name="cat[<?= (int) $c['id'] ?>]" data-no-search>
-                                    <option value="">Sin plan</option>
-                                    <?php foreach ($items as $pl): ?>
-                                        <option value="<?= (int) $pl['id'] ?>" <?= $suyo === (int) $pl['id'] ? 'selected' : '' ?>><?= e($pl['nombre']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            <?php else: ?>
-                                <?php $nombres = array_column(array_filter($items, static fn($pl) => (int) $pl['id'] === $suyo), 'nombre'); ?>
-                                <?= $nombres === [] ? '<span class="muted">Sin plan</span>' : e($nombres[0]) ?>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
+                    <div class="cat-planes__fila<?= $suyo > 0 ? ' is-asignada' : '' ?>">
+                        <span class="cat-planes__nombre"><?= e($c['nombre']) ?></span>
+                        <select name="cat[<?= (int) $c['id'] ?>]" data-no-search>
+                            <option value="">Sin plan</option>
+                            <?php foreach ($items as $pl): ?>
+                                <option value="<?= (int) $pl['id'] ?>" <?= $suyo === (int) $pl['id'] ? 'selected' : '' ?>><?= e($pl['nombre']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php if ($puedeEditar): ?>
-                <div class="cat-planes__pie">
-                    <p class="form__error" id="form-cat-error" hidden></p>
-                    <button type="submit" class="btn btn--primary">Guardar asignación</button>
-                </div>
-            <?php endif; ?>
-        </form>
-    </div>
+            </div>
+        </div>
+        <p class="form__error" id="form-cat-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar asignación</button>
+        </div>
+    </form>
+</dialog>
 <?php endif; ?>
 
 <?php require __DIR__ . '/_modales.php'; ?>
