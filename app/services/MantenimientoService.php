@@ -283,35 +283,34 @@ final class MantenimientoService
     }
 
     /**
-     * Aplica un plan a categorías enteras y marca las que no llevan servicio programado.
+     * El plan que sigue cada categoría.
      *
-     * Se recibe el estado completo porque es como se ve en pantalla: un cuadro de casillas.
-     * Desmarcar una categoría no la deja huérfana, la devuelve al plan por defecto.
+     * Se asigna desde la categoría y no desde el plan porque la pregunta que se hace la gente es
+     * «¿qué plan sigue el cabezal?», y desde el plan había que abrirlos todos para responderla.
+     * Un desplegable por fila además hace evidente la regla: una categoría sigue un plan, o
+     * ninguno, y lo que se queda sin plan no sale en el semáforo.
+     *
+     * @param array<int, int|null> $mapa categoría => plan, o null para dejarla sin plan
      */
-    public function aplicarPlanACategorias(int $planId, array $categorias, array $sinPlan, array $user): void
+    public function asignarPlanes(array $mapa, array $user): void
     {
-        $plan = $this->fila('planes_mantenimiento', $planId);
-        if ($plan === null) {
-            json_error('Plan no encontrado', 404);
+        $validos = [];
+        foreach ($mapa as $categoriaId => $planId) {
+            $categoriaId = (int) $categoriaId;
+            $planId = (int) $planId > 0 ? (int) $planId : null;
+            if ($planId !== null && $this->fila('planes_mantenimiento', $planId) === null) {
+                json_unprocessable(['plan' => 'Uno de los planes elegidos ya no existe.']);
+            }
+            $validos[$categoriaId] = $planId;
         }
 
-        tx($this->pdo, function () use ($planId, $categorias, $sinPlan, $plan, $user): void {
-            // Primero se suelta lo que tenía este plan y ya no lo tiene.
-            $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_mantenimiento_id = NULL
-                                  WHERE plan_mantenimiento_id = :p')->execute([':p' => $planId]);
-
-            foreach ($categorias as $id) {
-                $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_mantenimiento_id = :p WHERE id = :id')
-                    ->execute([':p' => $planId, ':id' => $id]);
+        tx($this->pdo, function () use ($validos, $user): void {
+            $stmt = $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_mantenimiento_id = :p WHERE id = :id');
+            foreach ($validos as $categoriaId => $planId) {
+                $stmt->execute([':p' => $planId, ':id' => $categoriaId]);
             }
-            // «No lleva plan» es de la categoría, no del plan: se fija para todas de una vez.
-            $this->pdo->exec('UPDATE categorias_vehiculo SET plan_no_aplica = 0');
-            foreach ($sinPlan as $id) {
-                $this->pdo->prepare('UPDATE categorias_vehiculo SET plan_no_aplica = 1, plan_mantenimiento_id = NULL WHERE id = :id')
-                    ->execute([':id' => $id]);
-            }
-            registrar_bitacora($this->pdo, $user['id'], 'plan_mantenimiento', $planId, AccionBitacora::EDITAR, [
-                'despues' => ['nombre' => $plan['nombre'], 'categorias' => $categorias, 'sin_plan' => $sinPlan],
+            registrar_bitacora($this->pdo, $user['id'], 'planes_por_categoria', 0, AccionBitacora::EDITAR, [
+                'despues' => $validos,
             ]);
         });
     }
@@ -411,7 +410,8 @@ final class MantenimientoService
     private function estadoDe(?int $faltanKm, ?int $faltanDias, int $umbralKm, int $umbralDias, ?int $kmActual, ?int $ultimoKm, bool $conPlan): string
     {
         // Sin plan no hay nada que vencer: una plataforma no lleva cambio de aceite, y contarla
-        // como alerta es lo que hacía que nadie mirara el semáforo.
+        // como alerta es lo que hacía que nadie mirara el semáforo. No estar en ningún plan ya
+        // es la respuesta; no hace falta marcarlo aparte.
         if (!$conPlan) {
             return self::SIN_PLAN;
         }

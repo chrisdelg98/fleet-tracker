@@ -3301,3 +3301,20 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     .modfiltros__acciones { margin-left: 0; width: 100%; }
     .modfiltros__acciones .btn { flex: 1; }
 }
+
+/* Plan de cada categoría: el reparto completo a la vista, sin abrir nada. */
+.cat-planes { margin-top: var(--sp-4); padding: 0; overflow: hidden; }
+.cat-planes__head { padding: var(--sp-4) var(--sp-4) var(--sp-3); }
+.cat-planes__head h2 { margin: 0 0 2px; font-size: var(--fs-lg); }
+.cat-planes .table { margin: 0; }
+.cat-planes th, .cat-planes td { padding: 6px var(--sp-4); }
+.cat-planes td:last-child { width: 320px; }
+.cat-planes__pie {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    border-top: 1px solid var(--color-border);
+}
+.cat-planes__pie .form__error { margin-right: auto; }

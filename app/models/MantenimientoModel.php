@@ -186,29 +186,18 @@ final class MantenimientoModel
                        (SELECT m.en_taller_desde FROM mantenimientos m WHERE m.unidad_id = u.id
                           AND m.en_taller_desde IS NOT NULL AND m.en_taller_hasta IS NULL
                          ORDER BY m.id DESC LIMIT 1) AS en_taller_desde,
-                       c.nombre AS categoria, c.plan_no_aplica,
-                       CASE WHEN u.plan_mantenimiento_id IS NOT NULL THEN pl.intervalo_km
-                            WHEN c.plan_no_aplica = 1 THEN NULL
-                            ELSE COALESCE(pc.intervalo_km, pd.intervalo_km) END     AS intervalo_km,
-                       CASE WHEN u.plan_mantenimiento_id IS NOT NULL THEN pl.intervalo_dias
-                            WHEN c.plan_no_aplica = 1 THEN NULL
-                            ELSE COALESCE(pc.intervalo_dias, pd.intervalo_dias) END AS intervalo_dias,
-                       CASE WHEN u.plan_mantenimiento_id IS NOT NULL THEN pl.umbral_km
-                            WHEN c.plan_no_aplica = 1 THEN NULL
-                            ELSE COALESCE(pc.umbral_km, pd.umbral_km) END           AS umbral_km,
-                       CASE WHEN u.plan_mantenimiento_id IS NOT NULL THEN pl.umbral_dias
-                            WHEN c.plan_no_aplica = 1 THEN NULL
-                            ELSE COALESCE(pc.umbral_dias, pd.umbral_dias) END       AS umbral_dias,
-                       CASE WHEN u.plan_mantenimiento_id IS NOT NULL THEN pl.nombre
-                            WHEN c.plan_no_aplica = 1 THEN NULL
-                            ELSE COALESCE(pc.nombre, pd.nombre) END                 AS plan
+                       c.nombre AS categoria,
+                       COALESCE(pl.intervalo_km, pc.intervalo_km)     AS intervalo_km,
+                       COALESCE(pl.intervalo_dias, pc.intervalo_dias) AS intervalo_dias,
+                       COALESCE(pl.umbral_km, pc.umbral_km)           AS umbral_km,
+                       COALESCE(pl.umbral_dias, pc.umbral_dias)       AS umbral_dias,
+                       COALESCE(pl.nombre, pc.nombre)                 AS plan
                   FROM unidades u
                   JOIN estaciones e ON e.id = u.estacion_id
                   JOIN categorias_vehiculo c ON c.id = u.categoria_vehiculo_id
                   LEFT JOIN pilotos p ON p.id = u.piloto_asignado_id
                   LEFT JOIN planes_mantenimiento pl ON pl.id = u.plan_mantenimiento_id
                   LEFT JOIN planes_mantenimiento pc ON pc.id = c.plan_mantenimiento_id
-                  LEFT JOIN (SELECT * FROM planes_mantenimiento WHERE por_defecto = 1 AND activo = 1 LIMIT 1) pd ON 1 = 1
                  WHERE u.activo = 1';
         $params = [];
         if (!empty($filtros['estacion_id'])) {

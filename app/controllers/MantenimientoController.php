@@ -163,48 +163,16 @@ final class MantenimientoController
     }
 
     /**
-     * POST /api/mantenimientos/planes/{id}/categorias
+     * POST /api/mantenimientos/categorias-planes — el plan que sigue cada categoría.
      *
-     * Asigna el plan a unas categorías y marca cuáles no llevan plan. Se manda el estado
-     * completo, no diferencias: lo que no venga marcado vuelve al plan por defecto.
+     * Llega el cuadro completo, no diferencias: es lo que se ve en pantalla, una fila por
+     * categoría con su desplegable.
      */
-    public function apiAplicarPlan(array $p): void
+    public function apiAsignarPlanes(): void
     {
         $user = require_role_api(self::ESCRITURA);
-        $body = request_body();
-        $this->service->aplicarPlanACategorias(
-            (int) $p['id'],
-            array_map('intval', (array) ($body['categorias'] ?? [])),
-            array_map('intval', (array) ($body['sin_plan'] ?? [])),
-            $user
-        );
-        json_ok(null, 'Plan aplicado.');
-    }
-
-    /**
-     * POST /api/talleres/lote — crea de golpe los talleres que faltaban en un archivo.
-     *
-     * Evita el círculo de «corrige el Excel, vuelve a subirlo»: el archivo ya dice qué talleres
-     * faltan y en qué estación, así que se confirman aquí y la carga sigue.
-     */
-    public function apiTalleresLote(): void
-    {
-        $user = require_role_api(self::ESCRITURA);
-        $creados = [];
-        foreach ((array) (request_body()['talleres'] ?? []) as $t) {
-            $nombre = trim((string) ($t['nombre'] ?? ''));
-            $estacion = (int) ($t['estacion_id'] ?? 0);
-            if ($nombre === '' || $estacion <= 0) {
-                continue;
-            }
-            // encontrarOCrear comprueba el permiso sobre la estación y no duplica por acentos.
-            $id = $this->tallerService->encontrarOCrear($nombre, $estacion, $user['id']);
-            if ($id !== null) {
-                $creados[] = $nombre;
-            }
-        }
-        $n = count($creados);
-        json_ok(['creados' => $creados], $n === 1 ? 'Taller creado.' : "{$n} talleres creados.");
+        $this->service->asignarPlanes((array) (request_body()['planes'] ?? []), $user);
+        json_ok(null, 'Planes asignados.');
     }
 
     // ── API: intervenciones ──

@@ -92,34 +92,19 @@ document.addEventListener('click', async (ev) => {
     }
 });
 
-// ── Aplicar un plan a categorías enteras ──
-const dlgPlan = $('dlg-aplicar-plan');
-const formPlan = $('form-aplicar-plan');
+// ── Plan de cada categoría ──
+const formCat = $('form-cat-planes');
 
-if (formPlan) {
-    document.addEventListener('click', (ev) => {
-        const btn = ev.target.closest('[data-action="aplicar-plan"]');
-        if (!btn) return;
-        formPlan.elements['plan_id'].value = btn.dataset.id;
-        $('dlg-aplicar-title').textContent = `Aplicar «${btn.dataset.nombre}»`;
-        // Se marca lo que ya usa este plan; lo demás queda libre para el plan por defecto.
-        formPlan.querySelectorAll('[name="categorias[]"]').forEach((c) => {
-            c.checked = c.dataset.plan === btn.dataset.id;
-        });
-        $('form-aplicar-error').hidden = true;
-        dlgPlan.showModal();
+formCat?.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    // Se manda el cuadro completo, que es lo que se ve: una fila por categoría con su plan.
+    const planes = {};
+    formCat.querySelectorAll('select[name^="cat["]').forEach((sel) => {
+        planes[sel.name.replace(/\D/g, '')] = sel.value === '' ? null : Number(sel.value);
     });
-
-    formPlan.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const marcados = (nombre) => [...formPlan.querySelectorAll(`[name="${nombre}[]"]:checked`)].map((c) => Number(c.value));
-        const r = await api('POST', `/api/mantenimientos/planes/${formPlan.elements['plan_id'].value}/categorias`, {
-            categorias: marcados('categorias'),
-            sin_plan: marcados('sin_plan'),
-        });
-        if (r.ok) location.reload(); else showError($('form-aplicar-error'), r);
-    });
-}
+    const r = await api('POST', '/api/mantenimientos/categorias-planes', { planes });
+    if (r.ok) location.reload(); else showError($('form-cat-error'), r);
+});
 
 document.querySelectorAll('[data-close]').forEach((b) =>
     b.addEventListener('click', () => b.closest('dialog').close()));

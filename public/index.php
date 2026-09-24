@@ -165,8 +165,8 @@ $router->get('/mantenimientos/costos', fn() => $mantenimientoController->costos(
 $router->get('/mantenimientos/talleres', fn() => $mantenimientoController->talleresPage());
 $router->get('/mantenimientos/configuracion', fn() => $mantenimientoController->configuracion());
 $router->get('/mantenimientos/configuracion/{seccion}', fn($p) => $mantenimientoController->configuracion($p));
-// Un plan se aplica a categorías enteras: «todos los cabezales» son catorce unidades.
-$router->post('/api/mantenimientos/planes/{id}/categorias', fn($p) => $mantenimientoController->apiAplicarPlan($p));
+// El plan se asigna por categoría: «todos los cabezales» son catorce unidades de una vez.
+$router->post('/api/mantenimientos/categorias-planes', fn() => $mantenimientoController->apiAsignarPlanes());
 
 // Los dos años que hoy viven en la hoja entran por aquí: el historial de intervenciones y las
 // lecturas de odómetro van por separado porque son dos archivos distintos y se corrigen aparte.

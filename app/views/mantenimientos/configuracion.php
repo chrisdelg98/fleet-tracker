@@ -26,7 +26,7 @@ $seccion = 'configuracion';
 // Una frase por pantalla, la que responde la duda que trae quien entra.
 $ayuda = [
     'planes'  => 'Un plan dice cada cuántos kilómetros o días toca el servicio programado. '
-               . 'Se aplica a categorías enteras —todos los cabezales, por ejemplo— desde la columna «Aplica a».',
+               . 'Abajo eliges qué plan sigue cada categoría: todos los cabezales de una vez.',
     'tipos'   => 'Solo dos hacen falta: <strong>Preventivo</strong> es el servicio programado y '
                . 'reinicia el conteo hacia el próximo; <strong>Correctivo</strong> es una reparación y no lo reinicia. '
                . 'Lo que se hizo va en la descripción de cada registro, no aquí.',
@@ -76,17 +76,9 @@ $ayuda = [
                             static fn(array $c): bool => (int) ($c['plan_mantenimiento_id'] ?? 0) === (int) $it['id']
                         ));
                         ?>
-                        <td>
-                            <?php if ($usan === []): ?>
-                                <span class="muted"><?= (int) ($it['por_defecto'] ?? 0) === 1 ? 'Todas las que no tengan otro' : 'Ninguna' ?></span>
-                            <?php else: ?>
-                                <?= e(implode(' · ', array_column($usan, 'nombre'))) ?>
-                            <?php endif; ?>
-                            <?php if ($puedeEditar): ?>
-                                <button type="button" class="btn btn--linea btn--sm" data-action="aplicar-plan"
-                                        data-id="<?= (int) $it['id'] ?>" data-nombre="<?= e($it['nombre']) ?>">Aplicar a categorías</button>
-                            <?php endif; ?>
-                        </td>
+                        <td><?= $usan === []
+                            ? '<span class="muted">Ninguna todavía</span>'
+                            : e(implode(' · ', array_column($usan, 'nombre'))) ?></td>
                     <?php endif; ?>
                     <?php if ($puedeEditar): ?>
                         <td class="col col--acciones">
@@ -104,6 +96,49 @@ $ayuda = [
         </table>
     </div>
 </section>
+
+<?php if ($clave === 'planes'): ?>
+    <!-- La pregunta real es «¿qué plan sigue esta categoría?», y desde el plan había que
+         abrirlos todos para responderla. Un desplegable por fila además hace evidente la regla:
+         una categoría sigue un plan, o ninguno. -->
+    <div class="card cat-planes">
+        <div class="cat-planes__head">
+            <h2>Plan de cada categoría</h2>
+            <p class="muted">Lo que dejes en «Sin plan» no lleva servicio programado y no aparece en el semáforo.</p>
+        </div>
+        <form id="form-cat-planes">
+            <table class="table">
+                <thead><tr><th>Categoría</th><th>Plan de servicio</th></tr></thead>
+                <tbody>
+                <?php foreach ($categorias as $c): $suyo = (int) ($c['plan_mantenimiento_id'] ?? 0); ?>
+                    <tr>
+                        <td><strong><?= e($c['nombre']) ?></strong></td>
+                        <td>
+                            <?php if ($puedeEditar): ?>
+                                <select name="cat[<?= (int) $c['id'] ?>]" data-no-search>
+                                    <option value="">Sin plan</option>
+                                    <?php foreach ($items as $pl): ?>
+                                        <option value="<?= (int) $pl['id'] ?>" <?= $suyo === (int) $pl['id'] ? 'selected' : '' ?>><?= e($pl['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php else: ?>
+                                <?php $nombres = array_column(array_filter($items, static fn($pl) => (int) $pl['id'] === $suyo), 'nombre'); ?>
+                                <?= $nombres === [] ? '<span class="muted">Sin plan</span>' : e($nombres[0]) ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php if ($puedeEditar): ?>
+                <div class="cat-planes__pie">
+                    <p class="form__error" id="form-cat-error" hidden></p>
+                    <button type="submit" class="btn btn--primary">Guardar asignación</button>
+                </div>
+            <?php endif; ?>
+        </form>
+    </div>
+<?php endif; ?>
 
 <?php require __DIR__ . '/_modales.php'; ?>
 
@@ -125,39 +160,7 @@ $ayuda = [
     </form>
 </dialog>
 
-<?php if ($clave === 'planes' && $puedeEditar): ?>
-<dialog id="dlg-aplicar-plan" class="dialog">
-    <form method="dialog" class="form" id="form-aplicar-plan" novalidate>
-        <div class="dialog__head">
-            <h2 id="dlg-aplicar-title">Aplicar plan</h2>
-            <p class="dialog__lede">Marca las categorías que usan este plan. Lo que desmarques vuelve al plan por defecto.</p>
-        </div>
-        <input type="hidden" name="plan_id" value="">
-        <div class="dialog__body">
-            <div class="checks">
-                <?php foreach ($categorias as $c): ?>
-                    <label class="check"><input type="checkbox" name="categorias[]" value="<?= (int) $c['id'] ?>"
-                        data-plan="<?= (int) ($c['plan_mantenimiento_id'] ?? 0) ?>"
-                        data-no-aplica="<?= (int) ($c['plan_no_aplica'] ?? 0) ?>"> <?= e($c['nombre']) ?></label>
-                <?php endforeach; ?>
-            </div>
-            <p class="muted">¿Una categoría no lleva servicio programado —plataformas, contenedores—?
-               Márcala en «No lleva plan» y dejará de aparecer en el semáforo.</p>
-            <div class="checks">
-                <?php foreach ($categorias as $c): ?>
-                    <label class="check"><input type="checkbox" name="sin_plan[]" value="<?= (int) $c['id'] ?>"
-                        <?= (int) ($c['plan_no_aplica'] ?? 0) === 1 ? 'checked' : '' ?>> <?= e($c['nombre']) ?> no lleva plan</label>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <p class="form__error" id="form-aplicar-error" hidden></p>
-        <div class="dialog__actions">
-            <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
-            <button type="submit" class="btn btn--primary">Guardar</button>
-        </div>
-    </form>
-</dialog>
-<?php endif; ?>
+
 
 <script type="application/json" id="config-spec"><?= json_encode([$tabla => $spec], JSON_UNESCAPED_UNICODE) ?></script>
 <script type="application/json" id="config-data"><?= json_encode([$tabla => $items], JSON_UNESCAPED_UNICODE) ?></script>

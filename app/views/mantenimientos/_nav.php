@@ -43,10 +43,3 @@ $claveConfig = $clave ?? 'planes';
         </div>
     </div>
 </nav>
-
-<!-- El módulo está en uso pero aún se le harán ajustes: conviene decirlo donde se ve siempre,
-     no en una sola pantalla, para que nadie tome sus números como definitivos. -->
-<p class="form__warn" style="margin-bottom: var(--sp-3)">
-    <strong>En construcción.</strong> Este módulo todavía está en ajustes: puedes usarlo, pero
-    algunas pantallas y datos van a cambiar.
-</p>

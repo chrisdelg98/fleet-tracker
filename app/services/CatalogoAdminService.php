@@ -19,7 +19,7 @@ final class CatalogoAdminService
         'capacidades'         => ['label' => 'Capacidad',            'fields' => ['nombre' => 'string', 'descripcion' => 'text', 'orden' => 'int']],
         'paises'              => ['label' => 'País',                 'fields' => ['codigo_iso' => 'iso2', 'nombre' => 'string', 'region' => 'region', 'orden' => 'int']],
         'tipos_mantenimiento' => ['label' => 'Tipo de mantenimiento', 'fields' => ['nombre' => 'string', 'es_preventivo' => 'bool', 'orden' => 'int']],
-        'planes_mantenimiento'=> ['label' => 'Plan de mantenimiento', 'fields' => ['nombre' => 'string', 'intervalo_km' => 'int', 'intervalo_dias' => 'int', 'umbral_km' => 'int', 'umbral_dias' => 'int', 'por_defecto' => 'bool']],
+        'planes_mantenimiento'=> ['label' => 'Plan de mantenimiento', 'fields' => ['nombre' => 'string', 'intervalo_km' => 'int', 'intervalo_dias' => 'int', 'umbral_km' => 'int', 'umbral_dias' => 'int']],
         'monedas'             => ['label' => 'Moneda',                'fields' => ['codigo' => 'iso3', 'nombre' => 'string', 'por_dolar' => 'decimal', 'orden' => 'int']],
     ];
 
@@ -40,12 +40,11 @@ final class CatalogoAdminService
         'admite_arrastre' => 'Lleva equipo',
         'orden' => 'Orden',
         'region' => 'Región',
-        'es_preventivo' => 'Es servicio programado (reinicia el ciclo)',
-        'intervalo_km' => 'Servicio cada (km)',
-        'intervalo_dias' => 'Servicio cada (días, vacío = no aplica)',
-        'umbral_km' => 'Avisar con (km) de anticipación',
-        'umbral_dias' => 'Avisar con (días) de anticipación',
-        'por_defecto' => 'Plan por defecto',
+        'es_preventivo' => 'Reinicia el ciclo',
+        'intervalo_km' => 'Cada (km)',
+        'intervalo_dias' => 'Cada (días)',
+        'umbral_km' => 'Avisar (km antes)',
+        'umbral_dias' => 'Avisar (días antes)',
         'codigo' => 'Código',
         'por_dolar' => 'Unidades por dólar',
     ];
@@ -110,28 +109,10 @@ final class CatalogoAdminService
         return self::SPEC[$tabla];
     }
 
-    /**
-     * Solo un plan puede ser el de por defecto: es el que usan las unidades que no eligieron uno,
-     * y con dos marcados la respuesta dependería del orden de la consulta.
-     */
-    private function soloUnPlanPorDefecto(array $data, ?int $exceptId): void
-    {
-        if (empty($data['por_defecto'])) {
-            return;
-        }
-        $sql = 'UPDATE planes_mantenimiento SET por_defecto = 0 WHERE por_defecto = 1'
-            . ($exceptId ? ' AND id <> :id' : '');
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($exceptId ? [':id' => $exceptId] : []);
-    }
-
     public function crear(string $tabla, array $input, array $user): int
     {
         self::assert($tabla);
         $data = $this->validar($tabla, $input, null);
-        if ($tabla === 'planes_mantenimiento') {
-            $this->soloUnPlanPorDefecto($data, null);
-        }
         $cols = array_keys($data);
         $ph = array_map(static fn(string $c): string => ':' . $c, $cols);
 
@@ -158,9 +139,6 @@ final class CatalogoAdminService
             json_error('Registro no encontrado', 404);
         }
         $data = $this->validar($tabla, $input, $id);
-        if ($tabla === 'planes_mantenimiento') {
-            $this->soloUnPlanPorDefecto($data, $id);
-        }
         $sets = array_map(static fn(string $c): string => "{$c} = :{$c}", array_keys($data));
 
         tx($this->pdo, function () use ($tabla, $id, $data, $sets, $actual, $user): void {
