@@ -51,39 +51,26 @@ $chip = [
         <?php endforeach; ?>
     </div>
 
-    <form class="filters-panel" method="get" action="/mantenimientos" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
-        <input type="hidden" name="estado" value="<?= e($filtros['estado']) ?>">
-        <div class="filters-panel__bar">
-            <div class="filters-panel__summary">
-                <strong>Filtros</strong>
-                <span>Estación, categoría y búsqueda por placa o marca</span>
-            </div>
-            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="mant-filtros">
-                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
-                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
-            </button>
-        </div>
-        <div class="filters-panel__more" id="mant-filtros" data-filters-more hidden>
-            <div class="filters-grid">
-                <label class="field"><span class="field__label">Buscar</span>
-                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Placa, marca o modelo…" data-no-search></label>
-                <label class="field"><span class="field__label">Estación</span>
-                    <select name="estacion_id">
-                        <option value="">Todas</option>
-                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= $sel($filtros['estacion_id'], $es['id']) ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
-                    </select></label>
-                <label class="field"><span class="field__label">Categoría</span>
-                    <select name="categoria_id">
-                        <option value="">Todas</option>
-                        <?php foreach ($categorias as $c): ?><option value="<?= (int) $c['id'] ?>" <?= $sel($filtros['categoria_id'], $c['id']) ?>><?= e($c['nombre']) ?></option><?php endforeach; ?>
-                    </select></label>
-            </div>
-            <div class="filters-actions">
-                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
-                <a href="/mantenimientos" class="link">Limpiar</a>
-            </div>
-        </div>
-    </form>
+    <?php
+    // El estado viaja oculto: se elige con las tarjetas de arriba, no con un desplegable más.
+    $opcionesDe = static function (array $filas, string $etiqueta, string $campo = 'nombre'): array {
+    $out = ['' => $etiqueta];
+    foreach ($filas as $f) { $out[(int) $f['id']] = (string) $f[$campo]; }
+    return $out;
+};
+    $accion = '/mantenimientos';
+    $ocultos = ['estado' => $filtros['estado']];
+    $conRangos = false;
+    $campos = [
+        ['tipo' => 'buscar', 'name' => 'q', 'label' => 'Buscar', 'valor' => $filtros['q'],
+         'placeholder' => 'Placa, marca o modelo…'],
+        ['tipo' => 'select', 'name' => 'estacion_id', 'label' => 'Estación', 'valor' => $filtros['estacion_id'],
+         'opciones' => $opcionesDe($estaciones, 'Todas', 'codigo')],
+        ['tipo' => 'select', 'name' => 'categoria_id', 'label' => 'Categoría', 'valor' => $filtros['categoria_id'],
+         'opciones' => $opcionesDe($categorias, 'Todas')],
+    ];
+    ?>
+    <?php require __DIR__ . '/_filtros.php'; ?>
 
     <?php if ($filas === []): ?>
         <div class="card empty"><div class="card__empty">

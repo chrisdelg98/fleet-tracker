@@ -29,51 +29,30 @@ $comunes = $filtros + ['por_pagina' => $resultado['por_pagina']];
 <section class="module">
     <?php require __DIR__ . '/_nav.php'; ?>
 
-    <form class="filters-panel" method="get" action="/mantenimientos/historial" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
-        <div class="filters-panel__bar">
-            <div class="filters-panel__summary">
-                <strong>Filtros</strong>
-                <span>Fechas, estación, tipo, taller y búsqueda por placa, descripción o factura</span>
-            </div>
-            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="hist-mant-filtros">
-                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
-                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
-            </button>
-        </div>
-        <div class="filters-panel__more" id="hist-mant-filtros" data-filters-more hidden>
-            <div class="filters-grid">
-                <label class="field"><span class="field__label">Desde</span>
-                    <input type="date" name="desde" value="<?= e($filtros['desde']) ?>"></label>
-                <label class="field"><span class="field__label">Hasta</span>
-                    <input type="date" name="hasta" value="<?= e($filtros['hasta']) ?>"></label>
-                <label class="field"><span class="field__label">Estación</span>
-                    <select name="estacion_id">
-                        <option value="">Todas</option>
-                        <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= $sel($filtros['estacion_id'], $es['id']) ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
-                    </select></label>
-                <label class="field"><span class="field__label">Tipo</span>
-                    <select name="tipo_id">
-                        <option value="">Todos</option>
-                        <?php foreach ($tiposMantenimiento as $t): ?><option value="<?= (int) $t['id'] ?>" <?= $sel($filtros['tipo_id'], $t['id']) ?>><?= e($t['nombre']) ?></option><?php endforeach; ?>
-                    </select></label>
-                <label class="field"><span class="field__label">Taller</span>
-                    <select name="taller_id">
-                        <option value="">Todos</option>
-                        <?php foreach ($talleresParaModal as $t): ?><option value="<?= (int) $t['id'] ?>" <?= $sel($filtros['taller_id'], $t['id']) ?>><?= e($t['nombre']) ?> · <?= e($t['estacion_codigo']) ?></option><?php endforeach; ?>
-                    </select></label>
-                <label class="field"><span class="field__label">Buscar</span>
-                    <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Placa, descripción o factura…" data-no-search></label>
-                <label class="field"><span class="field__label">Por página</span>
-                    <select name="por_pagina" data-no-search>
-                        <?php foreach ([15, 30, 50] as $op): ?><option value="<?= $op ?>" <?= $sel($resultado['por_pagina'], $op) ?>><?= $op ?></option><?php endforeach; ?>
-                    </select></label>
-            </div>
-            <div class="filters-actions">
-                <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
-                <a href="/mantenimientos/historial" class="link">Limpiar</a>
-            </div>
-        </div>
-    </form>
+    <?php
+    $opcionesDe = static function (array $filas, string $etiqueta, string $campo = 'nombre'): array {
+    $out = ['' => $etiqueta];
+    foreach ($filas as $f) { $out[(int) $f['id']] = (string) $f[$campo]; }
+    return $out;
+};
+    $accion = '/mantenimientos/historial';
+    // La página vuelve a 1 al filtrar: quedarse en la 4 de un resultado de 2 confunde.
+    $ocultos = ['por_pagina' => $resultado['por_pagina']];
+    $conRangos = true;
+    $campos = [
+        ['tipo' => 'buscar', 'name' => 'q', 'label' => 'Buscar', 'valor' => $filtros['q'],
+         'placeholder' => 'Placa, descripción o factura…'],
+        ['tipo' => 'fecha', 'name' => 'desde', 'label' => 'Desde', 'valor' => $filtros['desde']],
+        ['tipo' => 'fecha', 'name' => 'hasta', 'label' => 'Hasta', 'valor' => $filtros['hasta']],
+        ['tipo' => 'select', 'name' => 'estacion_id', 'label' => 'Estación', 'valor' => $filtros['estacion_id'],
+         'opciones' => $opcionesDe($estaciones, 'Todas', 'codigo')],
+        ['tipo' => 'select', 'name' => 'tipo_id', 'label' => 'Tipo', 'valor' => $filtros['tipo_id'],
+         'opciones' => $opcionesDe($tiposMantenimiento, 'Todos')],
+        ['tipo' => 'select', 'name' => 'taller_id', 'label' => 'Taller', 'valor' => $filtros['taller_id'],
+         'opciones' => $opcionesDe($talleresParaModal, 'Todos')],
+    ];
+    ?>
+    <?php require __DIR__ . '/_filtros.php'; ?>
 
     <p class="dashboard__meta">
         <span><?= (int) $resultado['total'] ?> intervencion<?= (int) $resultado['total'] === 1 ? '' : 'es' ?></span>

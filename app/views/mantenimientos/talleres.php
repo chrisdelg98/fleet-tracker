@@ -24,25 +24,25 @@ $sel = static fn($a, $b): string => (string) $a === (string) $b ? 'selected' : '
 <section class="module">
     <?php require __DIR__ . '/_nav.php'; ?>
 
-    <form class="card prov-buscar" method="get" action="/mantenimientos/talleres">
-        <label class="field prov-buscar__q"><span class="field__label">Buscar</span>
-            <input type="search" name="q" value="<?= e($filtros['q']) ?>" placeholder="Nombre del taller" data-no-search></label>
-        <label class="field"><span class="field__label">Estación</span>
-            <select name="estacion_id">
-                <option value="">Todas</option>
-                <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= $sel($filtros['estacion_id'], $es['id']) ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
-            </select></label>
-        <label class="field"><span class="field__label">Mostrar</span>
-            <select name="estado" data-no-search>
-                <?php foreach (['activos' => 'Activos', 'desactivados' => 'Desactivados', 'todos' => 'Todos'] as $v => $t): ?>
-                    <option value="<?= e($v) ?>" <?= $sel($filtros['estado'], $v) ?>><?= e($t) ?></option>
-                <?php endforeach; ?>
-            </select></label>
-        <div class="prov-buscar__acciones">
-            <button type="submit" class="btn btn--ghost-dark">Buscar</button>
-            <a href="/mantenimientos/talleres" class="link">Limpiar</a>
-        </div>
-    </form>
+    <?php
+    $opcionesDe = static function (array $filas, string $etiqueta, string $campo = 'nombre'): array {
+    $out = ['' => $etiqueta];
+    foreach ($filas as $f) { $out[(int) $f['id']] = (string) $f[$campo]; }
+    return $out;
+};
+    $accion = '/mantenimientos/talleres';
+    $ocultos = [];
+    $conRangos = false;
+    $campos = [
+        ['tipo' => 'buscar', 'name' => 'q', 'label' => 'Buscar', 'valor' => $filtros['q'],
+         'placeholder' => 'Nombre del taller…'],
+        ['tipo' => 'select', 'name' => 'estacion_id', 'label' => 'Estación', 'valor' => $filtros['estacion_id'],
+         'opciones' => $opcionesDe($estaciones, 'Todas', 'codigo')],
+        ['tipo' => 'select', 'name' => 'estado', 'label' => 'Mostrar', 'valor' => $filtros['estado'], 'sinBuscador' => true,
+         'opciones' => ['activos' => 'Activos', 'inactivos' => 'Inactivos', 'todos' => 'Todos']],
+    ];
+    ?>
+    <?php require __DIR__ . '/_filtros.php'; ?>
 
     <?php if ($talleres === []): ?>
         <div class="card empty"><div class="card__empty">

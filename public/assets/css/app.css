@@ -3259,3 +3259,45 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 .import-faltantes table { margin: 0; background: var(--color-surface); border-radius: var(--radius); }
 .import-faltantes th, .import-faltantes td { padding: 6px var(--sp-3); }
 .import-faltantes .btn { justify-self: start; }
+
+/* ── Filtros del módulo de mantenimientos ──
+   Siempre visibles y con el mismo orden en las cuatro pantallas: búsqueda, filtros, acciones.
+   Escondidos tras «Mostrar filtros» nadie los usaba, y cada pantalla los ordenaba distinto. */
+.modfiltros {
+    display: grid;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+.modfiltros__campos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--sp-3);
+}
+.modfiltros__campo { flex: 0 1 190px; min-width: 150px; }
+/* La búsqueda manda: es lo primero que se teclea y se lleva el espacio sobrante. */
+.modfiltros__campo--ancho { flex: 1 1 260px; min-width: 200px; }
+.modfiltros__acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-left: auto;
+    padding-bottom: 2px;
+}
+.modfiltros__rangos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--fs-sm);
+}
+@media (max-width: 720px) {
+    .modfiltros__acciones { margin-left: 0; width: 100%; }
+    .modfiltros__acciones .btn { flex: 1; }
+}

@@ -23,25 +23,25 @@ $agrupaciones = ['unidad' => 'Por unidad', 'marca' => 'Por marca', 'taller' => '
 <section class="module">
     <?php require __DIR__ . '/_nav.php'; ?>
 
-    <form class="card prov-buscar" method="get" action="/mantenimientos/costos">
-        <label class="field"><span class="field__label">Agrupar</span>
-            <select name="por" data-no-search>
-                <?php foreach ($agrupaciones as $clave => $texto): ?><option value="<?= e($clave) ?>" <?= $sel($por, $clave) ?>><?= e($texto) ?></option><?php endforeach; ?>
-            </select></label>
-        <label class="field"><span class="field__label">Desde</span>
-            <input type="date" name="desde" value="<?= e($filtros['desde']) ?>"></label>
-        <label class="field"><span class="field__label">Hasta</span>
-            <input type="date" name="hasta" value="<?= e($filtros['hasta']) ?>"></label>
-        <label class="field"><span class="field__label">Estación</span>
-            <select name="estacion_id">
-                <option value="">Todas</option>
-                <?php foreach ($estaciones as $es): ?><option value="<?= (int) $es['id'] ?>" <?= $sel($filtros['estacion_id'], $es['id']) ?>><?= e($es['codigo']) ?> · <?= e($es['nombre']) ?></option><?php endforeach; ?>
-            </select></label>
-        <div class="prov-buscar__acciones">
-            <button type="submit" class="btn btn--ghost-dark">Aplicar</button>
-            <a href="/mantenimientos/costos" class="link">Limpiar</a>
-        </div>
-    </form>
+    <?php
+    $opcionesDe = static function (array $filas, string $etiqueta, string $campo = 'nombre'): array {
+    $out = ['' => $etiqueta];
+    foreach ($filas as $f) { $out[(int) $f['id']] = (string) $f[$campo]; }
+    return $out;
+};
+    $accion = '/mantenimientos/costos';
+    $ocultos = [];
+    $conRangos = true;
+    $campos = [
+        ['tipo' => 'select', 'name' => 'por', 'label' => 'Agrupar por', 'valor' => $por, 'sinBuscador' => true,
+         'opciones' => ['unidad' => 'Unidad', 'marca' => 'Marca', 'taller' => 'Taller']],
+        ['tipo' => 'fecha', 'name' => 'desde', 'label' => 'Desde', 'valor' => $filtros['desde']],
+        ['tipo' => 'fecha', 'name' => 'hasta', 'label' => 'Hasta', 'valor' => $filtros['hasta']],
+        ['tipo' => 'select', 'name' => 'estacion_id', 'label' => 'Estación', 'valor' => $filtros['estacion_id'],
+         'opciones' => $opcionesDe($estaciones, 'Todas', 'codigo')],
+    ];
+    ?>
+    <?php require __DIR__ . '/_filtros.php'; ?>
 
     <p class="dashboard__meta">
         <span>$<?= number_format($total, 2) ?> en total</span>
