@@ -147,7 +147,7 @@ $tallerModel = new TallerModel($pdo);
 $mantenimientoModel = new MantenimientoModel($pdo);
 $lecturaModel = new LecturaOdometroModel($pdo);
 $tallerService = new TallerService($pdo, $tallerModel);
-$mantenimientoService = new MantenimientoService($pdo, $mantenimientoModel, $lecturaModel, $unidadModel, $tallerService);
+$mantenimientoService = new MantenimientoService($pdo, $mantenimientoModel, $lecturaModel, $unidadModel, $tallerService, $overrideModel);
 $mantenimientoController = new MantenimientoController(
     $mantenimientoService,
     $mantenimientoModel,
@@ -195,6 +195,8 @@ $router->put('/api/mantenimientos/{id}', fn($p) => $mantenimientoController->api
 $router->delete('/api/mantenimientos/{id}', fn($p) => $mantenimientoController->apiDelete($p));
 $router->post('/api/mantenimientos/lectura', fn() => $mantenimientoController->apiLectura());
 $router->post('/api/mantenimientos/lecturas', fn() => $mantenimientoController->apiLecturas());
+// Salida del taller: cierra el override y devuelve la unidad a disponibilidad.
+$router->post('/api/mantenimientos/{id}/salida', fn($p) => $mantenimientoController->apiSalida($p));
 
 $router->post('/api/talleres', fn() => $mantenimientoController->apiTallerCreate());
 $router->post('/api/talleres/lote', fn() => $mantenimientoController->apiTalleresLote());

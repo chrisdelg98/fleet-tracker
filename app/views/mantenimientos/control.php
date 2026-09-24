@@ -100,6 +100,7 @@ $chip = [
             <?php foreach ($filas as $f): ?>
                 <tr>
                     <td><strong><?= e($f['placa_unidad']) ?></strong>
+                        <?php if (!empty($f['en_taller_id'])): ?><span class="chip chip--taller">En taller</span><?php endif; ?>
                         <?php if ($f['marca'] || $f['modelo']): ?><small class="muted block"><?= e(trim($f['marca'] . ' ' . $f['modelo'])) ?></small><?php endif; ?></td>
                     <td><?= e($f['estacion_codigo']) ?></td>
                     <td><?= $f['piloto'] ? e($f['piloto']) : '<span class="muted">—</span>' ?></td>
@@ -126,6 +127,11 @@ $chip = [
                                 'data-action' => 'nuevo-mantenimiento', 'data-unidad' => (int) $f['id']]],
                             empty($puedeRegistrar) ? null : ['label' => 'Anotar kilometraje', 'attrs' => [
                                 'data-action' => 'capturar-km', 'data-unidad' => (int) $f['id']]],
+                            // Solo aparece si la unidad está en el taller ahora: cerrar el
+                            // trabajo es lo que la devuelve a disponibilidad.
+                            empty($puedeRegistrar) || empty($f['en_taller_id']) ? null : ['label' => 'Marcar salida del taller', 'attrs' => [
+                                'data-action' => 'salida-taller', 'data-id' => (int) $f['en_taller_id'],
+                                'data-nombre' => $f['placa_unidad']]],
                             ['label' => 'Ver historial', 'attrs' => [
                                 'data-action' => 'ir-historial', 'data-href' => '/mantenimientos/historial?unidad_id=' . (int) $f['id']]],
                         ])) ?>

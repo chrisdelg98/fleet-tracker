@@ -14,7 +14,7 @@ final class MantenimientoModel
     public const CAMPOS = [
         'unidad_id', 'fecha', 'tipo_mantenimiento_id', 'descripcion', 'taller_id',
         'costo', 'moneda_id', 'tasa_usada', 'costo_usd', 'factura', 'km',
-        'reinicia_ciclo', 'observaciones',
+        'reinicia_ciclo', 'observaciones', 'en_taller_desde', 'en_taller_hasta', 'override_id',
     ];
 
     public function __construct(private PDO $pdo)
@@ -153,6 +153,13 @@ final class MantenimientoModel
      * `km_ref` y `fecha_ref` son la lectura más vieja de los últimos 90 días: con ella y la
      * actual sale el ritmo de la unidad, y con el ritmo se puede estimar la fecha del servicio.
      */
+    /** Marca la salida del taller: cierra el intervalo que quitaba disponibilidad. */
+    public function cerrarTaller(int $id, string $cuando): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE mantenimientos SET en_taller_hasta = :h WHERE id = :id');
+        $stmt->execute([':h' => $cuando, ':id' => $id]);
+    }
+
     public function control(array $filtros): array
     {
         $sql = 'SELECT u.id, u.placa_unidad, u.marca, u.modelo, u.estado_vehiculo,
@@ -173,6 +180,12 @@ final class MantenimientoModel
                        (SELECT m.km FROM mantenimientos m WHERE m.unidad_id = u.id AND m.reinicia_ciclo = 1
                          ORDER BY m.fecha DESC, m.id DESC LIMIT 1) AS ultimo_km,
                        (SELECT COALESCE(SUM(m.costo_usd), 0) FROM mantenimientos m WHERE m.unidad_id = u.id) AS costo_usd,
+                       (SELECT m.id FROM mantenimientos m WHERE m.unidad_id = u.id
+                          AND m.en_taller_desde IS NOT NULL AND m.en_taller_hasta IS NULL
+                         ORDER BY m.id DESC LIMIT 1) AS en_taller_id,
+                       (SELECT m.en_taller_desde FROM mantenimientos m WHERE m.unidad_id = u.id
+                          AND m.en_taller_desde IS NOT NULL AND m.en_taller_hasta IS NULL
+                         ORDER BY m.id DESC LIMIT 1) AS en_taller_desde,
                        c.nombre AS categoria, c.plan_no_aplica,
                        CASE WHEN u.plan_mantenimiento_id IS NOT NULL THEN pl.intervalo_km
                             WHEN c.plan_no_aplica = 1 THEN NULL

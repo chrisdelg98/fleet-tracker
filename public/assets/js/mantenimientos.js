@@ -117,6 +117,7 @@ form?.addEventListener('submit', async (ev) => {
     const payload = {};
     for (const campo of CAMPOS) payload[campo] = form.elements[campo]?.value ?? '';
     payload.reinicia_ciclo = form.elements['reinicia_ciclo'].checked ? 1 : 0;
+    payload.en_taller = form.elements['en_taller'].checked ? 1 : 0;
 
     const id = form.elements['id'].value;
     const r = id
@@ -263,6 +264,17 @@ document.addEventListener('click', async (ev) => {
     if (action === 'editar-mantenimiento') abrirEdicion(id);
     if (action === 'capturar-km') abrirKm(unidad);
     if (action === 'ir-historial') location.href = href;
+
+    if (action === 'salida-taller') {
+        const ok = await confirmar({
+            titulo: 'Marcar salida del taller',
+            mensaje: `${nombre} vuelve a estar disponible desde ahora y se podrá reservar.`,
+            aceptar: 'Marcar salida',
+        });
+        if (!ok) return;
+        const r = await api('POST', `/api/mantenimientos/${id}/salida`);
+        if (r.ok) location.reload(); else toast(r.message || 'No se pudo marcar la salida.', { tono: 'error' });
+    }
 
     if (action === 'eliminar-mantenimiento') {
         const ok = await confirmar({

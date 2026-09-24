@@ -80,6 +80,14 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
                 <label class="field grid-4__2"><span class="field__label">Nota del odómetro</span>
                     <input type="text" name="nota_odometro" maxlength="160" placeholder="Solo si el odómetro se reemplazó o está dañado"></label>
 
+                <!-- Enlace con la disponibilidad: marcarla abre el bloqueo de la unidad, y se
+                     cierra al marcar la salida. Sin marcar, solo queda el gasto registrado. -->
+                <label class="check check--box grid-4__full" id="mant-taller-wrap">
+                    <input type="checkbox" name="en_taller" value="1">
+                    <span><strong>La unidad se queda en el taller</strong>
+                        <small>Deja de estar disponible hasta que marques su salida. No la marques
+                        para un trabajo corto ni al cargar historial viejo.</small></span>
+                </label>
                 <label class="check check--box grid-4__full" id="mant-reinicia-wrap">
                     <input type="checkbox" name="reinicia_ciclo" value="1">
                     <span>Reinicia el ciclo de servicio

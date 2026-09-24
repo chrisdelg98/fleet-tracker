@@ -24,7 +24,8 @@ final class MantenimientoService
         private MantenimientoModel $mantenimientos,
         private LecturaOdometroModel $lecturas,
         private UnidadModel $unidades,
-        private TallerService $talleres
+        private TallerService $talleres,
+        private OverrideModel $overrides
     ) {
     }
 
@@ -67,6 +68,12 @@ final class MantenimientoService
                 'nota' => $data['nota_odometro'] ?? null,
             ], $user['id']);
         }
+        // Meter la unidad al taller es parte del mismo hecho: si se hiciera aparte, el gasto y
+        // la disponibilidad podrían contradecirse, que es justo lo que pasaba antes.
+        if ($data['en_taller_desde'] !== null) {
+            $this->meterAlTaller($id, $data, $user);
+        }
+
         registrar_bitacora($this->pdo, $user['id'], 'mantenimiento', $id, AccionBitacora::CREAR, [
             'despues' => $data,
             'origen' => $origen,
@@ -189,6 +196,52 @@ final class MantenimientoService
             }
         });
         return ['guardadas' => count($validas), 'errores' => $errores];
+    }
+
+    /**
+     * Abre el override que quita disponibilidad y marca el vehículo en mantenimiento.
+     *
+     * El motivo sale del propio trabajo —taller y descripción—, así que el tablero explica por
+     * qué la unidad no está disponible sin que nadie lo escriba dos veces.
+     */
+    private function meterAlTaller(int $id, array $data, array $user): void
+    {
+        $taller = $data['taller_id'] !== null ? $this->fila('talleres', (int) $data['taller_id']) : null;
+        $motivo = trim(($taller['nombre'] ?? 'Taller') . ' · ' . ($data['descripcion'] ?? 'Mantenimiento'));
+
+        $overrideId = $this->overrides->abrir(
+            (int) $data['unidad_id'],
+            TipoOverride::EN_TALLER,
+            OrigenOverride::AUTO_ESTADO,
+            mb_substr($motivo, 0, 255),
+            $user['id']
+        );
+        $this->mantenimientos->actualizar($id, array_merge($data, ['override_id' => $overrideId]));
+        $this->unidades->actualizarEstado((int) $data['unidad_id'], EstadoVehiculo::EN_MANTENIMIENTO, $motivo);
+    }
+
+    /**
+     * Marca la salida del taller: la unidad vuelve a estar disponible.
+     *
+     * Es el cierre del mismo hecho, no una acción de otra pantalla. Por eso cierra el override,
+     * devuelve el vehículo a operativo y fecha la salida en una sola transacción.
+     */
+    public function marcarSalida(int $id, array $user): void
+    {
+        $m = $this->intervencion($id, $user);
+        if ($m['en_taller_desde'] === null || $m['en_taller_hasta'] !== null) {
+            json_unprocessable(['id' => 'Esta unidad no está en el taller.']);
+        }
+
+        tx($this->pdo, function () use ($id, $m, $user): void {
+            $this->mantenimientos->cerrarTaller($id, now_utc());
+            $this->overrides->cerrarAutomaticosAbiertos((int) $m['unidad_id']);
+            $this->unidades->actualizarEstado((int) $m['unidad_id'], EstadoVehiculo::OPERATIVO, null);
+            registrar_bitacora($this->pdo, $user['id'], 'mantenimiento', $id, AccionBitacora::CAMBIO_ESTADO, [
+                'antes'   => ['en_taller_hasta' => null],
+                'despues' => ['en_taller_hasta' => now_utc(), 'estado_vehiculo' => EstadoVehiculo::OPERATIVO],
+            ]);
+        });
     }
 
     /**
@@ -457,6 +510,11 @@ final class MantenimientoService
                 : (int) $tipo['es_preventivo'],
             'observaciones' => $this->texto($input['observaciones'] ?? null, 255),
             'nota_odometro' => $nota === '' ? null : $nota,
+            // Un cambio de aceite de dos horas no saca la unidad de disponibilidad; una
+            // reparación de tres días sí. Lo decide quien registra, no el tipo de trabajo.
+            'en_taller_desde' => !empty($input['en_taller']) ? now_utc() : null,
+            'en_taller_hasta' => null,
+            'override_id' => null,
         ], 'errores' => []];
     }
 

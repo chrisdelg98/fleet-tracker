@@ -79,6 +79,11 @@ final class UnidadService
         $nuevo = $v->value('estado_vehiculo');
         $notas = $v->value('estado_notas');
 
+        // El taller entra por Mantenimientos, que además guarda el trabajo y su costo. Dejarlo
+        // también aquí devolvería el problema de gestionar lo mismo en dos sitios.
+        if ($nuevo === EstadoVehiculo::EN_MANTENIMIENTO && $unidad['estado_vehiculo'] !== EstadoVehiculo::EN_MANTENIMIENTO) {
+            $v->addError('estado_vehiculo', 'Para meter una unidad al taller, regístralo en Mantenimientos.');
+        }
         if ($nuevo !== null && in_array($nuevo, EstadoVehiculo::REQUIERE_NOTAS, true) && ($notas === null || $notas === '')) {
             $v->addError('estado_notas', 'Las notas son obligatorias cuando el vehículo no está operativo.');
         }

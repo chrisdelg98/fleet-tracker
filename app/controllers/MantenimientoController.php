@@ -238,6 +238,14 @@ final class MantenimientoController
 
     // ── API: kilometraje ──
 
+    /** POST /api/mantenimientos/{id}/salida — la unidad sale del taller y vuelve a estar libre. */
+    public function apiSalida(array $p): void
+    {
+        $user = require_role_api(self::ESCRITURA);
+        $this->service->marcarSalida((int) $p['id'], $user);
+        json_ok(null, 'La unidad salió del taller y vuelve a estar disponible.');
+    }
+
     public function apiLectura(): void
     {
         $user = require_role_api(self::ESCRITURA);

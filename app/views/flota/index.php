@@ -288,8 +288,14 @@ set_page_meta(
         <div class="dialog__body">
             <label class="field"><span class="field__label">Nuevo estado *</span>
                 <select name="estado_vehiculo" required>
-                    <?php foreach ($estados as $e): ?><option value="<?= e($e) ?>"><?= e($labelEstado[$e] ?? $e) ?></option><?php endforeach; ?>
-                </select></label>
+                    <?php // EN_MANTENIMIENTO no se ofrece aquí: meter una unidad al taller se
+                          // registra en Mantenimientos, y de ahí sale el bloqueo y el gasto.
+                          foreach ($estados as $e): if ($e === EstadoVehiculo::EN_MANTENIMIENTO) { continue; } ?>
+                        <option value="<?= e($e) ?>"><?= e($labelEstado[$e] ?? $e) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <small>¿Va al taller? Regístralo en <a class="link" href="/mantenimientos">Mantenimientos</a>:
+                    ahí queda el trabajo, su costo y el bloqueo de disponibilidad de una sola vez.</small></label>
             <label class="field" id="estado-notas-field"><span class="field__label">Notas <span data-req>*</span></span>
                 <textarea name="estado_notas" rows="3" placeholder="Motivo del mantenimiento, avería o baja"></textarea>
                 <small>Obligatorio cuando el vehículo no está operativo.</small></label>
