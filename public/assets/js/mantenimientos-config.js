@@ -55,7 +55,9 @@ function abrir(tabla, id) {
     dlg.showModal();
 }
 
-form.addEventListener('submit', async (ev) => {
+// Con guarda: si el diálogo no estuviera en la página, un TypeError aquí arriba mataba también
+// el menú de acciones de abajo, y la pantalla entera dejaba de responder.
+form?.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const tabla = form.elements['__tabla'].value;
     const id = form.elements['id'].value;

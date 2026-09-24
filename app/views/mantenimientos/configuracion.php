@@ -107,6 +107,24 @@ $ayuda = [
 
 <?php require __DIR__ . '/_modales.php'; ?>
 
+<!-- Alta y edición de cualquiera de los tres catálogos: los campos los dibuja el JS desde
+     la definición que manda el servidor, así que este diálogo sirve para los tres. -->
+<dialog id="dlg-config" class="dialog">
+    <form method="dialog" class="form" id="form-config" novalidate>
+        <div class="dialog__head">
+            <h2 id="dlg-config-title">Agregar</h2>
+        </div>
+        <input type="hidden" name="id" value="">
+        <input type="hidden" name="__tabla" value="">
+        <div class="dialog__body"><div id="config-campos" class="form"></div></div>
+        <p class="form__error" id="form-config-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar</button>
+        </div>
+    </form>
+</dialog>
+
 <?php if ($clave === 'planes' && $puedeEditar): ?>
 <dialog id="dlg-aplicar-plan" class="dialog">
     <form method="dialog" class="form" id="form-aplicar-plan" novalidate>
