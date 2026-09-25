@@ -197,6 +197,7 @@ $router->post('/api/mantenimientos/lectura', fn() => $mantenimientoController->a
 $router->post('/api/mantenimientos/lecturas', fn() => $mantenimientoController->apiLecturas());
 // Salida del taller: cierra el override y devuelve la unidad a disponibilidad.
 $router->post('/api/mantenimientos/{id}/salida', fn($p) => $mantenimientoController->apiSalida($p));
+$router->post('/api/mantenimientos/unidad/{id}/salida', fn($p) => $mantenimientoController->apiSalidaDeUnidad($p));
 
 $router->post('/api/talleres', fn() => $mantenimientoController->apiTallerCreate());
 $router->post('/api/talleres/lote', fn() => $mantenimientoController->apiTalleresLote());

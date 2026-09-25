@@ -27,6 +27,17 @@ const CHIP = {
     TALLER_BLOQUEADA: ['chip--taller', 'Taller/Bloqueada'],
 };
 
+/**
+ * Chip de la unidad. «Taller/Bloqueada» era un solo estado para dos cosas que se resuelven en
+ * sitios distintos: el taller sale registrando la salida del trabajo, el bloqueo manual se
+ * quita aquí mismo. El tipo de override ya viaja con la fila, así que se distinguen.
+ */
+function chipDe(u) {
+    const base = CHIP[u.estado] || ['chip--muted', u.estado];
+    if (u.estado !== 'TALLER_BLOQUEADA' || !u.override) return base;
+    return [base[0], u.override.tipo === 'EN_TALLER' ? 'En taller' : 'Bloqueada'];
+}
+
 let fechaMode = 'hoy';
 const colspan = cfg.puedeReservar ? 9 : 8;
 
@@ -152,7 +163,7 @@ function equipoDe(u) {
 }
 
 function rowHtml(u) {
-    const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
+    const [cls, label] = chipDe(u);
     const m = u.movimiento;
     const demora = u.con_demora ? '<span class="delay-flag"><span class="delay-flag__icon" aria-hidden="true">!</span><span>Con demora</span></span>' : '';
     const juntos = (m?.acompanantes || []).length
@@ -213,7 +224,7 @@ const KEBAB = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true
  * retorno o acompañantes, y no había dónde acostumbrar la mano.
  */
 const ORDEN_ACCIONES = [
-    'desbloquear',
+    'desbloquear', 'salida-taller',
     'confirmar', 'salida', 'llegada',
     'editar', 'reprogramar', 'liberar',
     'apartar-retorno', 'reenviar-aviso',
@@ -223,6 +234,7 @@ const ORDEN_ACCIONES = [
 
 const ETIQUETA_ACCION = {
     desbloquear: 'Desbloquear',
+    'salida-taller': 'Marcar salida del taller',
     confirmar: 'Confirmar',
     salida: 'Marcar salida',
     llegada: 'Marcar llegada',
@@ -254,6 +266,9 @@ function accionesDe(u) {
     }
     if (u.override && u.override.tipo === 'BLOQUEADA') {
         puede.add('desbloquear');
+    }
+    if (u.override && u.override.tipo === 'EN_TALLER') {
+        puede.add('salida-taller');
     }
 
     if (enCurso) {
@@ -322,6 +337,8 @@ if (cfg.puedeReservar) {
             return abrirRetorno(id, u?.movimiento, u?.timezone);
         }
         if (mov === 'desbloquear') return postAccion(`/api/unidades/${unidad}/desbloquear`);
+        // La salida del taller cierra el trabajo que la metió; el tablero no necesita saber cuál.
+        if (mov === 'salida-taller') return postAccion(`/api/mantenimientos/unidad/${unidad}/salida`);
         if (mov === 'confirmar') return postAccion(`/api/movimientos/${id}/confirmar`);
         if (mov === 'llegada') return postAccion(`/api/movimientos/${id}/llegada`);
         if (mov === 'editar') return abrirEdicion(id);
@@ -942,6 +959,8 @@ function abrirMotivo(accion, id) {
     formMotivo.elements['accion'].value = accion;
     formMotivo.elements['id'].value = id;
     document.getElementById('dlg-motivo-title').textContent = accion === 'cancelar' ? 'Cancelar movimiento' : 'Bloquear unidad';
+    // La nota del taller solo estorba al cancelar un movimiento.
+    document.getElementById('motivo-taller').hidden = accion !== 'bloquear';
     errMotivo.hidden = true;
     dlgMotivo.showModal();
 }
@@ -1058,7 +1077,7 @@ function accionesPanel(u) {
 
 function abrirPanelUnidad(u) {
     const m = u.movimiento;
-    const [cls, label] = CHIP[u.estado] || ['chip--muted', u.estado];
+    const [cls, label] = chipDe(u);
 
     const fila = (k, v) => (v ? `<div class="panel__dato"><dt>${k}</dt><dd>${v}</dd></div>` : '');
     const datos = [

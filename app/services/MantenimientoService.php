@@ -245,6 +245,21 @@ final class MantenimientoService
     }
 
     /**
+     * Saca del taller a una unidad sin saber qué trabajo la metió.
+     *
+     * Lo usa el tablero: ahí se ve la unidad apagada, no el mantenimiento, y obligar a buscarlo
+     * en otra pantalla era justo lo que hacía que los dos bloqueos se confundieran.
+     */
+    public function marcarSalidaDeUnidad(int $unidadId, array $user): void
+    {
+        $abierto = $this->mantenimientos->abiertoDeUnidad($unidadId);
+        if ($abierto === null) {
+            json_unprocessable(['unidad_id' => 'Esta unidad no está en el taller.']);
+        }
+        $this->marcarSalida((int) $abierto['id'], $user);
+    }
+
+    /**
      * Las reglas de una lectura, SIN cortar la petición: la puerta que usa la carga masiva.
      *
      * @return array{data: ?array<string,mixed>, errores: array<string,string>}

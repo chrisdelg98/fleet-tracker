@@ -153,6 +153,18 @@ final class MantenimientoModel
      * `km_ref` y `fecha_ref` son la lectura más vieja de los últimos 90 días: con ella y la
      * actual sale el ritmo de la unidad, y con el ritmo se puede estimar la fecha del servicio.
      */
+    /** El trabajo por el que la unidad está en el taller ahora, si lo hay. */
+    public function abiertoDeUnidad(int $unidadId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM mantenimientos
+              WHERE unidad_id = :u AND en_taller_desde IS NOT NULL AND en_taller_hasta IS NULL
+              ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute([':u' => $unidadId]);
+        return $stmt->fetch() ?: null;
+    }
+
     /** Marca la salida del taller: cierra el intervalo que quitaba disponibilidad. */
     public function cerrarTaller(int $id, string $cuando): void
     {

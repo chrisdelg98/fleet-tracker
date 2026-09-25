@@ -437,6 +437,11 @@ set_page_meta(
         <div class="dialog__body">
             <label class="field"><span class="field__label">Motivo *</span>
                 <textarea name="motivo" rows="3" required></textarea></label>
+            <!-- El taller tiene su propio camino, que además guarda el trabajo y su costo.
+                 Sin esta línea, bloquear a mano se usaba también para eso. -->
+            <p class="muted" id="motivo-taller" hidden>¿La unidad va al taller? Regístralo en
+                <a class="link" href="/mantenimientos">Mantenimientos</a> y el bloqueo se pone solo,
+                junto con el trabajo y su costo.</p>
         </div>
         <p class="form__error" id="form-motivo-error" hidden></p>
         <div class="dialog__actions">
