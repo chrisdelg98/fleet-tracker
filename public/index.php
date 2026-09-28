@@ -303,7 +303,8 @@ $router->get('/api/unidades/{id}/estadisticas', fn($p) => $inventarioController-
 
 // ── Fase 3: Histórico ──
 $historicoController = new HistoricoController(new HistoricoService($pdo), $usuarioModel, $catalogoModel);
-$router->get('/historico', fn() => $historicoController->index());
+$router->get('/movimientos', fn() => $historicoController->index());
+$router->get('/historico', fn() => $historicoController->sistema());
 $router->get('/historico/sistema', fn() => $historicoController->sistema());
 $router->get('/historico/export.csv', fn() => $historicoController->export());
 

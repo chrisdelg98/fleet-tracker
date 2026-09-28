@@ -187,7 +187,7 @@ set_page_meta(
     'Registro del sistema',
     'Toda escritura registrada: catálogos, unidades, pilotos, usuarios y estaciones, con su autor y el antes/después.',
     [
-        'padre' => ['label' => 'Histórico', 'href' => '/historico'],
+        'padre' => ['label' => 'Movimientos', 'href' => '/movimientos'],
         'accion' => '<a class="btn btn--primary" href="/historico/export.csv' . ($qs ? '?' . e($qs) : '') . '">⬇ Exportar CSV</a>',
     ]
 );

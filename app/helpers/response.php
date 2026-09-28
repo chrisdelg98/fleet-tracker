@@ -25,9 +25,15 @@ function json_ok(mixed $data = null, string $message = '', int $status = 200): v
  * Respuesta de error. Códigos típicos: 401 (sin sesión), 403 (sin permiso),
  * 409 (traslape), 422 (validación).
  */
-function json_error(string $error, int $status = 400, string $message = ''): void
+function json_error(string $error, int $status = 400, string $message = '', array $data = []): void
 {
-    json_out($status, ['ok' => false, 'error' => $error, 'message' => $message !== '' ? $message : $error]);
+    // `data` es opcional y solo lo usan los errores sobre los que la pantalla puede ofrecer una
+    // salida: un traslape manda el movimiento con el que choca para poder actuar sobre él.
+    $cuerpo = ['ok' => false, 'error' => $error, 'message' => $message !== '' ? $message : $error];
+    if ($data !== []) {
+        $cuerpo['data'] = $data;
+    }
+    json_out($status, $cuerpo);
 }
 
 /**

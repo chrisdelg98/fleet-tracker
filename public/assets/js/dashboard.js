@@ -5,6 +5,7 @@
  */
 import { api, showError, mensajeError } from './api.js';
 import { confirmar } from './confirm.js';
+import { pintarConflicto } from './conflicto.js';
 import { toast } from './toast.js';
 
 const cfg = JSON.parse(document.getElementById('dash-config').textContent);
@@ -941,7 +942,7 @@ if (formReserva) {
         const r = editando
             ? await api('PUT', `/api/movimientos/${editando}`, p)
             : await api('POST', '/api/movimientos', p);
-        if (!r.ok) { showError(errReserva, r); return; }
+        if (!r.ok) { pintarConflicto(errReserva, r) || showError(errReserva, r); return; }
         dlgReserva.close();
         load();
         if (editando) toast('Reserva actualizada.');
@@ -1146,7 +1147,8 @@ if (formReprogramar) {
             fecha_fin_estimada: formReprogramar.elements['fecha_fin_estimada'].value,
             motivo: formReprogramar.elements['motivo'].value,
         });
-        if (r.ok) { dlgReprogramar.close(); load(); } else showError(errReprogramar, r);
+        if (r.ok) { dlgReprogramar.close(); load(); }
+        else if (!pintarConflicto(errReprogramar, r)) showError(errReprogramar, r);
     });
 }
 
@@ -1183,7 +1185,8 @@ if (formRetorno) {
             if (el.name && el.name !== 'id' && el.value !== '') p[el.name] = el.value;
         }
         const r = await api('POST', `/api/movimientos/${id}/apartar-retorno`, p);
-        if (r.ok) { dlgRetorno.close(); load(); } else showError(errRetorno, r);
+        if (r.ok) { dlgRetorno.close(); load(); }
+        else if (!pintarConflicto(errRetorno, r)) showError(errRetorno, r);
     });
 }
 

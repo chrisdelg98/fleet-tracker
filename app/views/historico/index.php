@@ -4,7 +4,7 @@
  *
  * Un movimiento es la unidad de trabajo de la operación, así que la vista principal cuenta
  * viajes: qué se prometió, qué pasó de verdad y quién intervino. El registro crudo de toda
- * escritura del sistema vive un nivel adentro, en /historico/sistema.
+ * escritura del sistema vive aparte, en /historico.
  *
  * @var array $usuario
  * @var array $resultado
@@ -109,22 +109,68 @@ $rastroHtml = static function (array $eventos) use ($accLabel, $campoLabel, $val
 };
 
 set_page_meta(
-    'Historial de viajes',
-    'Qué se programó, qué pasó de verdad y quién intervino en cada movimiento.',
-    ['acciones' => '<a class="btn btn--ghost-dark" href="/historico/sistema">Registro del sistema</a>']
+    'Movimientos',
+    'Todo lo reservado, en curso y terminado: flota propia y contratada, con lo que se programó y lo que pasó.',
+    ['acciones' => '<a class="btn btn--ghost-dark" href="/historico">Bitácora del sistema</a>']
 );
 ?>
 <section class="module">
-    <form class="filters-panel" method="get" action="/historico" data-filters-panel data-initial-open="<?= $hayFiltros ? 'true' : 'false' ?>">
-        <div class="filters-panel__bar">
-            <div class="filters-panel__summary">
-                <strong>Filtros</strong>
-                <span>Fechas, estación, estado, tipo de ruta y búsqueda por placa, piloto o cliente</span>
+    <?php
+    // Atajos: lo que se consulta a diario, a un clic y sin abrir el panel. Los filtros finos
+    // siguen abajo para lo demás. Cada atajo conserva el resto de filtros puestos.
+    $enlace = static function (array $cambios) use ($filtros, $r): string {
+        $q = array_filter(
+            array_merge($filtros, ['por_pagina' => $r['por_pagina']], $cambios),
+            static fn($v): bool => $v !== null && $v !== '' && $v !== false
+        );
+        return '/movimientos' . ($q ? '?' . http_build_query($q) : '');
+    };
+    $atajos = [
+        ['Todos', 'Sin filtrar por estado: reservados, en camino, terminados y cancelados.',
+            ['estado' => null, 'solo_demora' => null],
+            ($filtros['estado'] ?? '') === '' && empty($filtros['solo_demora'])],
+        ['Sin terminar', 'Todo lo que aún puede cambiar: reservados, programados y en tránsito. '
+            . 'Es lo que hay que vigilar; incluye a los reservados, no es lo mismo que ellos solos.',
+            ['estado' => HistoricoService::PENDIENTES, 'solo_demora' => null],
+            ($filtros['estado'] ?? '') === HistoricoService::PENDIENTES],
+        ['Reservados', 'Solo los apartados que todavía no salen ni se han confirmado.',
+            ['estado' => EstadoMovimiento::RESERVADO, 'solo_demora' => null],
+            ($filtros['estado'] ?? '') === EstadoMovimiento::RESERVADO],
+        ['En tránsito', 'Los que ya salieron y siguen en camino.',
+            ['estado' => EstadoMovimiento::EN_TRANSITO, 'solo_demora' => null],
+            ($filtros['estado'] ?? '') === EstadoMovimiento::EN_TRANSITO],
+        ['Terminados', 'Los que ya llegaron. Se conservan para consultar lo que pasó.',
+            ['estado' => EstadoMovimiento::COMPLETADO, 'solo_demora' => null],
+            ($filtros['estado'] ?? '') === EstadoMovimiento::COMPLETADO],
+        ['Con demora', 'Terminaron después de su fin estimado. Se combina con el atajo que tengas puesto.',
+            ['solo_demora' => 1], !empty($filtros['solo_demora'])],
+    ];
+    ?>
+    <!-- Una sola barra, como el tablero: los atajos a la izquierda, el recuento a la derecha y
+         los filtros finos detrás de «Más filtros». Antes eran dos bloques apilados que decían
+         lo mismo dos veces. -->
+    <form class="filters-panel filters-panel--split card" method="get" action="/movimientos" data-filters-panel data-initial-open="false">
+        <div class="filters-panel__always">
+            <div class="filters-panel__always-row">
+                <div class="filters-panel__always-main">
+                    <div class="atajos" role="group" aria-label="Vistas rápidas">
+                        <?php foreach ($atajos as [$texto, $ayuda, $cambios, $activo]): ?>
+                            <a class="chipbtn<?= $activo ? ' is-active' : '' ?>" href="<?= e($enlace($cambios)) ?>"
+                               data-infotip="<?= e($ayuda) ?>"><?= e($texto) ?></a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="dashboard__status">
+                    <strong><?= (int) $r['total'] ?> viaje<?= $r['total'] === 1 ? '' : 's' ?></strong>
+                    <?php if ($r['paginas'] > 1): ?>
+                        <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span>
+                    <?php endif; ?>
+                    <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="hist-filters">
+                        <span data-filters-toggle-label data-open-label="Más filtros" data-close-label="Ocultar filtros">Más filtros</span>
+                        <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
+                    </button>
+                </div>
             </div>
-            <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="hist-filters">
-                <span data-filters-toggle-label data-open-label="Mostrar filtros" data-close-label="Ocultar filtros">Mostrar filtros</span>
-                <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>
-            </button>
         </div>
         <div class="filters-panel__more" id="hist-filters" data-filters-more hidden>
             <div class="filters-grid">
@@ -150,8 +196,14 @@ set_page_meta(
                         <option value="<?= TipoRuta::NACIONAL ?>" <?= $sel($filtros['tipo_ruta'], TipoRuta::NACIONAL) ?>>Nacional</option>
                         <option value="<?= TipoRuta::INTERNACIONAL ?>" <?= $sel($filtros['tipo_ruta'], TipoRuta::INTERNACIONAL) ?>>Internacional</option>
                     </select></label>
+                <label class="field"><span class="field__label">Flota</span>
+                    <select name="flota" data-no-search>
+                        <option value="">Toda</option>
+                        <option value="propia" <?= $sel($filtros['flota'] ?? '', 'propia') ?>>Propia</option>
+                        <option value="proveedor" <?= $sel($filtros['flota'] ?? '', 'proveedor') ?>>De proveedor</option>
+                    </select></label>
                 <label class="field"><span class="field__label">Buscar</span>
-                    <input type="search" name="q" value="<?= e((string) $filtros['q']) ?>" placeholder="Placa, piloto o cliente…" class="search" data-no-search></label>
+                    <input type="search" name="q" value="<?= e((string) $filtros['q']) ?>" placeholder="Placa, piloto, cliente o #68…" class="search" data-no-search></label>
                 <label class="field field--delay-filter"><span class="field__label">Demora</span>
                     <label class="delay-toggle"><input type="checkbox" name="solo_demora" value="1" <?= !empty($filtros['solo_demora']) ? 'checked' : '' ?>><span>Solo con demora</span></label>
                 </label>
@@ -162,21 +214,17 @@ set_page_meta(
             </div>
             <div class="filters-actions">
                 <button type="submit" class="btn btn--ghost-dark">Filtrar</button>
-                <a href="/historico" class="link">Limpiar</a>
+                <a href="/movimientos" class="link">Limpiar</a>
             </div>
         </div>
     </form>
 
-    <p class="dashboard__meta">
-        <span><?= (int) $r['total'] ?> viaje<?= $r['total'] === 1 ? '' : 's' ?></span>
-        · <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span>
-    </p>
 
     <div class="card card--table">
         <?php if (empty($r['filas'])): ?>
-            <div class="card__empty"><p>Sin viajes para estos filtros. <a href="/historico" class="link">Limpiar filtros</a></p></div>
+            <div class="card__empty"><p>Sin movimientos para estos filtros. <a href="/movimientos" class="link">Limpiar filtros</a></p></div>
         <?php else: ?>
-        <table class="table">
+        <table class="table tabla-movimientos">
             <thead><tr>
                 <th class="col col--nombre">Unidad</th>
                 <th class="col col--corta">Ruta</th>
@@ -193,8 +241,13 @@ set_page_meta(
             <?php foreach ($r['filas'] as $m): $tid = 'viaje-' . (int) $m['id']; $eventos = $r['eventos'][(int) $m['id']] ?? []; ?>
                 <tr>
                     <td class="col col--nombre">
-                        <strong><?= e($m['placa_unidad']) ?></strong>
-                        <small class="muted block"><?= e($m['estacion_codigo']) ?> · Mov. #<?= (int) $m['id'] ?></small>
+                        <?php $esPropia = $m['placa_unidad'] !== null; ?>
+                        <strong><?= e($esPropia ? $m['placa_unidad'] : ($m['placa_tercero'] ?: '—')) ?></strong>
+                        <?php if (!$esPropia): ?>
+                            <span class="badge badge--warn" title="Unidad contratada a un proveedor">Proveedor</span>
+                        <?php endif; ?>
+                        <small class="muted block"><?= e($m['estacion_codigo'] ?? '—') ?> · Mov. #<?= (int) $m['id'] ?><?php
+                            if (!$esPropia && $m['proveedor']) { echo ' · ' . e($m['proveedor']); } ?></small>
                     </td>
                     <td class="col col--corta">
                         <?= e($m['ruta']) ?>
@@ -221,10 +274,33 @@ set_page_meta(
                     </td>
                     <td class="col--acciones">
                         <button type="button" class="detalle-btn" data-detalle-open="<?= e($tid) ?>"
-                                data-detalle-title="<?= e($m['placa_unidad'] . ' · ' . $m['ruta'] . ' · Mov. #' . (int) $m['id']) ?>">
+                                data-detalle-title="<?= e(($m['placa_unidad'] ?? $m['placa_tercero'] ?? '—') . ' · ' . $m['ruta'] . ' · Mov. #' . (int) $m['id']) ?>">
                             <span class="detalle-btn__more">Ver rastro<?= $eventos ? ' (' . count($eventos) . ')' : '' ?></span>
                         </button>
                         <template id="<?= e($tid) ?>"><?= $rastroHtml($eventos) ?></template>
+                        <?php
+                        // Ver sin poder hacer no resuelve nada: las acciones del movimiento viven
+                        // aquí, con las mismas reglas de estado que el tablero. La edición completa
+                        // sigue allá porque necesita el formulario entero de la reserva.
+                        $acciones = [];
+                        if (!empty($puedeGestionar) && !in_array($m['estado'], ['COMPLETADO', 'CANCELADO'], true)) {
+                            if ($m['estado'] === EstadoMovimiento::RESERVADO) {
+                                $acciones[] = ['label' => 'Confirmar', 'attrs' => ['data-mov' => 'confirmar', 'data-id' => (int) $m['id']]];
+                            }
+                            if (in_array($m['estado'], [EstadoMovimiento::RESERVADO, EstadoMovimiento::PROGRAMADO], true)) {
+                                $acciones[] = ['label' => 'Marcar salida', 'attrs' => ['data-mov' => 'salida', 'data-id' => (int) $m['id']]];
+                            }
+                            if ($m['estado'] === EstadoMovimiento::EN_TRANSITO) {
+                                $acciones[] = ['label' => 'Marcar llegada', 'attrs' => ['data-mov' => 'llegada', 'data-id' => (int) $m['id']]];
+                            }
+                            $acciones[] = ['label' => 'Cambiar fecha de fin', 'attrs' => [
+                                'data-mov' => 'reprogramar', 'data-id' => (int) $m['id'],
+                                'data-fin' => format_local($m['fecha_fin_estimada'], $m['timezone'], 'Y-m-d\TH:i')]];
+                            $acciones[] = ['label' => 'Cancelar', 'danger' => true, 'attrs' => [
+                                'data-mov' => 'cancelar', 'data-id' => (int) $m['id']]];
+                        }
+                        ?>
+                        <?= $acciones === [] ? '' : row_menu($acciones) ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -236,7 +312,7 @@ set_page_meta(
     <?php if ($r['paginas'] > 1): ?>
     <nav class="pager">
         <?php for ($p = 1; $p <= $r['paginas']; $p++): $pq = http_build_query(array_merge($filtros, ['pagina' => $p])); ?>
-            <a href="/historico?<?= e($pq) ?>" class="pager__link<?= $p === $r['pagina'] ? ' is-active' : '' ?>"><?= $p ?></a>
+            <a href="/movimientos?<?= e($pq) ?>" class="pager__link<?= $p === $r['pagina'] ? ' is-active' : '' ?>"><?= $p ?></a>
         <?php endfor; ?>
     </nav>
     <?php endif; ?>
@@ -255,4 +331,48 @@ set_page_meta(
     </div>
 </dialog>
 
-<script src="/assets/js/historico.js" type="module"></script>
+<?php if (!empty($puedeGestionar)): ?>
+<dialog id="dlg-fin" class="dialog">
+    <form method="dialog" class="form" id="form-fin" novalidate>
+        <div class="dialog__head">
+            <h2>Cambiar fecha de fin</h2>
+            <p class="dialog__lede">Ajusta el fin estimado cuando el viaje se alarga: retención en aduana,
+               espera de descarga, acuerdo con el cliente. Queda en bitácora con su motivo.</p>
+        </div>
+        <input type="hidden" name="id" value="">
+        <div class="dialog__body">
+            <label class="field"><span class="field__label">Nuevo fin estimado *</span>
+                <input type="datetime-local" name="fecha_fin_estimada" required></label>
+            <label class="field"><span class="field__label">Motivo del cambio *</span>
+                <textarea name="motivo" rows="3" required placeholder="Retención en aduana"></textarea></label>
+        </div>
+        <p class="form__error" id="form-fin-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar cambio</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="dlg-cancelar" class="dialog">
+    <form method="dialog" class="form" id="form-cancelar" novalidate>
+        <div class="dialog__head">
+            <h2>Cancelar movimiento</h2>
+            <p class="dialog__lede">La unidad queda libre en esas fechas. El movimiento no se borra: queda cancelado con su motivo.</p>
+        </div>
+        <input type="hidden" name="id" value="">
+        <div class="dialog__body">
+            <label class="field"><span class="field__label">Motivo *</span>
+                <textarea name="motivo" rows="3" required></textarea></label>
+        </div>
+        <p class="form__error" id="form-cancelar-error" hidden></p>
+        <div class="dialog__actions">
+            <button type="button" class="btn btn--ghost-dark" data-close>Cerrar</button>
+            <button type="submit" class="btn btn--primary">Cancelar movimiento</button>
+        </div>
+    </form>
+</dialog>
+<script src="<?= e(asset('/assets/js/movimientos.js')) ?>" type="module"></script>
+<?php endif; ?>
+
+<script src="<?= e(asset('/assets/js/historico.js')) ?>" type="module"></script>

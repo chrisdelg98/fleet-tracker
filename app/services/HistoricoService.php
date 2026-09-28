@@ -10,6 +10,9 @@ declare(strict_types=1);
 
 final class HistoricoService
 {
+    /** Filtro que agrupa todo lo que aún no terminó. No es un estado de la base. */
+    public const PENDIENTES = 'PENDIENTES';
+
     public const POR_PAGINA_OPCIONES = [10, 20, 50, 100];
     public const POR_PAGINA_DEFAULT = 20;
 
@@ -38,7 +41,11 @@ final class HistoricoService
         $porPagina = self::porPaginaValido($porPagina);
         [$where, $params] = $this->whereViajes($filtros);
 
-        $conteo = $this->pdo->prepare("SELECT COUNT(*) FROM movimientos m JOIN unidades u ON u.id = m.unidad_id {$where}");
+        $conteo = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM movimientos m
+               LEFT JOIN unidades u ON u.id = m.unidad_id
+               LEFT JOIN movimiento_tercero t ON t.movimiento_id = m.id {$where}"
+        );
         $conteo->execute($params);
         $total = (int) $conteo->fetchColumn();
 
@@ -49,21 +56,25 @@ final class HistoricoService
             "SELECT m.id, m.estado, m.tipo_ruta, m.reservado_para, m.notas,
                     m.fecha_salida, m.fecha_fin_estimada, m.fecha_fin_real,
                     m.retorno_disponible, m.movimiento_regreso_id,
-                    u.placa_unidad, e.codigo AS estacion_codigo, e.timezone,
-                    p.nombre AS piloto,
+                    u.placa_unidad, COALESCE(e.codigo, ep.codigo) AS estacion_codigo,
+                    COALESCE(e.timezone, ep.timezone) AS timezone,
+                    COALESCE(p.nombre, t.piloto) AS piloto,
+                    t.proveedor, t.placa_motriz AS placa_tercero,
                     po.codigo_iso AS origen, pd.codigo_iso AS destino,
                     r.nombre AS ruta_nombre,
                     m.ruta_custom_origen, m.ruta_custom_destino,
                     TIMESTAMPDIFF(MINUTE, m.fecha_fin_estimada, m.fecha_fin_real) AS demora_min
                FROM movimientos m
-               JOIN unidades u ON u.id = m.unidad_id
-               JOIN estaciones e ON e.id = u.estacion_id
+               LEFT JOIN unidades u ON u.id = m.unidad_id
+               LEFT JOIN estaciones e ON e.id = u.estacion_id
+               LEFT JOIN estaciones ep ON ep.id = m.estacion_id
+               LEFT JOIN movimiento_tercero t ON t.movimiento_id = m.id
                LEFT JOIN pilotos p ON p.id = m.piloto_id
                LEFT JOIN paises po ON po.id = m.pais_origen_id
                LEFT JOIN paises pd ON pd.id = m.pais_destino_id
                LEFT JOIN rutas r ON r.id = m.ruta_id
                {$where}
-              ORDER BY m.fecha_salida DESC, m.id DESC
+              ORDER BY m.id DESC
               LIMIT " . $porPagina . " OFFSET " . $offset
         );
         $stmt->execute($params);
@@ -132,12 +143,22 @@ final class HistoricoService
             $params[':hasta'] = substr((string) $f['hasta'], 0, 10) . ' 23:59:59';
         }
         if (!empty($f['estacion_id'])) {
-            $where .= ' AND u.estacion_id = :estacion';
+            // La reserva con proveedor no tiene unidad: su estación es la del propio movimiento.
+            // Se comparan columnas y no un COALESCE: una expresión pierde la afinidad de tipo y
+            // el filtro deja de encontrar nada según cómo se envíe el parámetro.
+            $where .= ' AND (u.estacion_id = :estacion OR (m.unidad_id IS NULL AND m.estacion_id = :estacion2))';
             $params[':estacion'] = (int) $f['estacion_id'];
+            $params[':estacion2'] = (int) $f['estacion_id'];
         }
         if (!empty($f['estado'])) {
-            $where .= ' AND m.estado = :estado';
-            $params[':estado'] = $f['estado'];
+            // «Pendientes» no es un estado guardado: es todo lo que todavía puede pasar algo,
+            // y es la pregunta más frecuente («qué tengo vivo»), así que merece su atajo.
+            if ($f['estado'] === self::PENDIENTES) {
+                $where .= " AND m.estado IN ('" . implode("','", EstadoMovimiento::ACTIVOS) . "')";
+            } else {
+                $where .= ' AND m.estado = :estado';
+                $params[':estado'] = $f['estado'];
+            }
         }
         if (!empty($f['tipo_ruta'])) {
             $where .= ' AND m.tipo_ruta = :tipo_ruta';
@@ -146,12 +167,25 @@ final class HistoricoService
         if (!empty($f['solo_demora'])) {
             $where .= ' AND m.fecha_fin_real IS NOT NULL AND m.fecha_fin_real > m.fecha_fin_estimada';
         }
+        if (!empty($f['flota'])) {
+            $where .= $f['flota'] === 'proveedor' ? ' AND m.unidad_id IS NULL' : ' AND m.unidad_id IS NOT NULL';
+        }
         if (!empty($f['q'])) {
-            // Una sola búsqueda para placa, piloto y cliente: quien busca no sabe (ni le
-            // importa) en qué columna está guardado lo que recuerda del viaje.
-            $where .= " AND CONCAT(u.placa_unidad, ' ', COALESCE((SELECT nombre FROM pilotos WHERE id = m.piloto_id), ''),"
+            $q = trim((string) $f['q']);
+            // Un traslape se rechaza citando «#68», así que ese número tiene que ser buscable:
+            // era la pregunta que nadie podía responder desde ninguna pantalla.
+            if (preg_match('/^#?(\d+)$/', $q, $n)) {
+                $where .= ' AND m.id = :mov';
+                $params[':mov'] = (int) $n[1];
+                return [$where, $params];
+            }
+            // Una sola búsqueda para placa, piloto, cliente y proveedor: quien busca no sabe (ni
+            // le importa) en qué columna está guardado lo que recuerda del viaje.
+            $where .= " AND CONCAT(COALESCE(u.placa_unidad, ''), ' ', COALESCE(t.placa_motriz, ''),"
+                . " ' ', COALESCE(t.proveedor, ''),"
+                . " ' ', COALESCE((SELECT nombre FROM pilotos WHERE id = m.piloto_id), ''), ' ', COALESCE(t.piloto, ''),"
                 . " ' ', COALESCE(m.reservado_para, '')) LIKE :q";
-            $params[':q'] = '%' . $f['q'] . '%';
+            $params[':q'] = '%' . $q . '%';
         }
         return [$where, $params];
     }

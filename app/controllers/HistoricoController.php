@@ -36,13 +36,14 @@ final class HistoricoController
             'usuario'    => $user,
             'filtros'    => $filtros,
             'verTodas'   => $verTodas,
+            'puedeGestionar' => in_array($user['rol'], [Rol::ADMIN_GLOBAL, Rol::ENCARGADO], true),
             'estaciones' => $this->catalogos->activos('estaciones'),
             'resultado'  => $this->service->viajes(
                 $filtros,
                 isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1,
                 HistoricoService::porPaginaValido((int) ($_GET['por_pagina'] ?? 0))
             ),
-        ], 'Historial de viajes · Flete Finder');
+        ], 'Movimientos · Flete Finder');
     }
 
     /** GET /historico/sistema — registro crudo de toda escritura, un nivel adentro. */
@@ -86,7 +87,8 @@ final class HistoricoController
             'desde'       => $q['desde'] ?? null,
             'hasta'       => $q['hasta'] ?? null,
             'estacion_id' => $verTodas ? ($q['estacion_id'] ?? null) : (int) $user['estacion_id'],
-            'estado'      => $q['estado'] ?? null,
+            'estado'      => in_array($q['estado'] ?? '', array_merge(EstadoMovimiento::values(), [HistoricoService::PENDIENTES]), true) ? $q['estado'] : null,
+            'flota'       => in_array($q['flota'] ?? '', ['propia', 'proveedor'], true) ? $q['flota'] : null,
             'tipo_ruta'   => $q['tipo_ruta'] ?? null,
             'solo_demora' => !empty($q['solo_demora']) ? '1' : null,
             'q'           => trim((string) ($q['q'] ?? '')) ?: null,

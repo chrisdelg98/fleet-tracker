@@ -37,7 +37,10 @@ function menu_usuario(array $u): array
         $grupos['Consulta']['/inteligencia'] = 'Inteligencia';
     }
     if ($puedeGestionar) {
-        $grupos['Consulta']['/historico'] = 'Histórico';
+        // «Movimientos» es su propia entrada: la gente la busca por ese nombre, y dentro de
+        // «Histórico» —que suena a pasado— nadie encontraba las reservas de la semana próxima.
+        $grupos['Consulta']['/movimientos'] = 'Movimientos';
+        $grupos['Consulta']['/historico'] = 'Bitácora del sistema';
     }
     if ($u['rol'] === Rol::ADMIN_GLOBAL) {
         $grupos['Administración']['/admin'] = 'Administración';

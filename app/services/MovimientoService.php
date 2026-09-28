@@ -765,9 +765,10 @@ final class MovimientoService
         $desde = format_local($c['fecha_salida'], $tz, 'd M H:i');
         $hasta = format_local($c['fecha_fin_estimada'], $tz, 'd M H:i');
         json_error(
-            "La unidad ya tiene un movimiento {$c['estado']} del {$desde} al {$hasta} (mov. #{$c['id']}).",
+            "Traslape con el movimiento #{$c['id']}.",
             409,
-            "Traslape con el movimiento #{$c['id']}."
+            "La unidad ya tiene el movimiento #{$c['id']} ({$c['estado']}) del {$desde} al {$hasta}.",
+            ['conflicto' => ['id' => (int) $c['id'], 'estado' => $c['estado'], 'desde' => $desde, 'hasta' => $hasta]]
         );
     }
 
@@ -790,9 +791,10 @@ final class MovimientoService
         $desde = format_local($c['fecha_salida'], $tz, 'd M H:i');
         $hasta = format_local($c['fecha_fin_estimada'], $tz, 'd M H:i');
         json_error(
-            "{$nombre} ya va en un movimiento {$c['estado']} del {$desde} al {$hasta} (mov. #{$c['id']}).",
+            "Traslape de piloto con el movimiento #{$c['id']}.",
             409,
-            "Traslape de piloto con el movimiento #{$c['id']}."
+            "{$nombre} ya va en el movimiento #{$c['id']} ({$c['estado']}) del {$desde} al {$hasta}.",
+            ['conflicto' => ['id' => (int) $c['id'], 'estado' => $c['estado'], 'desde' => $desde, 'hasta' => $hasta]]
         );
     }
 
