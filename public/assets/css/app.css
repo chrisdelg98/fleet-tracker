@@ -3380,3 +3380,64 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     vertical-align: middle;
 }
 .tabla-movimientos td.col--acciones .rowmenu { margin-left: var(--sp-2); }
+
+/* ── Hojas de gráficos ──
+   Un solo tono en todas las barras: cada gráfico compara magnitudes de UNA medida, así que el
+   color no tiene que distinguir series. Lo que marca es la selección —elegido en el color de la
+   marca, el resto en gris—, que además evita el problema de daltonismo de una paleta categórica. */
+.graf-activos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--sp-3); }
+.graf-pastilla {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px var(--sp-3); border: 1px solid var(--primary-border); border-radius: 999px;
+    background: var(--primary-soft); color: var(--color-primary);
+    font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+}
+.graf-pastilla__dim { color: var(--color-ink-mute); font-weight: 500; }
+
+.graf-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.graf-kpi { padding: var(--sp-3) var(--sp-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.graf-kpi__n { display: block; font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.graf-kpi__t { color: var(--color-ink-soft); font-size: var(--fs-sm); }
+
+.graf-paneles { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: var(--sp-3); }
+.graf-panel { padding: var(--sp-4); }
+.graf-panel h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-md); }
+.graf-panel--ancho { grid-column: 1 / -1; }
+.graf__vacio, .graf__resto { margin: 0; color: var(--color-ink-soft); font-size: var(--fs-sm); }
+.graf__resto { padding-top: var(--sp-2); }
+
+/* Columnas: solo para el tiempo, donde el orden es la historia y no el tamaño. */
+.graf-cols { display: flex; align-items: flex-end; gap: 4px; height: 190px; }
+.graf-col {
+    display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: flex-end;
+    gap: 4px; height: 100%; padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
+}
+.graf-col__barra {
+    width: 100%; max-width: 46px; border-radius: 4px 4px 0 0;
+    background: var(--color-primary); transition: background-color var(--transition);
+}
+.graf-col__valor, .graf-col__etq { font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.graf-col__valor { font-weight: 700; }
+.graf-col__etq { color: var(--color-ink-soft); }
+
+/* Barras horizontales: los nombres de ruta o taller no caben debajo de una columna. */
+.graf-barras { display: grid; gap: 4px; }
+.graf-barra {
+    display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; align-items: center; gap: var(--sp-3);
+    padding: 3px var(--sp-2); border: 0; border-radius: var(--radius);
+    background: none; font: inherit; text-align: left; cursor: pointer;
+}
+.graf-barra:hover { background: var(--color-surface-soft); }
+.graf-barra__etq { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); }
+.graf-barra__pista { height: 14px; border-radius: 4px; background: var(--color-bg-strong); }
+.graf-barra__fill { display: block; height: 100%; border-radius: 4px; background: var(--color-primary); }
+.graf-barra__valor { font-size: var(--fs-sm); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Lo no seleccionado no desaparece: se apaga, para poder compararlo y volver atrás. */
+.graf-col.is-apagada .graf-col__barra,
+.graf-barra.is-apagada .graf-barra__fill { background: var(--color-ink-mute); opacity: .45; }
+
+.graf-detalle { margin-top: var(--sp-3); padding: 0; overflow: hidden; }
+.graf-detalle h2 { margin: 0; padding: var(--sp-4) var(--sp-4) var(--sp-3); font-size: var(--fs-md); }
+.graf-detalle .table { margin: 0; }
+.graf-detalle .muted { padding: var(--sp-3) var(--sp-4); margin: 0; }

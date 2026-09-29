@@ -36,6 +36,7 @@ function menu_usuario(array $u): array
     if ($u['rol'] !== Rol::CONSULTA_BASICO) {
         $grupos['Consulta']['/inventario'] = 'Inventario';
         $grupos['Consulta']['/inteligencia'] = 'Inteligencia';
+        $grupos['Consulta']['/graficos'] = 'Gráficos';
     }
     if ($puedeGestionar) {
         // «Movimientos» es su propia entrada: la gente la busca por ese nombre, y dentro de
