@@ -73,13 +73,16 @@ $comunes = array_filter(['estacion_id' => $estacionSel], static fn($v) => $v !==
     </form>
 
     <!-- Lo que se ha pulsado, para poder deshacerlo sin adivinar qué está filtrando. -->
-    <div class="graf-activos" id="graf-filtros-activos" hidden></div>
+    <div class="graf-activos" id="graf-filtros-activos"></div>
 
     <div class="graf-kpis" id="graf-kpis"></div>
     <div class="graf-paneles" id="graf-paneles"></div>
 
     <section class="card card--table graf-detalle">
-        <h2>Detalle</h2>
+        <div class="graf-detalle__head">
+            <h2>Detalle</h2>
+            <input type="search" id="graf-tabla-buscar" placeholder="Buscar en el detalle…" data-no-search autocomplete="off">
+        </div>
         <div id="graf-tabla"></div>
     </section>
 </section>

@@ -53,6 +53,7 @@ final class GraficoService
                        m.tipo_ruta AS tipo,
                        CASE WHEN m.unidad_id IS NULL THEN 'De proveedor' ELSE 'Propia' END AS flota,
                        m.estado,
+                       COALESCE(m.notas, '') AS descripcion,
                        COALESCE(u.placa_unidad, t.placa_motriz, 'Sin placa') AS unidad,
                        COALESCE(p.nombre, t.piloto, 'Sin piloto') AS piloto,
                        ROUND(TIMESTAMPDIFF(MINUTE, m.fecha_salida,
@@ -97,6 +98,7 @@ final class GraficoService
                        COALESCE(u.marca, 'Sin marca') AS marca,
                        COALESCE(ta.nombre, 'Sin taller') AS taller,
                        ti.nombre AS tipo,
+                       COALESCE(mt.descripcion, '') AS descripcion,
                        CASE WHEN ta.es_propio = 1 THEN 'Propio' ELSE 'Externo' END AS taller_tipo,
                        COALESCE(mt.costo_usd, 0) AS costo
                   FROM mantenimientos mt

@@ -3162,8 +3162,12 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 .km-fecha { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); font-weight: 600; }
 /* Los campos del diálogo viven fuera de `.field`, que es donde el sistema aplica su estilo:
    sin esto salían con el borde gris del navegador y de otra altura que los chips. */
+/* `.km-fecha` incluido: se usa también en la barra de Gráficos, fuera de `.km-barra`, y sin
+   esto sus inputs de fecha salían con el borde por defecto del navegador. */
 .km-barra input,
-.km-nota input {
+.km-nota input,
+.km-fecha input,
+.km-fecha select {
     min-height: var(--control-h);
     padding: 0 var(--sp-3);
     border: 1px solid var(--color-border);
@@ -3174,7 +3178,9 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     transition: border-color var(--transition), box-shadow var(--transition);
 }
 .km-barra input:focus,
-.km-nota input:focus {
+.km-nota input:focus,
+.km-fecha input:focus,
+.km-fecha select:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: var(--focus-ring);
@@ -3385,7 +3391,10 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
    Un solo tono en todas las barras: cada gráfico compara magnitudes de UNA medida, así que el
    color no tiene que distinguir series. Lo que marca es la selección —elegido en el color de la
    marca, el resto en gris—, que además evita el problema de daltonismo de una paleta categórica. */
-.graf-activos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--sp-3); }
+/* Alto reservado: la fila existe siempre (vacía muestra la pista), así aplicar un filtro no
+   empuja la pantalla hacia abajo. */
+.graf-activos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 30px; margin-bottom: var(--sp-2); }
+.graf-activos__vacio { color: var(--color-ink-mute); font-size: var(--fs-sm); }
 .graf-pastilla {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 4px var(--sp-3); border: 1px solid var(--primary-border); border-radius: 999px;
@@ -3394,20 +3403,76 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 }
 .graf-pastilla__dim { color: var(--color-ink-mute); font-weight: 500; }
 
-.graf-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-3); }
-.graf-kpi { padding: var(--sp-3) var(--sp-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
-.graf-kpi__n { display: block; font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.graf-kpi__t { color: var(--color-ink-soft); font-size: var(--fs-sm); }
+.graf-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.graf-kpi {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); background: var(--color-surface);
+}
+.graf-kpi__ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; flex: none; border-radius: 50%;
+    background: var(--primary-soft); color: var(--color-primary);
+}
+.graf-kpi__cuerpo { display: flex; flex-direction: column; }
+.graf-kpi__n { font-size: 22px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.graf-kpi__t { color: var(--color-ink-soft); font-size: var(--fs-xs); }
 
-.graf-paneles { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: var(--sp-3); }
-.graf-panel { padding: var(--sp-4); }
-.graf-panel h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-md); }
-.graf-panel--ancho { grid-column: 1 / -1; }
-.graf__vacio, .graf__resto { margin: 0; color: var(--color-ink-soft); font-size: var(--fs-sm); }
-.graf__resto { padding-top: var(--sp-2); }
+/* Rejilla densa de 4 columnas: los paneles pequeños caben de a cuatro, los anchos ocupan la
+   fila entera. Así se parece a una página de BI y no a una lista de tarjetas sueltas. */
+.graf-paneles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); align-items: start; }
+.graf-panel { padding: var(--sp-3); min-width: 0; }
+.graf-panel h2 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+.graf__vacio, .graf__resto { margin: 0; color: var(--color-ink-soft); font-size: var(--fs-xs); }
+.graf__resto { padding-top: 4px; }
+/* Al estrechar, la rejilla pasa a 2 columnas y cada panel ocupa como mucho esas 2. */
+@media (max-width: 1100px) {
+    .graf-paneles { grid-template-columns: repeat(2, 1fr); }
+    .graf-panel { grid-column: span 2 !important; }
+}
+@media (max-width: 620px) {
+    .graf-paneles { grid-template-columns: 1fr; }
+    .graf-panel { grid-column: span 1 !important; }
+}
 
+/* Gráfico de tiempo con eje: la fila de números a la izquierda da referencia a la altura. */
+.graf-plot { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2); }
+.graf-ejeY {
+    display: flex; flex-direction: column; justify-content: space-between;
+    height: 150px; padding-bottom: 18px; text-align: right;
+    color: var(--color-ink-soft); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
+}
 /* Columnas: solo para el tiempo, donde el orden es la historia y no el tamaño. */
-.graf-cols { display: flex; align-items: flex-end; gap: 4px; height: 190px; }
+.graf-cols {
+    display: flex; align-items: flex-end; gap: 4px; height: 150px;
+    background: repeating-linear-gradient(to top, transparent 0, transparent calc(50% - 1px),
+        var(--color-border) calc(50% - 1px), var(--color-border) 50%);
+    background-position: 0 -18px;
+}
+
+/* Dona: anillo con el total al centro y leyenda con conteo y porcentaje. Centrada y con aire,
+   para que no quede pegada a un lado del panel. */
+/* La dona y su leyenda reparten el ancho de la tarjeta en dos mitades: con la leyenda pegada
+   al aro, el conjunto quedaba contra el borde izquierdo y sobraba media tarjeta a la derecha. */
+.graf-dona { display: flex; align-items: center; justify-content: space-evenly; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-2) 0; }
+.graf-dona__svg { width: 122px; height: 122px; flex: none; }
+.graf-dona__arco { cursor: pointer; transition: opacity var(--transition); }
+.graf-dona__arco.is-apagada { opacity: .3; }
+.graf-dona__total { font-size: 17px; font-weight: 700; fill: var(--color-ink); }
+.graf-dona__cap { font-size: 9px; fill: var(--color-ink-soft); text-transform: uppercase; letter-spacing: .04em; }
+/* Sin `flex: 1`: al crecer, la leyenda empujaba la dona contra el borde izquierdo y dejaba el
+   hueco a la derecha. Así el conjunto dona+leyenda se centra como una sola pieza. */
+.graf-leyendas { display: grid; gap: 4px; flex: 0 1 auto; min-width: 0; }
+.graf-leyenda {
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px;
+    padding: 4px 6px; border: 0; border-radius: var(--radius); background: none;
+    font: inherit; text-align: left; cursor: pointer;
+}
+.graf-leyenda:hover { background: var(--color-surface-soft); }
+.graf-leyenda.is-apagada { opacity: .5; }
+.graf-leyenda__punto { width: 10px; height: 10px; border-radius: 3px; }
+.graf-leyenda__etq { font-size: var(--fs-sm); font-weight: 600; }
+.graf-leyenda__val { grid-column: 2; color: var(--color-ink-soft); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .graf-col {
     display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: flex-end;
     gap: 4px; height: 100%; padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
@@ -3438,6 +3503,17 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
 .graf-barra.is-apagada .graf-barra__fill { background: var(--color-ink-mute); opacity: .45; }
 
 .graf-detalle { margin-top: var(--sp-3); padding: 0; overflow: hidden; }
-.graf-detalle h2 { margin: 0; padding: var(--sp-4) var(--sp-4) var(--sp-3); font-size: var(--fs-md); }
+.graf-detalle__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
+.graf-detalle__head h2 { margin: 0; font-size: var(--fs-md); }
+#graf-tabla-buscar {
+    width: 280px; max-width: 50%; min-height: var(--control-h); padding: 0 var(--sp-3);
+    border: 1px solid var(--color-border); border-radius: var(--radius);
+    background: var(--color-surface); color: var(--color-ink); font: inherit;
+}
+#graf-tabla-buscar:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--focus-ring); }
+.graf-tabla__pie { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--color-border); font-size: var(--fs-sm); }
+.graf-pager { display: flex; align-items: center; gap: var(--sp-3); }
 .graf-detalle .table { margin: 0; }
+/* Descripción es texto libre: si no se recorta, una sola fila larga descuadra la tabla entera. */
+.graf-detalle .col--desc { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .graf-detalle .muted { padding: var(--sp-3) var(--sp-4); margin: 0; }
