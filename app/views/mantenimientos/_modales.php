@@ -72,7 +72,7 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
                 <label class="field"><span class="field__label">Tasa usada</span>
                     <input type="text" name="tasa_usada" inputmode="decimal" autocomplete="off">
                     <small class="field__note" id="mant-conversion" hidden></small></label>
-                <label class="field"><span class="field__label">Factura</span>
+                <label class="field"><span class="field__label"># Factura</span>
                     <input type="text" name="factura" maxlength="60" autocomplete="off"></label>
 
                 <label class="field grid-4__2"><span class="field__label">Observaciones</span>
@@ -88,10 +88,15 @@ $hoy = (new DateTimeImmutable('today'))->format('Y-m-d');
                         <small>Deja de estar disponible hasta que marques su salida. No la marques
                         para un trabajo corto ni al cargar historial viejo.</small></span>
                 </label>
+                <!-- El título dice el efecto y el subtítulo las dos opciones. Nombrar el
+                     «ciclo» o poner de ejemplo el cambio de aceite no servía: el plan de cada
+                     categoría puede ser otra cosa, y quien registra no tiene por qué saberlo. -->
                 <label class="check check--box grid-4__full" id="mant-reinicia-wrap">
                     <input type="checkbox" name="reinicia_ciclo" value="1">
-                    <span>Reinicia el ciclo de servicio
-                        <small class="block muted">Se marca solo según el tipo. Quítalo o ponlo si esta vez fue distinto.</small>
+                    <span><strong>El próximo servicio se cuenta desde hoy</strong>
+                        <small class="block muted">Márcalo si este trabajo fue el servicio que toca
+                        según el plan. Si fue algo aparte, déjalo sin marcar: la cuenta sigue desde
+                        el servicio anterior.</small>
                     </span></label>
             </div>
         </div>
