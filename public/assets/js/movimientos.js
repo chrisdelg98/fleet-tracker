@@ -37,6 +37,10 @@ document.addEventListener('click', async (ev) => {
         dlgFin.showModal();
         return;
     }
+    if (mov === 'editar') {
+        location.href = `/?editar=${id}`;
+        return;
+    }
     if (mov === 'cancelar') {
         formMotivo.reset();
         formMotivo.elements['id'].value = id;
@@ -68,7 +72,8 @@ formFin?.addEventListener('submit', async (ev) => {
 formMotivo?.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const r = await api('POST', `/api/movimientos/${formMotivo.elements['id'].value}/cancelar`, {
-        motivo: formMotivo.elements['motivo'].value,
+        // El servicio espera este nombre; con `motivo` a secas devolvía un 422 genérico.
+        motivo_cancelacion: formMotivo.elements['motivo'].value,
     });
     if (r.ok) { location.reload(); return; }
     pintarConflicto($('form-cancelar-error'), r);

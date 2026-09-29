@@ -293,6 +293,11 @@ set_page_meta(
                             if ($m['estado'] === EstadoMovimiento::EN_TRANSITO) {
                                 $acciones[] = ['label' => 'Marcar llegada', 'attrs' => ['data-mov' => 'llegada', 'data-id' => (int) $m['id']]];
                             }
+                            // La edición completa vive en el formulario de reserva, que ya valida
+                            // apoyos, retorno y proveedor. Duplicarlo aquí sería una segunda
+                            // versión de las mismas reglas.
+                            $acciones[] = ['label' => 'Editar viaje', 'attrs' => [
+                                'data-mov' => 'editar', 'data-id' => (int) $m['id']]];
                             $acciones[] = ['label' => 'Cambiar fecha de fin', 'attrs' => [
                                 'data-mov' => 'reprogramar', 'data-id' => (int) $m['id'],
                                 'data-fin' => format_local($m['fecha_fin_estimada'], $m['timezone'], 'Y-m-d\TH:i')]];

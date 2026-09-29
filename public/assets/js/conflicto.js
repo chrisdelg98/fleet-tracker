@@ -78,7 +78,7 @@ export function pintarConflicto(caja, r, alResolver) {
                 peligro: true,
             });
             if (!ok) return;
-            const r2 = await api('POST', `/api/movimientos/${c.id}/cancelar`, { motivo });
+            const r2 = await api('POST', `/api/movimientos/${c.id}/cancelar`, { motivo_cancelacion: motivo });
             if (!r2.ok) { toast(r2.message || 'No se pudo cancelar.', { tono: 'error' }); return; }
             caja.innerHTML = `<span class="conflicto__texto">Movimiento #${c.id} cancelado. Ya puedes guardar.</span>`;
             if (typeof alResolver === 'function') alResolver();

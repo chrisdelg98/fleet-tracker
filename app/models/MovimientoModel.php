@@ -49,7 +49,8 @@ final class MovimientoModel
 
         $stmt = $this->pdo->prepare(
             'SELECT m.*, u.placa_unidad AS unidad_placa, p.nombre AS piloto_nombre,
-                    est.nombre AS estacion_nombre, '
+                    est.nombre AS estacion_nombre,
+                    COALESCE(est.timezone, eu.timezone) AS timezone, '
             . $apoyo($motriz, 'mu.unidad_id') . ' AS apoyo_motriz_id, '
             . $apoyo($motriz, 'ua.placa_unidad') . ' AS apoyo_motriz_placa, '
             . $apoyo($arrastre, 'mu.unidad_id') . ' AS apoyo_arrastre_id, '
@@ -58,6 +59,7 @@ final class MovimientoModel
                LEFT JOIN unidades u ON u.id = m.unidad_id
                LEFT JOIN pilotos p ON p.id = m.piloto_id
                LEFT JOIN estaciones est ON est.id = m.estacion_id
+               LEFT JOIN estaciones eu ON eu.id = u.estacion_id
               WHERE m.id = :id
               LIMIT 1'
         );

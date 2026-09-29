@@ -625,7 +625,9 @@ async function abrirEdicion(id) {
     if (!r.ok) { toast(mensajeError(r, 'No se pudo cargar la reserva.'), { tono: 'error' }); return; }
     const m = r.data;
     const fila = ultimasUnidades.find((x) => String(x.movimiento?.id) === String(id));
-    const tz = fila?.timezone;
+    // Si el viaje no está en la ventana que se está mirando —o se llegó por enlace directo—
+    // la zona horaria sale del propio movimiento, no del navegador.
+    const tz = fila?.timezone || m.timezone;
 
     formReserva.reset();
     quitarOpcionesTemporales();
@@ -1253,6 +1255,14 @@ document.addEventListener('keydown', (ev) => {
 setInterval(load, 60000);
 syncStateSummary();
 load();
+
+// Llegada desde la lista de movimientos: se abre la edición de ese viaje directamente. El
+// formulario carga por id, así que no depende de que la unidad esté en la ventana que se ve.
+const paraEditar = new URLSearchParams(location.search).get('editar');
+if (paraEditar && cfg.puedeReservar) {
+    abrirEdicion(paraEditar);
+    history.replaceState(null, '', location.pathname);
+}
 
 // ── Utilidades de fecha (hora local de la estación con Intl) ──
 function dayKey(date, tz) {
