@@ -21,8 +21,9 @@ function menu_usuario(array $u): array
     $principal = ['/' => 'Dashboard', '/live' => 'Live', '/timeline' => 'Timeline'];
     // Mantenimientos va en su propio grupo, no dentro de Operación: es un módulo con sus
     // propias secciones adentro, y colgarlo de los datos maestros lo escondía entre ellos.
-    // Mantenimientos va al final: se consulta de vez en cuando, no a diario como Operación.
-    $grupos = ['Operación' => [], 'Consulta' => [], 'Administración' => [], 'Mantenimientos' => []];
+    // Administración va al final por ser lo que menos se toca; Mantenimientos queda encima,
+    // que se consulta de vez en cuando pero más que los catálogos y los usuarios.
+    $grupos = ['Operación' => [], 'Consulta' => [], 'Mantenimientos' => [], 'Administración' => []];
 
     if ($puedeGestionar) {
         $grupos['Operación']['/flota'] = 'Flota';
