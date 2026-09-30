@@ -1,10 +1,13 @@
 <?php
 /**
- * Gráficos: dos hojas que se exploran con filtro cruzado, como una página de BI.
+ * Las hojas de gráficos: filtro cruzado sobre la tabla de hechos, como una página de BI.
  *
  * La pantalla no recibe totales sino la tabla de hechos del rango; los gráficos y sus filtros
- * se calculan en el navegador (ver GraficoService). Aquí solo viven el alcance por rol, el
- * rango y qué hoja se está viendo.
+ * se calculan en el navegador (ver GraficoService). Aquí solo viven el alcance por rol y el
+ * rango.
+ *
+ * Son dos pantallas en dos módulos distintos —movimientos en Consulta, costos dentro de
+ * Mantenimientos— pero comparten alcance, rango y dibujo, así que comparten clase.
  */
 
 declare(strict_types=1);
@@ -18,34 +21,47 @@ final class GraficoController
     {
     }
 
-    public function index(array $params = []): void
+    /** GET /graficos — la hoja de movimientos. */
+    public function index(): void
     {
         $user = require_login_web();
-        $hoja = (string) ($params['hoja'] ?? 'movimientos');
-        if (!isset(GraficoService::HOJAS[$hoja])) {
-            header('Location: /graficos');
-            return;
-        }
+        [$rango, $estacion, $total] = $this->contexto($user);
 
-        $rango = $this->service->rango($_GET);
+        render('graficos/index', [
+            'usuario'     => $user,
+            'filas'       => $this->service->movimientos($rango, $estacion),
+            'rango'       => $rango,
+            'estacionSel' => $estacion,
+            'verTodas'    => $total,
+            'estaciones'  => $this->catalogos->activos('estaciones', 'codigo'),
+        ], 'Gráficos · Movimientos · Flete Finder');
+    }
+
+    /** GET /mantenimientos/graficos — la misma hoja, sobre el gasto de taller. */
+    public function costos(): void
+    {
+        $user = require_login_web();
+        [$rango, $estacion, $total] = $this->contexto($user);
+
+        render('mantenimientos/graficos', [
+            'usuario'     => $user,
+            'filas'       => $this->service->costos($rango, $estacion),
+            'rango'       => $rango,
+            'estacionSel' => $estacion,
+            'verTodas'    => $total,
+            'estaciones'  => $this->catalogos->activos('estaciones', 'codigo'),
+        ], 'Costos de mantenimiento · Flete Finder');
+    }
+
+    /** Rango pedido y hasta dónde llega este usuario. */
+    private function contexto(array $user): array
+    {
         $total = in_array($user['rol'], self::ALCANCE_TOTAL, true);
         // Un admin puede mirar una estación concreta; el resto ve la suya y no puede cambiarla.
         $estacion = $total
             ? (!empty($_GET['estacion_id']) ? (int) $_GET['estacion_id'] : null)
             : (int) $user['estacion_id'];
 
-        $filas = $hoja === 'costos'
-            ? $this->service->costos($rango, $estacion)
-            : $this->service->movimientos($rango, $estacion);
-
-        render('graficos/index', [
-            'usuario'     => $user,
-            'hoja'        => $hoja,
-            'filas'       => $filas,
-            'rango'       => $rango,
-            'estacionSel' => $estacion,
-            'verTodas'    => $total,
-            'estaciones'  => $this->catalogos->activos('estaciones', 'codigo'),
-        ], 'Gráficos · ' . GraficoService::HOJAS[$hoja] . ' · Flete Finder');
+        return [$this->service->rango($_GET), $estacion, $total];
     }
 }

@@ -15,12 +15,6 @@ declare(strict_types=1);
 
 final class GraficoService
 {
-    /** Hojas disponibles; cada una es una tabla de hechos distinta. */
-    public const HOJAS = [
-        'movimientos' => 'Movimientos',
-        'costos'      => 'Costos de mantenimiento',
-    ];
-
     public function __construct(private PDO $pdo)
     {
     }

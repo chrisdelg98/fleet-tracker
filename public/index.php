@@ -303,10 +303,16 @@ $router->get('/api/unidades/{id}/estadisticas', fn($p) => $inventarioController-
 
 // ── Fase 3: Histórico ──
 $historicoController = new HistoricoController(new HistoricoService($pdo), $usuarioModel, $catalogoModel);
-// Gráficos: dos hojas con filtro cruzado; el agregado ocurre en el navegador.
+// Gráficos con filtro cruzado; el agregado ocurre en el navegador. La hoja de costos se
+// registra más abajo, dentro del módulo de mantenimientos, que es donde se consulta.
 $graficoController = new GraficoController(new GraficoService($pdo), $catalogoModel);
 $router->get('/graficos', fn() => $graficoController->index());
-$router->get('/graficos/{hoja}', fn($p) => $graficoController->index($p));
+// Enlaces viejos a las hojas: la de costos se mudó, el resto vuelve a la portada.
+$router->get('/graficos/{hoja}', function ($p) {
+    header('Location: ' . ($p['hoja'] === 'costos' ? '/mantenimientos/graficos' : '/graficos'));
+});
+// Pestaña del módulo de mantenimientos, registrada aquí porque comparte controlador.
+$router->get('/mantenimientos/graficos', fn() => $graficoController->costos());
 
 $router->get('/movimientos', fn() => $historicoController->index());
 $router->get('/historico', fn() => $historicoController->sistema());

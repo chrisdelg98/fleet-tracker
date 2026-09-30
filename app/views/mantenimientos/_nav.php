@@ -12,6 +12,7 @@ $secciones = [
     'control'   => ['/mantenimientos', 'Control'],
     'historial' => ['/mantenimientos/historial', 'Historial'],
     'costos'    => ['/mantenimientos/costos', 'Costos'],
+    'graficos'  => ['/mantenimientos/graficos', 'Gráficos'],
     'talleres'  => ['/mantenimientos/talleres', 'Talleres'],
 ];
 $deConfiguracion = [
