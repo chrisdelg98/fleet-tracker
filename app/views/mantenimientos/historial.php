@@ -60,7 +60,7 @@ $comunes = $filtros + ['por_pagina' => $resultado['por_pagina']];
         <?php if ($resultado['paginas'] > 1): ?>
             · <span class="muted">página <?= (int) $resultado['pagina'] ?> de <?= (int) $resultado['paginas'] ?></span>
         <?php endif; ?>
-        · <a class="link" href="/mantenimientos/historial.csv?<?= e(http_build_query($filtros)) ?>">Descargar CSV</a>
+        · <a class="link" href="/mantenimientos/historial.xlsx?<?= e(http_build_query($filtros)) ?>">Descargar Excel</a>
     </p>
 
     <?php if ($resultado['filas'] === []): ?>

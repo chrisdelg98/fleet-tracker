@@ -70,26 +70,46 @@ final class MantenimientoController
         ] + $this->datosDelModal($user), 'Historial de mantenimientos · Flete Finder');
     }
 
-    /** GET /mantenimientos/historial.csv — lo mismo que se ve, para Excel. */
-    public function historialCsv(): void
+    /**
+     * GET /mantenimientos/historial.xlsx — lo filtrado, en Excel.
+     *
+     * Kilómetros y costos van como número y no como texto: lo que se hace con esta descarga es
+     * sumar y ordenar, y un CSV llega con todo en texto —y con la coma decimal peleando con el
+     * separador de columnas— así que había que arreglarlo a mano antes de poder usarlo.
+     */
+    public function historialExcel(): void
     {
         require_login_web();
         $filas = $this->mantenimientos->historialCompleto($this->filtrosHistorial());
 
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="mantenimientos-' . date('Ymd') . '.csv"');
-        $salida = fopen('php://output', 'w');
-        fwrite($salida, "\xEF\xBB\xBF");   // BOM: Excel abre el CSV con tildes correctas
-        fputcsv($salida, ['Fecha', 'Placa', 'Marca', 'Modelo', 'Estación', 'Tipo', 'Descripción',
-                          'Taller', 'Propio', 'Km', 'Costo', 'Moneda', 'Costo USD', 'Factura', 'Observaciones']);
+        $columnas = [
+            ['Fecha', 12], ['Placa', 14], ['Marca', 16], ['Modelo', 16], ['Estación', 10],
+            ['Tipo', 22], ['Descripción', 40], ['Taller', 22], ['Taller propio', 13],
+            ['Km', 11], ['Costo', 12], ['Moneda', 9], ['Costo USD', 12],
+            ['Factura', 14], ['Observaciones', 34],
+        ];
+        $num = static fn($v): int|float|string => $v === null || $v === '' ? '' : (float) $v;
+
+        $tabla = [array_column($columnas, 0)];
         foreach ($filas as $f) {
-            fputcsv($salida, [
+            $tabla[] = [
                 $f['fecha'], $f['placa_unidad'], $f['marca'], $f['modelo'], $f['estacion_codigo'],
                 $f['tipo'], $f['descripcion'], $f['taller'], $f['es_propio'] ? 'Sí' : 'No',
-                $f['km'], $f['costo'], $f['moneda'], $f['costo_usd'], $f['factura'], $f['observaciones'],
-            ]);
+                $f['km'] === null ? '' : (int) $f['km'],
+                $num($f['costo']), $f['moneda'], $num($f['costo_usd']),
+                $f['factura'], $f['observaciones'],
+            ];
         }
-        fclose($salida);
+
+        $bytes = (new XlsxWriter())
+            ->hoja('Mantenimientos', $tabla, ['anchos' => array_column($columnas, 1), 'congelar' => true])
+            ->generar();
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="mantenimientos-' . date('Ymd-His') . '.xlsx"');
+        header('Content-Length: ' . strlen($bytes));
+        header('Cache-Control: no-store');
+        echo $bytes;
     }
 
     /** GET /mantenimientos/costos — en qué se va el dinero. */

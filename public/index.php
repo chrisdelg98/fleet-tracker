@@ -160,7 +160,7 @@ $mantenimientoController = new MantenimientoController(
 );
 $router->get('/mantenimientos', fn() => $mantenimientoController->control());
 $router->get('/mantenimientos/historial', fn() => $mantenimientoController->historial());
-$router->get('/mantenimientos/historial.csv', fn() => $mantenimientoController->historialCsv());
+$router->get('/mantenimientos/historial.xlsx', fn() => $mantenimientoController->historialExcel());
 $router->get('/mantenimientos/costos', fn() => $mantenimientoController->costos());
 $router->get('/mantenimientos/talleres', fn() => $mantenimientoController->talleresPage());
 $router->get('/mantenimientos/configuracion', fn() => $mantenimientoController->configuracion());
