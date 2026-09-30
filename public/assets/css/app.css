@@ -1220,6 +1220,7 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
     background: transparent;
     color: var(--color-ink);
     font: inherit;
+    text-decoration: none;
     font-size: var(--fs-sm);
     font-weight: 600;
     text-align: left;
@@ -1931,7 +1932,8 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
 .filtro-chip:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
 .filtro-chip span { font-size: 13px; line-height: 1; opacity: .75; }
 
-.chipbtn { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--color-border); background: #fff; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-sm); }
+/* Sirve igual a <button> que a <a>; sin esto, los que son enlace salen subrayados y en azul. */
+.chipbtn { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--color-border); background: #fff; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-sm); text-decoration: none; color: inherit; }
 .chipbtn.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 
 /* Atajo de categoría. Deliberadamente más discreto que los botones de fecha: acompaña, no
@@ -1941,8 +1943,6 @@ input[type="radio"]:disabled { background-color: var(--color-bg-strong); border-
    línea, una raya vertical al principio queda huérfana y parece un error de pintado. */
 /* Rangos del timeline: mismos botones que los atajos de fecha del tablero. */
 .tl-rangos { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
-.tl-rangos .chipbtn { text-decoration: none; color: inherit; }
-.tl-rangos .chipbtn.is-active { color: #fff; }
 
 .filtros__categorias {
     display: flex;
@@ -3335,8 +3335,6 @@ button.retorno { border: none; font: inherit; font-size: 0.75rem; font-weight: 6
     flex-wrap: wrap;
     gap: 6px;
 }
-.atajos .chipbtn { text-decoration: none; color: inherit; }
-.atajos .chipbtn.is-active { color: #fff; }
 
 /* Traslape: el aviso deja de ser un callejón sin salida y trae las acciones sobre el movimiento
    con el que se choca, que es lo que hay que resolver para poder guardar. */
