@@ -99,7 +99,8 @@ final class NotificacionService
         // Por referencia: si el tercer correo falla, los dos primeros ya salieron y el
         // aviso tiene que decir eso, no dar el envío entero por perdido.
         $enviados = 0;
-        $error = $this->safe(function () use ($movimientoId, $correos, $correoUsuario, &$enviados): void {
+        $fallos = [];
+        $error = $this->safe(function () use ($movimientoId, $correos, $correoUsuario, &$enviados, &$fallos): void {
             // El aviso lo lee quien recibe la unidad: necesita saber qué llega y quién la trae,
             // con los datos con que se identifica al motorista en la frontera y en la báscula.
             // La unidad propia es opcional: sin ella el viaje lo hace un proveedor, la estación
@@ -221,9 +222,10 @@ final class NotificacionService
 
             // Reply-To a quien reservó: el remitente es un buzón automático que nadie lee, así
             // que sin esto la respuesta del cliente se pierde.
+            $mensajes = [];
             foreach ($correos as $correo) {
-                $this->correo->send($correo, $subject, $html, $text, $correoUsuario);
-                $enviados++;
+                $mensajes[] = ['to' => $correo, 'subject' => $subject, 'html' => $html,
+                               'text' => $text, 'responder_a' => $correoUsuario];
             }
 
             // Y una copia para quien la hizo. Va aparte y no como Cc porque se manda un correo
@@ -231,10 +233,27 @@ final class NotificacionService
             // uno le dejaría tantas copias como contactos tenga la lista.
             $suyo = trim((string) $correoUsuario);
             if ($suyo !== '' && !in_array(strtolower($suyo), array_map('strtolower', $correos), true)) {
-                $this->correo->send($suyo, 'Copia · ' . $subject, $html, $text);
-                $enviados++;
+                $mensajes[] = ['to' => $suyo, 'subject' => 'Copia · ' . $subject,
+                               'html' => $html, 'text' => $text];
+            }
+
+            // Todos en una sesión y cada uno por su cuenta: que una dirección rebote no puede
+            // dejar sin aviso a las demás ni sin copia a quien hizo la reserva, que va última.
+            foreach ($this->correo->enviarLote($mensajes) as $fallo) {
+                if ($fallo === null) {
+                    $enviados++;
+                } else {
+                    $fallos[] = $fallo;
+                }
             }
         });
+
+        // Un rebote de un destinatario no es lo mismo que el correo caído, pero quien reservó
+        // tiene que enterarse igual: si no, da por avisado a alguien que no lo está.
+        if ($error === null && $fallos !== []) {
+            $error = count($fallos) . ' de ' . ($enviados + count($fallos))
+                . ' no salieron: ' . implode(' · ', array_unique($fallos));
+        }
 
         $this->anotar($evento, 'Movimiento #' . $movimientoId, $enviados, $error, $usuario);
 

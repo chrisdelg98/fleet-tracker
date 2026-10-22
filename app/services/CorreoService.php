@@ -44,6 +44,33 @@ final class CorreoService
      */
     public function send(string $to, string $subject, string $html, string $text = '', ?string $responderA = null): void
     {
+        $errores = $this->enviarLote([[
+            'to' => $to, 'subject' => $subject, 'html' => $html,
+            'text' => $text, 'responder_a' => $responderA,
+        ]]);
+        if ($errores[0] !== null) {
+            throw new RuntimeException($errores[0]);
+        }
+    }
+
+    /**
+     * Varios mensajes sobre una sola sesión SMTP, cada uno aislado del resto.
+     *
+     * Las dos cosas importan y son el mismo arreglo. Antes se abría una conexión por mensaje
+     * —una reserva con tres contactos y su copia eran cuatro AUTH seguidos—, que es justo lo
+     * que un servidor compartido empieza a frenar. Y el fallo de un destinatario se llevaba
+     * por delante a los que faltaban: si la primera dirección rebotaba, los demás y la copia
+     * del autor no se intentaban siquiera.
+     *
+     * Cuando algo falla se reintenta ese mensaje una vez sobre una sesión nueva, porque el
+     * motivo más común —la sesión se cayó o el servidor cortó por ritmo— se arregla solo al
+     * reconectar. Si vuelve a fallar, se anota y se sigue con el siguiente.
+     *
+     * @param list<array{to:string,subject:string,html:string,text?:string,responder_a?:?string}> $mensajes
+     * @return list<string|null> el motivo del fallo de cada mensaje, en el mismo orden; null si salió.
+     */
+    public function enviarLote(array $mensajes): array
+    {
         $faltan = $this->faltantes();
         if ($faltan !== []) {
             throw new RuntimeException('Falta configurar ' . implode(' y ', $faltan) . ' en el .env.');
@@ -51,45 +78,104 @@ final class CorreoService
 
         $from = trim((string) $this->config['from']);
         $fromName = trim((string) ($this->config['from_name'] ?? 'Flete Finder'));
-        $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text !== '' ? $text : strip_tags($html), $responderA);
 
-        // Antes de hablar con nadie: una línea demasiado larga la acepta el servidor y la
-        // rechaza después, al encaminarla, cuando ya nadie está mirando. Comprobarlo aquí
-        // convierte ese fallo remoto y silencioso en un error inmediato y visible.
-        $this->assertLineasCortas($payload);
-
-        $socket = $this->connect();
+        $errores = [];
+        $socket = null;
         try {
-            $this->expect($socket, [220]);
-            $this->command($socket, 'EHLO localhost', [250]);
+            foreach (array_values($mensajes) as $i => $m) {
+                $texto = (string) ($m['text'] ?? '');
+                $payload = $this->buildMessage(
+                    $from,
+                    $fromName,
+                    $m['to'],
+                    $m['subject'],
+                    $m['html'],
+                    $texto !== '' ? $texto : strip_tags($m['html']),
+                    $m['responder_a'] ?? null
+                );
 
-            $encryption = strtolower((string) ($this->config['encryption'] ?? ''));
-            $port = (int) ($this->config['port'] ?? 25);
-            if ($encryption === 'tls' || ($encryption === '' && $port === 587)) {
-                $this->command($socket, 'STARTTLS', [220]);
-                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                    throw new RuntimeException('No se pudo activar TLS para el correo saliente.');
+                $errores[$i] = null;
+                for ($intento = 1; $intento <= 2; $intento++) {
+                    try {
+                        // Antes de hablar con nadie: una línea demasiado larga la acepta el
+                        // servidor y la rechaza después, al encaminarla, cuando ya nadie está
+                        // mirando. Comprobarlo aquí lo convierte en un error inmediato.
+                        $this->assertLineasCortas($payload);
+                        if (!is_resource($socket)) {
+                            $socket = $this->abrirSesion();
+                        }
+                        $this->entregar($socket, $from, (string) $m['to'], $payload);
+                        $errores[$i] = null;
+                        break;
+                    } catch (Throwable $e) {
+                        $errores[$i] = $e->getMessage();
+                        // La sesión queda en un estado que no se puede dar por bueno: se cierra
+                        // para que el siguiente intento —de este mensaje o del próximo— arranque
+                        // limpio en vez de heredar una transacción a medias.
+                        $this->cerrar($socket);
+                        $socket = null;
+                    }
                 }
-                $this->command($socket, 'EHLO localhost', [250]);
             }
-
-            $username = trim((string) ($this->config['username'] ?? ''));
-            $password = (string) ($this->config['password'] ?? '');
-            if ($username !== '') {
-                $this->command($socket, 'AUTH LOGIN', [334]);
-                $this->command($socket, base64_encode($username), [334]);
-                $this->command($socket, base64_encode($password), [235]);
-            }
-
-            $this->command($socket, 'MAIL FROM:<' . $from . '>', [250]);
-            $this->command($socket, 'RCPT TO:<' . $to . '>', [250, 251]);
-            $this->command($socket, 'DATA', [354]);
-            $this->write($socket, $payload . "\r\n.\r\n");
-            $this->expect($socket, [250]);
-            $this->command($socket, 'QUIT', [221]);
         } finally {
-            fclose($socket);
+            $this->cerrar($socket, true);
         }
+
+        return $errores;
+    }
+
+    /** Conexión, saludo, TLS y autenticación: todo lo que se hace una vez por sesión. */
+    private function abrirSesion()
+    {
+        $socket = $this->connect();
+        $this->expect($socket, [220]);
+        $this->command($socket, 'EHLO localhost', [250]);
+
+        $encryption = strtolower((string) ($this->config['encryption'] ?? ''));
+        $port = (int) ($this->config['port'] ?? 25);
+        if ($encryption === 'tls' || ($encryption === '' && $port === 587)) {
+            $this->command($socket, 'STARTTLS', [220]);
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new RuntimeException('No se pudo activar TLS para el correo saliente.');
+            }
+            $this->command($socket, 'EHLO localhost', [250]);
+        }
+
+        $username = trim((string) ($this->config['username'] ?? ''));
+        $password = (string) ($this->config['password'] ?? '');
+        if ($username !== '') {
+            $this->command($socket, 'AUTH LOGIN', [334]);
+            $this->command($socket, base64_encode($username), [334]);
+            $this->command($socket, base64_encode($password), [235]);
+        }
+
+        return $socket;
+    }
+
+    /** Un mensaje dentro de una sesión ya abierta. */
+    private function entregar($socket, string $from, string $to, string $payload): void
+    {
+        $this->command($socket, 'MAIL FROM:<' . $from . '>', [250]);
+        $this->command($socket, 'RCPT TO:<' . $to . '>', [250, 251]);
+        $this->command($socket, 'DATA', [354]);
+        $this->write($socket, $payload . "\r\n.\r\n");
+        $this->expect($socket, [250]);
+    }
+
+    /** El QUIT es cortesía: si la sesión ya está rota, cerrar el socket basta. */
+    private function cerrar($socket, bool $despedirse = false): void
+    {
+        if (!is_resource($socket)) {
+            return;
+        }
+        if ($despedirse) {
+            try {
+                $this->command($socket, 'QUIT', [221]);
+            } catch (Throwable) {
+                // da igual: se cierra de todos modos
+            }
+        }
+        @fclose($socket);
     }
 
     private function connect()
@@ -117,11 +203,17 @@ final class CorreoService
     private function buildMessage(string $from, string $fromName, string $to, string $subject, string $html, string $text, ?string $responderA = null): string
     {
         $boundary = 'b' . bin2hex(random_bytes(12));
+        // Message-ID propio y único. Un mensaje sin él es de lo primero que penalizan los
+        // filtros —Microsoft 365 entre ellos—, y como la penalización es por puntos, el mismo
+        // aviso entra en una bandeja y en otra se va a correo no deseado. También es lo que
+        // usa el cliente para no mostrar dos veces el mismo correo.
+        $dominio = substr((string) strrchr($from, '@'), 1) ?: 'localhost';
         $headers = [
             'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000',
             'From: ' . $this->mimeHeader($fromName) . ' <' . $from . '>',
             'To: <' . $to . '>',
             'Subject: ' . $this->mimeHeader($subject),
+            'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $dominio . '>',
             'MIME-Version: 1.0',
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
         ];
