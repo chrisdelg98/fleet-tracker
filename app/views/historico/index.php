@@ -165,6 +165,8 @@ set_page_meta(
                     <?php if ($r['paginas'] > 1): ?>
                         <span class="muted">página <?= (int) $r['pagina'] ?> de <?= (int) $r['paginas'] ?></span>
                     <?php endif; ?>
+                    <a class="link" href="/movimientos.xlsx<?= $qs !== '' ? '?' . e($qs) : '' ?>"
+                       data-infotip="Descarga todos los viajes de los filtros puestos (no solo esta página).">Descargar Excel</a>
                     <button type="button" class="filters-panel__toggle" data-filters-toggle aria-expanded="false" aria-controls="hist-filters">
                         <span data-filters-toggle-label data-open-label="Más filtros" data-close-label="Ocultar filtros">Más filtros</span>
                         <span class="filters-panel__toggle-icon" aria-hidden="true">▾</span>

@@ -52,31 +52,7 @@ final class HistoricoService
         $pagina = max(1, $pagina);
         $offset = ($pagina - 1) * $porPagina;
 
-        $stmt = $this->pdo->prepare(
-            "SELECT m.id, m.estado, m.tipo_ruta, m.reservado_para, m.notas,
-                    m.fecha_salida, m.fecha_fin_estimada, m.fecha_fin_real,
-                    m.retorno_disponible, m.movimiento_regreso_id,
-                    u.placa_unidad, COALESCE(e.codigo, ep.codigo) AS estacion_codigo,
-                    COALESCE(e.timezone, ep.timezone) AS timezone,
-                    COALESCE(p.nombre, t.piloto) AS piloto,
-                    t.proveedor, t.placa_motriz AS placa_tercero,
-                    po.codigo_iso AS origen, pd.codigo_iso AS destino,
-                    r.nombre AS ruta_nombre,
-                    m.ruta_custom_origen, m.ruta_custom_destino,
-                    TIMESTAMPDIFF(MINUTE, m.fecha_fin_estimada, m.fecha_fin_real) AS demora_min
-               FROM movimientos m
-               LEFT JOIN unidades u ON u.id = m.unidad_id
-               LEFT JOIN estaciones e ON e.id = u.estacion_id
-               LEFT JOIN estaciones ep ON ep.id = m.estacion_id
-               LEFT JOIN movimiento_tercero t ON t.movimiento_id = m.id
-               LEFT JOIN pilotos p ON p.id = m.piloto_id
-               LEFT JOIN paises po ON po.id = m.pais_origen_id
-               LEFT JOIN paises pd ON pd.id = m.pais_destino_id
-               LEFT JOIN rutas r ON r.id = m.ruta_id
-               {$where}
-              ORDER BY m.id DESC
-              LIMIT " . $porPagina . " OFFSET " . $offset
-        );
+        $stmt = $this->pdo->prepare($this->consultaViajes($where, " LIMIT " . $porPagina . " OFFSET " . $offset));
         $stmt->execute($params);
         $filas = $stmt->fetchAll();
 
@@ -88,6 +64,42 @@ final class HistoricoService
             'paginas'    => max(1, (int) ceil($total / $porPagina)),
             'por_pagina' => $porPagina,
         ];
+    }
+
+    /** SELECT de viajes compartido por la pantalla (paginada) y la descarga (sin límite). */
+    private function consultaViajes(string $where, string $limite = ''): string
+    {
+        return "SELECT m.id, m.estado, m.tipo_ruta, m.reservado_para, m.notas,
+                m.fecha_salida, m.fecha_fin_estimada, m.fecha_fin_real,
+                m.retorno_disponible, m.movimiento_regreso_id,
+                u.placa_unidad, COALESCE(e.codigo, ep.codigo) AS estacion_codigo,
+                COALESCE(e.timezone, ep.timezone) AS timezone,
+                COALESCE(p.nombre, t.piloto) AS piloto,
+                t.proveedor, t.placa_motriz AS placa_tercero,
+                po.codigo_iso AS origen, pd.codigo_iso AS destino,
+                r.nombre AS ruta_nombre,
+                m.ruta_custom_origen, m.ruta_custom_destino,
+                TIMESTAMPDIFF(MINUTE, m.fecha_fin_estimada, m.fecha_fin_real) AS demora_min
+           FROM movimientos m
+           LEFT JOIN unidades u ON u.id = m.unidad_id
+           LEFT JOIN estaciones e ON e.id = u.estacion_id
+           LEFT JOIN estaciones ep ON ep.id = m.estacion_id
+           LEFT JOIN movimiento_tercero t ON t.movimiento_id = m.id
+           LEFT JOIN pilotos p ON p.id = m.piloto_id
+           LEFT JOIN paises po ON po.id = m.pais_origen_id
+           LEFT JOIN paises pd ON pd.id = m.pais_destino_id
+           LEFT JOIN rutas r ON r.id = m.ruta_id
+           {$where}
+          ORDER BY m.id DESC" . $limite;
+    }
+
+    /** Todos los viajes que cumplen los filtros, sin paginar, para la descarga a Excel. */
+    public function exportarViajes(array $filtros): array
+    {
+        [$where, $params] = $this->whereViajes($filtros);
+        $stmt = $this->pdo->prepare($this->consultaViajes($where));
+        $stmt->execute($params);
+        return array_map([$this, 'normalizarViaje'], $stmt->fetchAll());
     }
 
     /** Añade lo que se calcula igual en todas partes: la ruta legible y si llegó tarde. */

@@ -315,6 +315,7 @@ $router->get('/graficos/{hoja}', function ($p) {
 $router->get('/mantenimientos/graficos', fn() => $graficoController->costos());
 
 $router->get('/movimientos', fn() => $historicoController->index());
+$router->get('/movimientos.xlsx', fn() => $historicoController->exportViajes());
 $router->get('/historico', fn() => $historicoController->sistema());
 $router->get('/historico/sistema', fn() => $historicoController->sistema());
 $router->get('/historico/export.csv', fn() => $historicoController->export());

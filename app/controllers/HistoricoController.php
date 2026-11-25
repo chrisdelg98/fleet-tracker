@@ -96,6 +96,68 @@ final class HistoricoController
         ];
     }
 
+    /** GET /movimientos.xlsx — las mismas columnas de la pantalla, con todos los filtros y sin paginar. */
+    public function exportViajes(): void
+    {
+        $user = $this->usuarioConAcceso();
+        if ($user === null) {
+            return;
+        }
+        $filtros = $this->filtrosViajes($_GET, $user, $user['rol'] === Rol::ADMIN_GLOBAL);
+        $filas = $this->service->exportarViajes($filtros);
+
+        $estados = [
+            EstadoMovimiento::RESERVADO => 'Reservado', EstadoMovimiento::PROGRAMADO => 'Programado',
+            EstadoMovimiento::EN_TRANSITO => 'En tránsito', EstadoMovimiento::COMPLETADO => 'Completado',
+            EstadoMovimiento::CANCELADO => 'Cancelado',
+        ];
+        $local = static function (?string $utc, ?string $tz): string {
+            if (empty($utc)) {
+                return '';
+            }
+            return (new DateTimeImmutable($utc, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone($tz ?: 'UTC'))->format('d/m/Y H:i');
+        };
+
+        $columnas = [
+            ['Mov. #', 9], ['Unidad', 14], ['Estación', 10], ['Flota', 12], ['Proveedor', 22],
+            ['Ruta', 28], ['Alcance', 14], ['Piloto', 28], ['Salida', 17], ['Fin estimado', 17],
+            ['Fin real', 17], ['Demora', 12], ['Demora (min)', 13], ['Cliente', 40], ['Estado', 13],
+        ];
+        $tabla = [array_column($columnas, 0)];
+        foreach ($filas as $m) {
+            $propia = $m['placa_unidad'] !== null;
+            $tz = $m['timezone'];
+            $tabla[] = [
+                (int) $m['id'],
+                $propia ? $m['placa_unidad'] : (string) $m['placa_tercero'],
+                (string) $m['estacion_codigo'],
+                $propia ? 'Propia' : 'Proveedor',
+                (string) $m['proveedor'],
+                $m['ruta'],
+                $m['tipo_ruta'] === TipoRuta::INTERNACIONAL ? 'Internacional' : 'Nacional',
+                (string) $m['piloto'],
+                $local($m['fecha_salida'], $tz),
+                $local($m['fecha_fin_estimada'], $tz),
+                $local($m['fecha_fin_real'], $tz),
+                $m['fecha_fin_real'] === null ? '' : ($m['con_demora'] ? 'Con demora' : 'A tiempo'),
+                $m['fecha_fin_real'] === null ? '' : (int) $m['demora_min'],
+                (string) $m['reservado_para'],
+                $estados[$m['estado']] ?? $m['estado'],
+            ];
+        }
+
+        $bytes = (new XlsxWriter())
+            ->hoja('Movimientos', $tabla, ['anchos' => array_column($columnas, 1), 'congelar' => true])
+            ->generar();
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="movimientos-' . date('Ymd-His') . '.xlsx"');
+        header('Content-Length: ' . strlen($bytes));
+        header('Cache-Control: no-store');
+        echo $bytes;
+    }
+
     public function export(): void
     {
         $user = require_login_web();
